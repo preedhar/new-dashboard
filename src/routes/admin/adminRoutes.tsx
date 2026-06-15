@@ -1,0 +1,466 @@
+import {
+  BarChart3,
+  CalendarDays,
+  Globe,
+  Home,
+  LayoutGrid,
+  Mail,
+  Megaphone,
+  Monitor,
+  Package,
+  Settings,
+  ReceiptText,
+  Tag,
+  Truck,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
+
+import { AdminCustomersPage } from './pages/AdminCustomersPage'
+import { AdminOverviewPage } from './pages/AdminOverviewPage'
+import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
+
+export type AdminRoute = {
+  path: string
+  label: string
+  title: string
+  icon: LucideIcon
+  component: () => React.ReactNode
+}
+
+export type AdminNavItem = {
+  title: string
+  url: string
+  icon: LucideIcon
+  items?: {
+    title: string
+    url: string
+  }[]
+}
+
+function createAdminPlaceholder(title: string, description: string) {
+  return function AdminPlaceholderRoute() {
+    return <AdminPagePlaceholder title={title} description={description} />
+  }
+}
+
+export const primaryAdminNav: AdminNavItem[] = [
+  {
+    title: 'Home',
+    url: '/admin',
+    icon: Home,
+  },
+  {
+    title: 'Orders',
+    url: '/admin/orders/all',
+    icon: ReceiptText,
+    items: [
+      { title: 'All Orders', url: '/admin/orders/all' },
+      { title: 'Summary', url: '/admin/orders/summary' },
+      { title: 'Deliveries', url: '/admin/orders/deliveries' },
+      { title: 'Reviews', url: '/admin/orders/reviews' },
+      { title: 'Analytics', url: '/admin/orders/analytics' },
+    ],
+  },
+  {
+    title: 'Products',
+    url: '/admin/products',
+    icon: Package,
+    items: [
+      { title: 'Products', url: '/admin/products' },
+      { title: 'Categories', url: '/admin/products/categories' },
+      { title: 'Bundles', url: '/admin/products/bundles' },
+    ],
+  },
+  {
+    title: 'Bookings',
+    url: '/admin/bookings',
+    icon: CalendarDays,
+    items: [
+      { title: 'Bookings', url: '/admin/bookings' },
+      { title: 'Booking Forms', url: '/admin/bookings/forms' },
+      { title: 'Timeline', url: '/admin/bookings/timeline' },
+      { title: 'Analytics', url: '/admin/bookings/analytics' },
+    ],
+  },
+  {
+    title: 'Marketing',
+    url: '/admin/marketing/share',
+    icon: Megaphone,
+    items: [
+      { title: 'Share', url: '/admin/marketing/share' },
+      { title: 'Discounts', url: '/admin/marketing/discounts' },
+      { title: 'Customers', url: '/admin/marketing/customers' },
+      { title: 'Email Marketing', url: '/admin/marketing/email' },
+      { title: 'Loyalty', url: '/admin/marketing/loyalty' },
+    ],
+  },
+  {
+    title: 'Settings',
+    url: '/admin/settings/payments',
+    icon: Settings,
+    items: [
+      { title: 'Payments', url: '/admin/settings/payments' },
+      { title: 'Website', url: '/admin/settings/website' },
+      { title: 'Store', url: '/admin/settings/store' },
+      { title: 'Team', url: '/admin/settings/team' },
+    ],
+  },
+]
+
+export const appsAdminNav: AdminNavItem[] = [
+  {
+    title: 'Online Store',
+    url: '/admin/apps/online-store',
+    icon: Globe,
+    items: [
+      { title: 'Fulfillment', url: '/admin/apps/online-store/fulfillment' },
+      { title: 'Inventory Calendar', url: '/admin/apps/online-store/inventory-calendar' },
+      { title: 'Checkouts', url: '/admin/apps/online-store/checkouts' },
+      { title: 'Website', url: '/admin/apps/online-store/website' },
+    ],
+  },
+  {
+    title: 'POS',
+    url: '/admin/apps/pos',
+    icon: Monitor,
+  },
+  {
+    title: 'All Apps',
+    url: '/admin/apps',
+    icon: LayoutGrid,
+  },
+]
+
+export const adminRoutes: AdminRoute[] = [
+  {
+    path: '/admin',
+    label: 'Home',
+    title: 'Dashboard',
+    icon: Home,
+    component: AdminOverviewPage,
+  },
+  {
+    path: '/admin/orders',
+    label: 'Orders',
+    title: 'Orders',
+    icon: ReceiptText,
+    component: createAdminPlaceholder(
+      'Orders',
+      'A future workspace for reviewing incoming orders, fulfillment status, and order history.',
+    ),
+  },
+  {
+    path: '/admin/orders/all',
+    label: 'All Orders',
+    title: 'All Orders',
+    icon: ReceiptText,
+    component: createAdminPlaceholder(
+      'All Orders',
+      'A future workspace for browsing, filtering, and managing every order.',
+    ),
+  },
+  {
+    path: '/admin/orders/summary',
+    label: 'Summary',
+    title: 'Order Summary',
+    icon: ReceiptText,
+    component: createAdminPlaceholder(
+      'Order Summary',
+      'A future workspace for order totals, trends, and operational snapshots.',
+    ),
+  },
+  {
+    path: '/admin/orders/deliveries',
+    label: 'Deliveries',
+    title: 'Deliveries',
+    icon: Truck,
+    component: createAdminPlaceholder(
+      'Deliveries',
+      'A future workspace for delivery queues, handoffs, and fulfillment status.',
+    ),
+  },
+  {
+    path: '/admin/orders/reviews',
+    label: 'Reviews',
+    title: 'Reviews',
+    icon: ReceiptText,
+    component: createAdminPlaceholder(
+      'Reviews',
+      'A future workspace for customer order reviews and post-purchase feedback.',
+    ),
+  },
+  {
+    path: '/admin/orders/analytics',
+    label: 'Analytics',
+    title: 'Order Analytics',
+    icon: BarChart3,
+    component: createAdminPlaceholder(
+      'Order Analytics',
+      'A future workspace for order conversion, revenue, and fulfillment analytics.',
+    ),
+  },
+  {
+    path: '/admin/products',
+    label: 'Products',
+    title: 'Products',
+    icon: Package,
+    component: createAdminPlaceholder(
+      'Products',
+      'A future workspace for managing the catalog, inventory, pricing, and product availability.',
+    ),
+  },
+  {
+    path: '/admin/products/categories',
+    label: 'Categories',
+    title: 'Categories',
+    icon: Package,
+    component: createAdminPlaceholder(
+      'Categories',
+      'A future workspace for organizing product collections and category pages.',
+    ),
+  },
+  {
+    path: '/admin/products/bundles',
+    label: 'Bundles',
+    title: 'Bundles',
+    icon: Package,
+    component: createAdminPlaceholder(
+      'Bundles',
+      'A future workspace for grouped products, bundle pricing, and package offers.',
+    ),
+  },
+  {
+    path: '/admin/bookings',
+    label: 'Bookings',
+    title: 'Bookings',
+    icon: CalendarDays,
+    component: createAdminPlaceholder(
+      'Bookings',
+      'A future workspace for booking requests, appointments, and availability.',
+    ),
+  },
+  {
+    path: '/admin/bookings/forms',
+    label: 'Booking Forms',
+    title: 'Booking Forms',
+    icon: CalendarDays,
+    component: createAdminPlaceholder(
+      'Booking Forms',
+      'A future workspace for configuring intake forms and booking questions.',
+    ),
+  },
+  {
+    path: '/admin/bookings/timeline',
+    label: 'Timeline',
+    title: 'Timeline',
+    icon: CalendarDays,
+    component: createAdminPlaceholder(
+      'Timeline',
+      'A future workspace for viewing bookings across a calendar-style schedule.',
+    ),
+  },
+  {
+    path: '/admin/bookings/analytics',
+    label: 'Analytics',
+    title: 'Booking Analytics',
+    icon: BarChart3,
+    component: createAdminPlaceholder(
+      'Booking Analytics',
+      'A future workspace for booking volume, utilization, and service performance analytics.',
+    ),
+  },
+  {
+    path: '/admin/marketing/share',
+    label: 'Share',
+    title: 'Share',
+    icon: Megaphone,
+    component: createAdminPlaceholder(
+      'Share',
+      'A future workspace for social links, campaign sharing, and promotional assets.',
+    ),
+  },
+  {
+    path: '/admin/marketing/discounts',
+    label: 'Discounts',
+    title: 'Discounts',
+    icon: Tag,
+    component: createAdminPlaceholder(
+      'Discounts',
+      'A future workspace for promotions, discount codes, and campaign rules.',
+    ),
+  },
+  {
+    path: '/admin/marketing/email',
+    label: 'Email Marketing',
+    title: 'Email Marketing',
+    icon: Mail,
+    component: createAdminPlaceholder(
+      'Email Marketing',
+      'A future workspace for newsletters, automations, and customer campaigns.',
+    ),
+  },
+  {
+    path: '/admin/marketing/customers',
+    label: 'Customers',
+    title: 'Customers',
+    icon: Users,
+    component: AdminCustomersPage,
+  },
+  {
+    path: '/admin/marketing/loyalty',
+    label: 'Loyalty',
+    title: 'Loyalty',
+    icon: Megaphone,
+    component: createAdminPlaceholder(
+      'Loyalty',
+      'A future workspace for rewards, retention programs, and member benefits.',
+    ),
+  },
+  {
+    path: '/admin/analytics',
+    label: 'Analytics',
+    title: 'Analytics',
+    icon: BarChart3,
+    component: createAdminPlaceholder(
+      'Analytics',
+      'A future workspace for sales trends, product performance, and customer insights.',
+    ),
+  },
+  {
+    path: '/admin/settings',
+    label: 'Settings',
+    title: 'Settings',
+    icon: Settings,
+    component: createAdminPlaceholder(
+      'Settings',
+      'A future workspace for store preferences, payments, shipping, and account settings.',
+    ),
+  },
+  {
+    path: '/admin/settings/payments',
+    label: 'Payments',
+    title: 'Payments',
+    icon: Settings,
+    component: createAdminPlaceholder(
+      'Payments',
+      'A future workspace for payment methods, payouts, taxes, and checkout rules.',
+    ),
+  },
+  {
+    path: '/admin/settings/website',
+    label: 'Website',
+    title: 'Website',
+    icon: Settings,
+    component: createAdminPlaceholder(
+      'Website',
+      'A future workspace for storefront pages, domains, theme settings, and SEO.',
+    ),
+  },
+  {
+    path: '/admin/settings/store',
+    label: 'Store',
+    title: 'Store',
+    icon: Settings,
+    component: createAdminPlaceholder(
+      'Store',
+      'A future workspace for store details, locations, policies, and operating preferences.',
+    ),
+  },
+  {
+    path: '/admin/settings/team',
+    label: 'Team',
+    title: 'Team',
+    icon: Settings,
+    component: createAdminPlaceholder(
+      'Team',
+      'A future workspace for team members, roles, and access permissions.',
+    ),
+  },
+  {
+    path: '/admin/settings/billing',
+    label: 'Billing',
+    title: 'Billing',
+    icon: Settings,
+    component: createAdminPlaceholder(
+      'Billing',
+      'A future workspace for plans, invoices, and subscription details.',
+    ),
+  },
+  {
+    path: '/admin/apps',
+    label: 'All Apps',
+    title: 'Apps',
+    icon: LayoutGrid,
+    component: createAdminPlaceholder(
+      'Apps',
+      'A future workspace for discovering and configuring Cococart apps.',
+    ),
+  },
+  {
+    path: '/admin/apps/online-store',
+    label: 'Online Store',
+    title: 'Online Store',
+    icon: Globe,
+    component: createAdminPlaceholder(
+      'Online Store',
+      'A future workspace for configuring the online storefront app.',
+    ),
+  },
+  {
+    path: '/admin/apps/online-store/fulfillment',
+    label: 'Fulfillment',
+    title: 'Fulfillment',
+    icon: Globe,
+    component: createAdminPlaceholder(
+      'Fulfillment',
+      'A future workspace for online store fulfillment rules, routing, and status.',
+    ),
+  },
+  {
+    path: '/admin/apps/online-store/inventory-calendar',
+    label: 'Inventory Calendar',
+    title: 'Inventory Calendar',
+    icon: CalendarDays,
+    component: createAdminPlaceholder(
+      'Inventory Calendar',
+      'A future workspace for planning inventory availability across upcoming dates.',
+    ),
+  },
+  {
+    path: '/admin/apps/online-store/checkouts',
+    label: 'Checkouts',
+    title: 'Checkouts',
+    icon: ReceiptText,
+    component: createAdminPlaceholder(
+      'Checkouts',
+      'A future workspace for configuring checkout settings, fields, and conversion flows.',
+    ),
+  },
+  {
+    path: '/admin/apps/online-store/website',
+    label: 'Website',
+    title: 'Website',
+    icon: Globe,
+    component: createAdminPlaceholder(
+      'Website',
+      'A future workspace for online store pages, theme settings, domains, and SEO.',
+    ),
+  },
+  {
+    path: '/admin/apps/pos',
+    label: 'POS',
+    title: 'POS',
+    icon: Monitor,
+    component: createAdminPlaceholder(
+      'POS',
+      'A future workspace for configuring point-of-sale tools and workflows.',
+    ),
+  },
+]
+
+export function getAdminRoute(pathname: string) {
+  const normalizedPath = pathname.replace(/\/+$/, '') || '/admin'
+
+  return adminRoutes.find((route) => route.path === normalizedPath)
+}

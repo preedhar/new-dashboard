@@ -1,0 +1,31 @@
+#root {
+  min-height: 100svh;
+}
+
+.flag-button {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  border: 1px solid #18181b;
+  border-radius: 6px;
+  background:
+    linear-gradient(#b91c1c 0 14%, #fff 14% 28%, #b91c1c 28% 42%, #fff 42% 56%, #b91c1c 56% 70%, #fff 70% 84%, #b91c1c 84% 100%);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 18%);
+}
+
+.flag-canton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 11px;
+  height: 12px;
+  background:
+    radial-gradient(circle at 2px 2px, #fff 0 0.6px, transparent 0.8px),
+    radial-gradient(circle at 6px 2px, #fff 0 0.6px, transparent 0.8px),
+    radial-gradient(circle at 10px 2px, #fff 0 0.6px, transparent 0.8px),
+    radial-gradient(circle at 2px 6px, #fff 0 0.6px, transparent 0.8px),
+    radial-gradient(circle at 6px 6px, #fff 0 0.6px, transparent 0.8px),
+    radial-gradient(circle at 10px 6px, #fff 0 0.6px, transparent 0.8px),
+    #1e3a8a;
+}
