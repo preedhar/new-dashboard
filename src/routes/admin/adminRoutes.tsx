@@ -17,6 +17,8 @@ import {
 } from 'lucide-react'
 
 import { AdminCustomersPage } from './pages/AdminCustomersPage'
+import { AdminOrdersAllPage } from './pages/AdminOrdersAllPage'
+import { AdminAppsPage } from './pages/AdminAppsPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
 import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
 
@@ -46,11 +48,6 @@ function createAdminPlaceholder(title: string, description: string) {
 
 export const primaryAdminNav: AdminNavItem[] = [
   {
-    title: 'Home',
-    url: '/admin',
-    icon: Home,
-  },
-  {
     title: 'Orders',
     url: '/admin/orders/all',
     icon: ReceiptText,
@@ -64,20 +61,20 @@ export const primaryAdminNav: AdminNavItem[] = [
   },
   {
     title: 'Products',
-    url: '/admin/products',
+    url: '/admin/products/all',
     icon: Package,
     items: [
-      { title: 'Products', url: '/admin/products' },
+      { title: 'All Products', url: '/admin/products/all' },
       { title: 'Categories', url: '/admin/products/categories' },
       { title: 'Bundles', url: '/admin/products/bundles' },
     ],
   },
   {
     title: 'Bookings',
-    url: '/admin/bookings',
+    url: '/admin/bookings/all',
     icon: CalendarDays,
     items: [
-      { title: 'Bookings', url: '/admin/bookings' },
+      { title: 'All Bookings', url: '/admin/bookings/all' },
       { title: 'Booking Forms', url: '/admin/bookings/forms' },
       { title: 'Timeline', url: '/admin/bookings/timeline' },
       { title: 'Analytics', url: '/admin/bookings/analytics' },
@@ -104,6 +101,7 @@ export const primaryAdminNav: AdminNavItem[] = [
       { title: 'Website', url: '/admin/settings/website' },
       { title: 'Store', url: '/admin/settings/store' },
       { title: 'Team', url: '/admin/settings/team' },
+      { title: 'Billing', url: '/admin/settings/billing' },
     ],
   },
 ]
@@ -155,10 +153,7 @@ export const adminRoutes: AdminRoute[] = [
     label: 'All Orders',
     title: 'All Orders',
     icon: ReceiptText,
-    component: createAdminPlaceholder(
-      'All Orders',
-      'A future workspace for browsing, filtering, and managing every order.',
-    ),
+    component: AdminOrdersAllPage,
   },
   {
     path: '/admin/orders/summary',
@@ -211,6 +206,16 @@ export const adminRoutes: AdminRoute[] = [
     ),
   },
   {
+    path: '/admin/products/all',
+    label: 'All Products',
+    title: 'All Products',
+    icon: Package,
+    component: createAdminPlaceholder(
+      'All Products',
+      'A future workspace for browsing, filtering, and managing every product.',
+    ),
+  },
+  {
     path: '/admin/products/categories',
     label: 'Categories',
     title: 'Categories',
@@ -238,6 +243,16 @@ export const adminRoutes: AdminRoute[] = [
     component: createAdminPlaceholder(
       'Bookings',
       'A future workspace for booking requests, appointments, and availability.',
+    ),
+  },
+  {
+    path: '/admin/bookings/all',
+    label: 'All Bookings',
+    title: 'All Bookings',
+    icon: CalendarDays,
+    component: createAdminPlaceholder(
+      'All Bookings',
+      'A future workspace for browsing, filtering, and managing every booking.',
     ),
   },
   {
@@ -392,10 +407,7 @@ export const adminRoutes: AdminRoute[] = [
     label: 'All Apps',
     title: 'Apps',
     icon: LayoutGrid,
-    component: createAdminPlaceholder(
-      'Apps',
-      'A future workspace for discovering and configuring Cococart apps.',
-    ),
+    component: AdminAppsPage,
   },
   {
     path: '/admin/apps/online-store',
@@ -461,6 +473,5 @@ export const adminRoutes: AdminRoute[] = [
 
 export function getAdminRoute(pathname: string) {
   const normalizedPath = pathname.replace(/\/+$/, '') || '/admin'
-
   return adminRoutes.find((route) => route.path === normalizedPath)
 }

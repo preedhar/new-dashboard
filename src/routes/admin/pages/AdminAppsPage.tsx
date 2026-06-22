@@ -77,13 +77,13 @@ const otherApps: AppListing[] = [
 ]
 
 const onlineStoreSettingsItems = [
-  { title: "Fulfillment", href: "/admin-2/apps/online-store/fulfillment" },
-  { title: "Inventory Calendar", href: "/admin-2/apps/online-store/inventory-calendar" },
-  { title: "Checkouts", href: "/admin-2/apps/online-store/checkouts" },
-  { title: "Website", href: "/admin-2/apps/online-store/website" },
+  { title: "Fulfillment", href: "/admin/apps/online-store/fulfillment" },
+  { title: "Inventory Calendar", href: "/admin/apps/online-store/inventory-calendar" },
+  { title: "Checkouts", href: "/admin/apps/online-store/checkouts" },
+  { title: "Website", href: "/admin/apps/online-store/website" },
 ]
 
-export function Admin2AppsPage() {
+export function AdminAppsPage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 pt-8">
       <TypographyH2 className="text-center">Find everything your business needs</TypographyH2>

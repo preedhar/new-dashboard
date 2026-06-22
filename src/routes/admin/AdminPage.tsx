@@ -1,6 +1,6 @@
-import { AppSidebar } from '@/components/app-sidebar'
-import { MobileBottomNav } from '@/components/mobile-bottom-nav'
-import { MobileHeader } from '@/components/mobile-header'
+import { AppSidebar } from './components/app-sidebar'
+import { MobileBottomNav } from './components/mobile-bottom-nav'
+import { MobileHeader } from './components/mobile-header'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -24,32 +24,44 @@ export function AdminPage({ pathname }: AdminPageProps) {
   }
 
   const Page = activeRoute.component
+  const showDesktopHeader =
+    activeRoute.path !== '/admin' &&
+    activeRoute.path !== '/admin/apps' &&
+    activeRoute.path !== '/admin/orders/all'
+  const showPageTitle =
+    activeRoute.path !== '/admin' &&
+    activeRoute.path !== '/admin/apps' &&
+    activeRoute.path !== '/admin/orders/all'
 
   return (
     <SidebarProvider open onOpenChange={() => {}}>
       <AppSidebar pathname={activeRoute.path} />
       <SidebarInset>
         <MobileHeader pathname={activeRoute.path} />
-        <header className="hidden h-16 shrink-0 items-center gap-2 border-b border-border px-4 md:flex">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="/admin">Admin</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{activeRoute.label}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </header>
-
-        <section className="flex flex-1 flex-col gap-6 p-4 pt-6 pb-24 sm:px-6 sm:pt-6 sm:pb-24 md:pb-6 lg:px-8 lg:pt-8 lg:pb-8">
-          <header>
-            <h1 className="text-2xl font-semibold tracking-normal text-neutral-900">
-              {activeRoute.title}
-            </h1>
+        {showDesktopHeader ? (
+          <header className="hidden h-16 shrink-0 items-center gap-2 border-b border-border px-4 md:flex">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="/admin">Admin</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{activeRoute.label}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </header>
+        ) : null}
+
+        <section className="flex flex-1 flex-col gap-6 p-4 pt-5 pb-24 sm:px-6 sm:pt-5 sm:pb-24 md:pb-6 lg:px-8 lg:pt-5 lg:pb-8">
+          {showPageTitle ? (
+            <header>
+              <h1 className="text-2xl font-semibold tracking-normal text-neutral-900">
+                {activeRoute.title}
+              </h1>
+            </header>
+          ) : null}
 
           <Page />
         </section>

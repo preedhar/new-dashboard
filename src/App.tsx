@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AdminPage } from '@/routes/admin/AdminPage'
-import { Admin2Page } from '@/routes/admin-2/Admin2Page'
 import { SignupPage } from '@/routes/signup/SignupPage'
 import './App.css'
 
@@ -36,10 +35,6 @@ function App() {
 
     if (pathname === '/admin' || pathname.startsWith('/admin/')) {
       return <AdminPage pathname={pathname} />
-    }
-
-    if (pathname === '/admin-2' || pathname.startsWith('/admin-2/')) {
-      return <Admin2Page pathname={pathname} />
     }
 
     return <SignupPage />

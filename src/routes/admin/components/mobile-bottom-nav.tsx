@@ -17,20 +17,20 @@ type MobileNavItem = {
 }
 
 const items: MobileNavItem[] = [
-  { title: "Orders", url: "/admin-2/orders/all", icon: ReceiptText, matchPrefix: "/admin-2/orders" },
-  { title: "Products", url: "/admin-2/products", icon: Package, matchPrefix: "/admin-2/products" },
-  { title: "Bookings", url: "/admin-2/bookings", icon: CalendarDays, matchPrefix: "/admin-2/bookings" },
+  { title: "Orders", url: "/admin/orders/all", icon: ReceiptText, matchPrefix: "/admin/orders" },
+  { title: "Products", url: "/admin/products/all", icon: Package, matchPrefix: "/admin/products" },
+  { title: "Bookings", url: "/admin/bookings/all", icon: CalendarDays, matchPrefix: "/admin/bookings" },
   {
     title: "Marketing",
-    url: "/admin-2/marketing/share",
+    url: "/admin/marketing/share",
     icon: Megaphone,
-    matchPrefix: "/admin-2/marketing",
+    matchPrefix: "/admin/marketing",
   },
   {
     title: "Settings",
-    url: "/admin-2/settings/payments",
+    url: "/admin/settings/payments",
     icon: Settings,
-    matchPrefix: "/admin-2/settings",
+    matchPrefix: "/admin/settings",
   },
 ]
 
@@ -61,9 +61,9 @@ export function MobileBottomNav({ pathname }: MobileBottomNavProps) {
                 href={item.url}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex h-16 flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors",
+                  "flex h-16 flex-col items-center justify-center gap-1 border-t-2 border-transparent text-[10px] font-medium transition-colors",
                   active
-                    ? "text-foreground"
+                    ? "border-foreground text-foreground"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >

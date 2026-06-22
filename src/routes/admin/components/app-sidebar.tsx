@@ -5,7 +5,7 @@ import * as React from "react"
 import { NavMain } from "./nav-main"
 import { NavUser } from "./nav-user"
 import { SearchCommandDialog } from "./search-command-dialog"
-import { appsAdmin2Nav, primaryAdmin2Nav, type Admin2NavItem } from "../admin2Routes"
+import { appsAdminNav, primaryAdminNav, type AdminNavItem } from "../adminRoutes"
 import {
   Sidebar,
   SidebarContent,
@@ -29,7 +29,7 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 export function AppSidebar({ pathname, ...props }: AppSidebarProps) {
   const [commandOpen, setCommandOpen] = React.useState(false)
 
-  function mapNavItems(items: Admin2NavItem[]) {
+  function mapNavItems(items: AdminNavItem[]) {
     return items.map((item) => {
       const Icon = item.icon
       const subItems = item.items?.map((subItem) => ({
@@ -50,8 +50,8 @@ export function AppSidebar({ pathname, ...props }: AppSidebarProps) {
     })
   }
 
-  const primaryItems = mapNavItems(primaryAdmin2Nav)
-  const appItems = mapNavItems(appsAdmin2Nav)
+  const primaryItems = mapNavItems(primaryAdminNav)
+  const appItems = mapNavItems(appsAdminNav)
 
   return (
     <>
@@ -59,16 +59,16 @@ export function AppSidebar({ pathname, ...props }: AppSidebarProps) {
         <SidebarHeader>
           <div className="flex w-full items-center gap-4">
             <a
-              href="/admin-2"
-              data-active={pathname === "/admin-2"}
-              className="flex flex-1 flex-col items-center justify-center gap-1 rounded-md bg-sidebar-accent py-2 text-xs text-muted-foreground outline-hidden transition-colors hover:bg-[color-mix(in_oklch,var(--sidebar-accent),var(--sidebar-foreground)_5%)] hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[active=true]:bg-[color-mix(in_oklch,var(--sidebar-accent),var(--sidebar-foreground)_10%)] data-[active=true]:text-sidebar-accent-foreground"
+              href="/admin"
+              data-active={pathname === "/admin"}
+              className="flex flex-1 flex-col items-center justify-center gap-1 rounded-md py-2 text-xs text-muted-foreground outline-hidden transition-colors hover:bg-[color-mix(in_oklch,var(--sidebar-accent),var(--sidebar-foreground)_5%)] hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[active=true]:bg-[color-mix(in_oklch,var(--sidebar-accent),var(--sidebar-foreground)_10%)] data-[active=true]:text-sidebar-accent-foreground"
             >
               <img src="/cococart-logomark.svg" alt="Home" className="size-6 shrink-0" />
               <span>Home</span>
             </a>
             <button
               type="button"
-              className="flex flex-1 flex-col items-center justify-center gap-1 rounded-md bg-sidebar-accent py-2 text-xs text-muted-foreground outline-hidden transition-colors hover:bg-[color-mix(in_oklch,var(--sidebar-accent),var(--sidebar-foreground)_5%)] hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+              className="flex flex-1 flex-col items-center justify-center gap-1 rounded-md py-2 text-xs text-muted-foreground outline-hidden transition-colors hover:bg-[color-mix(in_oklch,var(--sidebar-accent),var(--sidebar-foreground)_5%)] hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring"
               onClick={() => setCommandOpen(true)}
             >
               <SearchIcon className="size-6 shrink-0" />
