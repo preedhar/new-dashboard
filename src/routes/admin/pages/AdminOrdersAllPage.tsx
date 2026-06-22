@@ -1,36 +1,69 @@
 import * as React from 'react'
 import {
   Archive,
+  Banknote,
   Calendar as CalendarIcon,
+  Check,
   ChevronDown,
+  CircleDollarSign,
+  ClipboardList,
+  CreditCard,
+  ChevronUp,
   CircleCheck,
   Copy,
   Download,
   FileDown,
+  FileText,
+  Gift,
+  Info,
+  Link2,
+  Mail,
+  MapPin,
   Pencil,
+  Phone,
   Plus,
+  Receipt,
+  Tag,
   Search,
   ShoppingBag,
   Store,
   Truck,
+  Undo2,
+  User,
   X,
   type LucideIcon,
 } from 'lucide-react'
 import type { DateRange } from 'react-day-picker'
 
+import LalamoveIcon from '@/assets/lalamove.svg?react'
+import WhatsappIcon from '@/assets/whatsapp.svg?react'
+import productImage from '@/assets/product.png'
 import globeIcon from '@/assets/channels/globe.png'
 import monitorIcon from '@/assets/channels/monitor.png'
 import qrIcon from '@/assets/channels/qr.png'
 import adminIcon from '@/assets/channels/admin.png'
-import pendingIcon from '@/assets/status/pending.svg'
-import paidIcon from '@/assets/status/paid.svg'
-import fulfilledIcon from '@/assets/status/fulfilled.svg'
-import cancelledIcon from '@/assets/status/cancelled.svg'
-import rejectedIcon from '@/assets/status/rejected.svg'
+import PendingIcon from '@/assets/status/pending.svg?react'
+import PaidIcon from '@/assets/status/paid.svg?react'
+import FulfilledIcon from '@/assets/status/fulfilled.svg?react'
+import CancelledIcon from '@/assets/status/cancelled.svg?react'
+import RejectedIcon from '@/assets/status/rejected.svg?react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
+} from '@/components/ui/combobox'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Card,
   CardDescription,
@@ -56,7 +89,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { TypographyH3 } from '@/components/ui/typography'
+import { TypographyH3, TypographyH4, TypographyLarge } from '@/components/ui/typography'
 import type { ColumnDef, RowSelectionState } from '@tanstack/react-table'
 
 type OrderStat = {
@@ -71,7 +104,11 @@ const ORDER_STATS: OrderStat[] = [
   { label: 'To fulfill', count: 27 },
 ]
 
-type FilterOption = { label: string; icon?: LucideIcon; iconSrc?: string }
+// Lucide icons and SVGR-imported SVGs both render as components taking a
+// className, so this covers either.
+type IconComponent = React.ComponentType<{ className?: string }>
+
+type FilterOption = { label: string; icon?: IconComponent; iconSrc?: string }
 
 const CHANNEL_ICON_SRC: Record<Channel, string> = {
   'Online Store': globeIcon,
@@ -92,19 +129,19 @@ const FULFILLMENT_TYPE_OPTIONS: FilterOption[] = [
   { label: 'In-store', icon: Store },
 ]
 const STATUS_OPTIONS: FilterOption[] = [
-  { label: 'Pending', iconSrc: pendingIcon },
-  { label: 'Approved', iconSrc: paidIcon },
-  { label: 'Fulfilled', iconSrc: fulfilledIcon },
-  { label: 'Canceled', iconSrc: cancelledIcon },
-  { label: 'Rejected', iconSrc: rejectedIcon },
+  { label: 'Pending', icon: PendingIcon },
+  { label: 'Approved', icon: PaidIcon },
+  { label: 'Fulfilled', icon: FulfilledIcon },
+  { label: 'Canceled', icon: CancelledIcon },
+  { label: 'Rejected', icon: RejectedIcon },
 ]
 const ACTIVE_OPTIONS = ['Active', 'Incomplete', 'Archived']
 
-const ACTION_GROUPS: { label: string; icon: LucideIcon }[][] = [
+const ACTION_GROUPS: { label: string; icon: IconComponent }[][] = [
   [
     { label: 'Edit', icon: Pencil },
     { label: 'Copy', icon: Copy },
-    { label: 'Delivery', icon: Truck },
+    { label: 'Delivery', icon: LalamoveIcon },
   ],
   [
     { label: 'Mark as Fulfilled', icon: CircleCheck },
@@ -127,32 +164,102 @@ function isActionDisabled(label: string, selectedCount: number) {
 
 type OrderStatus = 'Pending' | 'Approved' | 'Paid' | 'Fulfilled' | 'Canceled' | 'Rejected'
 
-const STATUS_ICON_SRC: Record<OrderStatus, string> = {
-  Pending: pendingIcon,
-  Approved: paidIcon,
-  Paid: paidIcon,
-  Fulfilled: fulfilledIcon,
-  Canceled: cancelledIcon,
-  Rejected: rejectedIcon,
+const STATUS_ICONS: Record<OrderStatus, IconComponent> = {
+  Pending: PendingIcon,
+  Approved: PaidIcon,
+  Paid: PaidIcon,
+  Fulfilled: FulfilledIcon,
+  Canceled: CancelledIcon,
+  Rejected: RejectedIcon,
 }
 
-const STATUS_MENU: OrderStatus[] = ['Pending', 'Approved', 'Fulfilled', 'Canceled', 'Rejected']
-
-type FulfillmentMethod = { label: string; icon: LucideIcon }
+type FulfillmentMethod = { label: string; icon: IconComponent }
 
 type Channel = 'Online Store' | 'POS' | 'QR Code Ordering' | 'Admin Dashboard'
+
+type PaymentMethod = 'Card' | 'GCash' | 'PayNow' | 'Cash' | 'Admin added'
+
+type Payment = { method: PaymentMethod; automated: boolean }
+
+// Which payment methods each channel exposes, split by whether the payment is
+// captured automatically or recorded manually by staff.
+const PAYMENT_METHODS: Record<Channel, { automated: PaymentMethod[]; manual: PaymentMethod[] }> = {
+  'Online Store': { automated: ['Card', 'GCash'], manual: ['PayNow', 'Cash'] },
+  'QR Code Ordering': { automated: ['Card', 'GCash'], manual: ['PayNow', 'Cash'] },
+  POS: { automated: ['Card'], manual: ['GCash', 'PayNow', 'Cash'] },
+  'Admin Dashboard': { automated: [], manual: ['Admin added'] },
+}
+
+// Allowed statuses (and extra dropdown actions) depend on how the order was paid.
+type StatusCategory = 'automated' | 'manualNonCash' | 'cash'
+
+type StatusAction = { label: string; icon: LucideIcon }
+
+const STATUS_CATEGORY_CONFIG: Record<
+  StatusCategory,
+  { statuses: OrderStatus[]; actions: StatusAction[] }
+> = {
+  automated: {
+    statuses: ['Paid', 'Fulfilled', 'Canceled'],
+    actions: [
+      { label: 'Refund', icon: Undo2 },
+      { label: 'Archive', icon: Archive },
+    ],
+  },
+  manualNonCash: {
+    statuses: ['Pending', 'Paid', 'Rejected', 'Canceled'],
+    actions: [{ label: 'Archive', icon: Archive }],
+  },
+  cash: {
+    statuses: ['Pending', 'Approved', 'Rejected', 'Canceled'],
+    actions: [{ label: 'Archive', icon: Archive }],
+  },
+}
+
+function getStatusCategory(payment: Payment): StatusCategory {
+  if (payment.method === 'Cash') return 'cash'
+  return payment.automated ? 'automated' : 'manualNonCash'
+}
+
+// While an order is still Pending the dropdown only offers the two transitions
+// that resolve it. (Automated orders are never pending.)
+const PENDING_TRANSITIONS: Record<StatusCategory, { label: string; status: OrderStatus }[]> = {
+  automated: [],
+  manualNonCash: [
+    { label: 'Mark as paid', status: 'Paid' },
+    { label: 'Reject', status: 'Rejected' },
+  ],
+  cash: [
+    { label: 'Approve', status: 'Approved' },
+    { label: 'Reject', status: 'Rejected' },
+  ],
+}
+
+// A Rejected order can only be moved forward (mark as paid / approve) or
+// archived. (Automated orders are never rejected.)
+const REJECTED_TRANSITIONS: Record<StatusCategory, { label: string; status: OrderStatus }[]> = {
+  automated: [],
+  manualNonCash: [{ label: 'Mark as paid', status: 'Paid' }],
+  cash: [{ label: 'Approve', status: 'Approved' }],
+}
 
 type Order = {
   id: string
   channel: Channel
-  customer: string
+  customer: {
+    name?: string
+    phone?: string
+    email?: string
+  }
   orderedAt: Date
   total: number
   items: string[]
   fulfillAt: Date
   fulfillment: FulfillmentMethod
+  payment: Payment
   status: OrderStatus
-  swatch: string
+  address?: string[]
+  gift?: { to: string; message: string }
 }
 
 function formatDate(date: Date) {
@@ -180,17 +287,23 @@ const CHANNELS: Channel[] = ['Online Store', 'POS', 'QR Code Ordering', 'Admin D
 // POS and QR Code Ordering can only be fulfilled in-store.
 const IN_STORE_ONLY_CHANNELS: Channel[] = ['POS', 'QR Code Ordering']
 
-const FULFILLMENT_ICONS: Record<string, LucideIcon> = Object.fromEntries(
+const FULFILLMENT_ICONS: Record<string, IconComponent> = Object.fromEntries(
   FULFILLMENT_TYPE_OPTIONS.map((option) => [option.label, option.icon ?? Store]),
 )
 
 const SELECTABLE_FULFILLMENTS = FULFILLMENT_TYPE_OPTIONS.map((option) => option.label)
 
-const CUSTOMERS = [
-  'Aiden Carter', 'Chloe Mitchell', 'Teresa Nakamura', 'Maya Rodriguez', 'David Kim',
-  'Lily Chen', 'Sofia Rossi', 'Noah Patel', 'Emma Johnson', 'Lucas Müller',
-  'Olivia Brown', 'Mason Lee', 'Ava Garcia', 'Ethan Wong', 'Isabella Silva',
-  'Jack Thompson', 'Mia Anderson', 'Daniel Cohen', 'Grace Park', 'Liam Walker',
+const CUSTOMERS: Array<{ name: string; phone: string; email: string }> = [
+  { name: 'Aiden Carter', phone: '+1 415 555 0102', email: 'aiden.carter@example.com' },
+  { name: 'Chloe Mitchell', phone: '+1 415 555 0108', email: 'chloe.mitchell@example.com' },
+  { name: 'Teresa Nakamura', phone: '+1 415 555 0114', email: 'teresa.nakamura@example.com' },
+  { name: 'Maya Rodriguez', phone: '+1 415 555 0121', email: 'maya.rodriguez@example.com' },
+  { name: 'David Kim', phone: '+1 415 555 0135', email: 'david.kim@example.com' },
+  { name: 'Lily Chen', phone: '+1 415 555 0147', email: 'lily.chen@example.com' },
+  { name: 'Sofia Rossi', phone: '+1 415 555 0159', email: 'sofia.rossi@example.com' },
+  { name: 'Noah Patel', phone: '+1 415 555 0164', email: 'noah.patel@example.com' },
+  { name: 'Emma Johnson', phone: '+1 415 555 0176', email: 'emma.johnson@example.com' },
+  { name: 'Olivia Brown', phone: '+1 415 555 0188', email: 'olivia.brown@example.com' },
 ]
 
 const ITEM_SETS = [
@@ -208,32 +321,116 @@ const ITEM_SETS = [
   ['1x Ramen', '1x Gyoza'],
 ]
 
-const STATUSES: OrderStatus[] = ['Pending', 'Approved', 'Paid', 'Fulfilled', 'Canceled', 'Rejected']
+function getOrderCustomer(channel: Channel, customer: { name: string; phone: string; email: string }) {
+  if (channel === 'POS') return {}
+  if (channel === 'QR Code Ordering') return { name: customer.name }
+  return customer
+}
 
-const SWATCHES = [
-  'bg-amber-100 text-amber-600',
-  'bg-yellow-100 text-yellow-600',
-  'bg-orange-100 text-orange-600',
-  'bg-rose-100 text-rose-600',
-  'bg-fuchsia-100 text-fuchsia-600',
-  'bg-sky-100 text-sky-600',
-  'bg-emerald-100 text-emerald-600',
-  'bg-violet-100 text-violet-600',
-  'bg-blue-100 text-blue-600',
-  'bg-teal-100 text-teal-600',
+// Example detail content for the order side pane.
+const ADDRESSES: string[][] = [
+  ['88 Tanjong Pagar Rd, Singapore 088501', 'Unit 43'],
+  ['12 Marina Blvd, Singapore 018982', '#08-12'],
+  ['450 Orchard Rd, Singapore 238877', 'Tower 2, Unit 15'],
+  ['9 Raffles Pl, Singapore 048619', 'Level 21'],
+  ['5 Changi Business Park Cres, Singapore 486040', 'Unit 03-07'],
 ]
 
+const GIFT_MESSAGES = [
+  'Happy birthday! Hope you enjoy this little treat. Lots of love.',
+  'Congrats on the new job — you earned this!',
+  'Thinking of you today. Enjoy every bite!',
+]
+
+const ITEM_NOTES = [
+  'Please make it less sweet, thank you!',
+  'Extra hot, no foam.',
+  'No ice please.',
+]
+
+const ADD_ON_SETS = [
+  ['1x Oat Milk', '1x Espresso Shot'],
+  ['1x Whipped Cream'],
+  ['1x Extra Sauce', '1x Side Salad'],
+]
+
+const SPECIAL_REQUESTS = [
+  'Please pack the cutlery separately',
+  'Leave it at the front desk, thank you!',
+  'Please call on arrival.',
+]
+
+// Deterministic pseudo-random integer derived from a seed, so example data is
+// varied but stable across reloads.
+function pseudoRandom(seed: number) {
+  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453
+  return Math.floor((x - Math.floor(x)) * 1000)
+}
+
+function getOrderId(channel: Channel, customer: { name?: string }, index: number) {
+  if (customer.name) return `${customer.name.slice(0, 3).toUpperCase()}${10 + index}`
+
+  const channelPrefix: Record<Channel, string> = {
+    'Online Store': 'ONL',
+    POS: 'POS',
+    'QR Code Ordering': 'QRO',
+    'Admin Dashboard': 'ADM',
+  }
+
+  return `${channelPrefix[channel]}${10 + index}`
+}
+
 const ORDERS: Order[] = Array.from({ length: 40 }, (_, i) => {
-  const channel = CHANNELS[i % CHANNELS.length]
+  // Pick the channel from the seeded hash (not i % length) so channels don't
+  // cluster together once the table is sorted by date.
+  const channel = CHANNELS[pseudoRandom(i + 500) % CHANNELS.length]
   const fulfillmentLabel = IN_STORE_ONLY_CHANNELS.includes(channel)
     ? 'In-store'
     : SELECTABLE_FULFILLMENTS[(i * 3) % SELECTABLE_FULFILLMENTS.length]
-  const customer = CUSTOMERS[i % CUSTOMERS.length]
-  const orderedAt = new Date(2027, 5, 20 - Math.floor(i / 2), 8 + ((i * 5) % 12), (i * 13) % 60)
-  const fulfillAt = new Date(orderedAt.getTime() + (12 + (i % 3) * 6) * 60 * 60 * 1000)
+  const customer = getOrderCustomer(channel, CUSTOMERS[i % CUSTOMERS.length])
+
+  // Spread orders across 2025, 2026 and 2027; fulfillment is always a few
+  // (5–25) hours after the order is placed.
+  const year = 2025 + (i % 3)
+  const orderedAt = new Date(year, (i * 5) % 12, 1 + ((i * 7) % 27), 8 + ((i * 5) % 12), (i * 13) % 60)
+  const fulfillAt = new Date(orderedAt.getTime() + (5 + (i % 6) * 4) * 60 * 60 * 1000)
+
+  const methods = PAYMENT_METHODS[channel]
+  const automated = methods.automated.length > 0 && i % 2 === 0
+  const pool = automated ? methods.automated : methods.manual
+  // Seed the method index separately so it isn't coupled to the automated
+  // parity (which would otherwise always pick the first method, e.g. Card).
+  const payment: Payment = { method: pool[pseudoRandom(i + 700) % pool.length], automated }
+
+  // Randomly pick an allowed status for this order's payment category. A simple
+  // seeded hash keeps it varied but stable across reloads. Pending is given a
+  // modest extra weight so some orders show up as pending. Admin-added orders
+  // that still have an open payment link are always pending.
+  const allowedStatuses = STATUS_CATEGORY_CONFIG[getStatusCategory(payment)].statuses
+  const hasOpenPaymentLink =
+    channel === 'Admin Dashboard' && orderedAt.getMinutes() % 2 === 0
+  const status: OrderStatus = hasOpenPaymentLink
+    ? 'Pending'
+    : allowedStatuses.includes('Pending') && pseudoRandom(i) % 100 < 25
+      ? 'Pending'
+      : allowedStatuses[pseudoRandom(i + 1) % allowedStatuses.length]
+
+  // Delivery orders get a shipping address. Every Online Store order carries
+  // gift details.
+  const isDelivery = fulfillmentLabel.startsWith('Delivery')
+  const address = isDelivery && customer.name ? ADDRESSES[i % ADDRESSES.length] : undefined
+  // Gift orders are sent to someone other than the buyer, so the recipient name
+  // differs from the customer name.
+  const gift =
+    channel === 'Online Store'
+      ? {
+          to: CUSTOMERS[(i + 3) % CUSTOMERS.length].name,
+          message: GIFT_MESSAGES[i % GIFT_MESSAGES.length],
+        }
+      : undefined
 
   return {
-    id: `${customer.slice(0, 3).toUpperCase()}${10 + i}`,
+    id: getOrderId(channel, customer, i),
     channel,
     customer,
     orderedAt,
@@ -241,10 +438,27 @@ const ORDERS: Order[] = Array.from({ length: 40 }, (_, i) => {
     items: ITEM_SETS[i % ITEM_SETS.length],
     fulfillAt,
     fulfillment: { label: fulfillmentLabel, icon: FULFILLMENT_ICONS[fulfillmentLabel] },
-    status: STATUSES[(i * 7) % STATUSES.length],
-    swatch: SWATCHES[i % SWATCHES.length],
+    payment,
+    status,
+    address,
+    gift,
   }
 })
+
+// The table sorts by order date (newest first) and shows 10 rows per page, so
+// force most of the most-recent orders to Pending — that's the first page the
+// user lands on. Orders paid via an automated method can't be pending, so swap
+// those to a manual method first.
+const FIRST_PAGE_PENDING = 3
+ORDERS.map((order, index) => ({ order, index }))
+  .sort((a, b) => b.order.orderedAt.getTime() - a.order.orderedAt.getTime())
+  .slice(0, FIRST_PAGE_PENDING)
+  .forEach(({ order }) => {
+    if (!STATUS_CATEGORY_CONFIG[getStatusCategory(order.payment)].statuses.includes('Pending')) {
+      order.payment = { method: PAYMENT_METHODS[order.channel].manual[0], automated: false }
+    }
+    order.status = 'Pending'
+  })
 
 const FILTER_BUTTON_CLASS = 'h-10 px-3 font-normal text-muted-foreground'
 const FILTER_BUTTON_ACTIVE_CLASS = 'border-foreground text-foreground'
@@ -496,29 +710,654 @@ function DatesFilter({
   )
 }
 
-function StatusPill({ status }: { status: OrderStatus }) {
+function StatusPill({
+  status,
+  category,
+  onChange,
+}: {
+  status: OrderStatus
+  category: StatusCategory
+  onChange: (status: OrderStatus) => void
+}) {
+  const { statuses, actions } = STATUS_CATEGORY_CONFIG[category]
+
+  // Pending and Rejected orders get a restricted menu of transitions; every
+  // other status shows the full list of allowed statuses.
+  let statusItems: { label: string; status: OrderStatus }[]
+  let actionItems: StatusAction[]
+  if (status === 'Pending') {
+    statusItems = PENDING_TRANSITIONS[category]
+    actionItems = []
+  } else if (status === 'Rejected') {
+    statusItems = REJECTED_TRANSITIONS[category]
+    actionItems = actions.filter((action) => action.label === 'Archive')
+  } else {
+    statusItems = statuses.map((s) => ({ label: s, status: s }))
+    actionItems = actions
+  }
+
+  const TriggerIcon = STATUS_ICONS[status]
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="h-10 w-[132px] px-3 font-normal">
-          <img src={STATUS_ICON_SRC[status]} alt="" className="size-5" />
+        <Button variant="outline" className="h-10 w-[132px] px-3 font-medium">
+          <TriggerIcon className="size-5" />
           {status}
           <ChevronDown className="ml-auto size-4 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
-        {STATUS_MENU.map((option) => (
-          <DropdownMenuItem key={option}>
-            <img src={STATUS_ICON_SRC[option]} alt="" className="size-4" />
-            {option}
-          </DropdownMenuItem>
-        ))}
+        {statusItems.map((option) => {
+          const Icon = STATUS_ICONS[option.status]
+          return (
+            <DropdownMenuItem key={option.label} onSelect={() => onChange(option.status)}>
+              <Icon className="size-4" />
+              {option.label}
+            </DropdownMenuItem>
+          )
+        })}
+        {actionItems.length > 0 ? <DropdownMenuSeparator /> : null}
+        {actionItems.map((action) => {
+          const Icon = action.icon
+          return (
+            <DropdownMenuItem key={action.label}>
+              <Icon className="size-4 text-muted-foreground" />
+              {action.label}
+            </DropdownMenuItem>
+          )
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
 
-const ORDER_COLUMNS: ColumnDef<Order>[] = [
+function CustomerDetails({ customer }: { customer: Order['customer'] }) {
+  // Phone and email are intentionally hidden here — they are shown separately
+  // alongside payment info elsewhere.
+  if (!customer.name) {
+    return <p className="text-sm text-muted-foreground">-</p>
+  }
+
+  return <p className="text-sm text-muted-foreground">{customer.name}</p>
+}
+
+function formatDateTime(date: Date) {
+  return `${formatDate(date)} ${formatTime(date)}`
+}
+
+function parseLineItem(raw: string) {
+  const match = raw.match(/^(\d+)x\s+(.*)$/)
+  return match ? { qty: Number(match[1]), name: match[2] } : { qty: 1, name: raw }
+}
+
+const DETAIL_ACTIONS: { label: string; icon: IconComponent }[] = [
+  { label: 'Edit', icon: Pencil },
+  { label: 'Receipt', icon: Receipt },
+  { label: 'Delivery', icon: LalamoveIcon },
+  { label: 'Copy', icon: Copy },
+  { label: 'Archive', icon: Archive },
+]
+
+function CollapsibleSection({
+  title,
+  defaultOpen = true,
+  children,
+}: {
+  title: string
+  defaultOpen?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = React.useState(defaultOpen)
+  return (
+    <div className="border-b border-border p-4 last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between"
+      >
+        <TypographyLarge>{title}</TypographyLarge>
+        <ChevronUp
+          className={cn('size-4 text-muted-foreground transition-transform', !open && 'rotate-180')}
+        />
+      </button>
+      {open ? <div className="mt-4">{children}</div> : null}
+    </div>
+  )
+}
+
+function DetailRow({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: IconComponent
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex gap-3">
+      <Icon className="size-5 shrink-0 text-muted-foreground" />
+      <div className="min-w-0 flex-1">
+        <p className="flex h-5 items-center text-sm text-muted-foreground">{label}</p>
+        <div className="space-y-0.5 text-base text-foreground">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+function ContactPhone({ phone }: { phone: string }) {
+  return (
+    <p className="flex items-center gap-1.5">
+      {phone}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Open in WhatsApp"
+            className="text-foreground"
+          >
+            <WhatsappIcon className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Open in Whatsapp</TooltipContent>
+      </Tooltip>
+    </p>
+  )
+}
+
+function CopyLinkButton({ value }: { value: string }) {
+  const [open, setOpen] = React.useState(false)
+  const [copied, setCopied] = React.useState(false)
+  const timer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  function handleCopy() {
+    navigator.clipboard?.writeText(value)
+    setCopied(true)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => setCopied(false), 2000)
+  }
+
+  React.useEffect(() => () => clearTimeout(timer.current), [])
+
+  return (
+    <Tooltip open={open || copied} onOpenChange={setOpen}>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Copy payment link"
+          className="shrink-0 text-foreground"
+          onClick={handleCopy}
+        >
+          {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{copied ? 'Copied' : 'Copy'}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+const CUSTOMER_TAG_OPTIONS = [
+  'Wholesale',
+  'Regular',
+  'Repeat buyer',
+  'VIP',
+  'New customer',
+  'Corporate',
+]
+
+function TagsCombobox({ defaultTags = [] }: { defaultTags?: string[] }) {
+  const anchor = useComboboxAnchor()
+  const [options, setOptions] = React.useState<string[]>(() =>
+    Array.from(new Set([...CUSTOMER_TAG_OPTIONS, ...defaultTags])),
+  )
+  const [value, setValue] = React.useState<string[]>(defaultTags)
+  const [query, setQuery] = React.useState('')
+
+  const trimmed = query.trim()
+  const canCreate =
+    trimmed.length > 0 &&
+    !options.some((option) => option.toLowerCase() === trimmed.toLowerCase())
+
+  function createTag() {
+    if (!canCreate) return
+    setOptions((prev) => [...prev, trimmed])
+    setValue((prev) => [...prev, trimmed])
+    setQuery('')
+  }
+
+  return (
+    <Combobox
+      items={options}
+      value={value}
+      onValueChange={(next: string[], details) => {
+        // base-ui clears the whole selection on Escape — ignore that change.
+        if (details.reason === 'escape-key') return
+        setValue(next)
+      }}
+      inputValue={query}
+      onInputValueChange={(next) => setQuery(next)}
+      multiple
+    >
+      <ComboboxChips ref={anchor} className="mt-1">
+        <ComboboxValue>
+          {(tags: string[]) => (
+            <>
+              {tags.map((tag) => (
+                <ComboboxChip key={tag} aria-label={tag} className="h-auto py-0.5 text-sm font-normal">
+                  {tag}
+                </ComboboxChip>
+              ))}
+              <ComboboxChipsInput placeholder={tags.length ? '' : 'Add tags…'} />
+            </>
+          )}
+        </ComboboxValue>
+      </ComboboxChips>
+      <ComboboxContent anchor={anchor}>
+        {!canCreate ? <ComboboxEmpty>No tags found.</ComboboxEmpty> : null}
+        <ComboboxList>
+          {(tag: string) => (
+            <ComboboxItem key={tag} value={tag}>
+              {tag}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+        {canCreate ? (
+          <button
+            type="button"
+            // Keep input focus (and the popover open) when clicking.
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={createTag}
+            className="flex w-full cursor-default items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden hover:bg-accent hover:text-accent-foreground"
+          >
+            <span>
+              Create "<span className="font-medium">{trimmed}</span>"
+            </span>
+            <Plus className="size-4 shrink-0 text-muted-foreground" />
+          </button>
+        ) : null}
+      </ComboboxContent>
+    </Combobox>
+  )
+}
+
+function NotesField() {
+  const [value, setValue] = React.useState('')
+  const [saved, setSaved] = React.useState('')
+  const dirty = value !== saved
+
+  return (
+    <div className="mt-1 space-y-2">
+      <Textarea
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+        placeholder="Add notes about customer"
+        className="min-h-10 text-sm"
+      />
+      {dirty ? (
+        <Button size="sm" onClick={() => setSaved(value)}>
+          Save
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+function OrderDetailPane({
+  order,
+  onClose,
+  onStatusChange,
+}: {
+  order: Order
+  onClose: () => void
+  onStatusChange: (id: string, status: OrderStatus) => void
+}) {
+  const [otherOpen, setOtherOpen] = React.useState(false)
+  const FulfillmentIcon = order.fulfillment.icon
+  // Every item shows a special instruction and add-ons, picked deterministically
+  // from the pools so each order/item is varied but stable.
+  const itemSeed = order.orderedAt.getTime()
+  const lineItems = order.items.map((raw, idx) => ({
+    ...parseLineItem(raw),
+    note: ITEM_NOTES[(itemSeed + idx) % ITEM_NOTES.length],
+    addOns: ADD_ON_SETS[(itemSeed + idx) % ADD_ON_SETS.length],
+  }))
+  const per = lineItems.length ? Math.round((order.total / lineItems.length) * 100) / 100 : 0
+  const prices = lineItems.map((_, idx) =>
+    idx === lineItems.length - 1 ? order.total - per * (lineItems.length - 1) : per,
+  )
+  const hasCustomer = Boolean(order.customer.name || order.customer.phone || order.customer.email)
+
+  // Order summary line items shown between Subtotal and Total. Some charges
+  // don't apply to POS / QR Code orders.
+  const isPOS = order.channel === 'POS'
+  const isQR = order.channel === 'QR Code Ordering'
+  const charges = [
+    { label: 'Fulfillment fee', amount: 1.5, show: !isPOS && !isQR },
+    { label: 'Bulk discount', amount: -1, show: !isPOS },
+    { label: 'Promotional discount', amount: -2 },
+    { label: 'Tip', amount: 1.2, show: !isPOS },
+    { label: 'Service charge', amount: 0.25 },
+    { label: 'GST (included where applicable)', amount: 0.25 },
+  ].filter((charge) => charge.show !== false)
+  const total = order.total + charges.reduce((sum, charge) => sum + charge.amount, 0)
+
+  // Gift orders are delivered to the recipient, not the buyer.
+  const recipient = order.gift?.to ?? order.customer.name
+  // In-store orders have no customer info to show in the fulfillment section.
+  const isInStore = order.fulfillment.label === 'In-store'
+  const specialRequest = SPECIAL_REQUESTS[itemSeed % SPECIAL_REQUESTS.length]
+  // Show a payment link for about half of the admin-added orders.
+  const hasPaymentLink =
+    order.payment.method === 'Admin added' && order.orderedAt.getMinutes() % 2 === 0
+
+  // Example activity timeline derived from the order.
+  const activity = [
+    { label: 'Event', at: formatDateTime(order.fulfillAt) },
+    { label: 'Event', at: formatDateTime(order.orderedAt) },
+    { label: 'Event', at: formatDateTime(order.orderedAt) },
+  ]
+
+  return (
+    <aside className="max-h-[calc(100vh-2rem)] w-[360px] overflow-y-auto rounded-lg border border-border">
+      {/* Action toolbar */}
+      <div className="flex items-stretch border-b border-border p-1">
+        {DETAIL_ACTIONS.map((action) => {
+          const Icon = action.icon
+          return (
+            <Button
+              key={action.label}
+              variant="ghost"
+              className="h-auto flex-1 flex-col gap-1 py-1 text-[10px] font-normal text-muted-foreground [&_svg]:size-5"
+            >
+              <Icon className="size-5" />
+              {action.label}
+            </Button>
+          )
+        })}
+        <Button
+          variant="ghost"
+          onClick={onClose}
+          aria-label="Close"
+          className="h-auto flex-1 flex-col gap-1 py-2 text-xs font-normal text-muted-foreground"
+        >
+          <X className="size-5" />
+          Close
+        </Button>
+      </div>
+
+      {/* Header */}
+      <div className="space-y-3 border-b border-border p-4">
+        <div className="flex items-center justify-between gap-2">
+          <TypographyH4>{order.id}</TypographyH4>
+          <StatusPill
+            status={order.status}
+            category={getStatusCategory(order.payment)}
+            onChange={(status) => onStatusChange(order.id, status)}
+          />
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <img src={CHANNEL_ICON_SRC[order.channel]} alt="" className="size-5" />
+            {order.channel}
+          </span>
+          <span aria-hidden className="size-1 rounded-full bg-muted-foreground/40" />
+          <span>{formatDateTime(order.orderedAt)}</span>
+        </div>
+      </div>
+
+      {/* Fulfillment */}
+      <CollapsibleSection title="Fulfillment">
+        <div className="space-y-5">
+          <DetailRow icon={CalendarIcon} label="Date">
+            <p>{formatDateTime(order.fulfillAt)}</p>
+          </DetailRow>
+
+          <DetailRow icon={FulfillmentIcon} label="Type">
+            <p>{order.fulfillment.label}</p>
+          </DetailRow>
+
+          {order.gift ? (
+            <DetailRow icon={Gift} label="Gift order">
+              {recipient ? <p>{recipient}</p> : null}
+              {order.customer.phone ? <ContactPhone phone={order.customer.phone} /> : null}
+              <p>"{order.gift.message}"</p>
+            </DetailRow>
+          ) : !isInStore && (order.customer.name || order.customer.phone) ? (
+            <DetailRow icon={User} label="Customer">
+              {order.customer.name ? <p>{order.customer.name}</p> : null}
+              {order.customer.phone ? <ContactPhone phone={order.customer.phone} /> : null}
+            </DetailRow>
+          ) : null}
+
+          {order.address ? (
+            <DetailRow icon={MapPin} label="Address">
+              {order.address.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </DetailRow>
+          ) : null}
+        </div>
+      </CollapsibleSection>
+
+      {/* Items */}
+      <CollapsibleSection title="Items">
+        <div className="space-y-4">
+          {lineItems.map((item, idx) => (
+            <div key={`${item.name}-${idx}`} className="flex gap-3">
+              <img
+                src={productImage}
+                alt=""
+                className="size-10 shrink-0 rounded-md object-cover"
+              />
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-medium text-foreground">
+                    {item.qty}x {item.name}
+                  </p>
+                  <p className="shrink-0 text-sm font-normal text-muted-foreground">
+                    {formatCurrency(prices[idx])}
+                  </p>
+                </div>
+                <div className="text-sm">
+                  <p className="text-muted-foreground">Special instructions:</p>
+                  <p className="text-foreground">{item.note}</p>
+                </div>
+                <div className="text-sm">
+                  <p className="text-muted-foreground">Add-ons:</p>
+                  <p className="text-foreground">{item.addOns.join(', ')}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between text-muted-foreground">
+              <span>Subtotal</span>
+              <span>{formatCurrency(order.total)}</span>
+            </div>
+            <div>
+              <button
+                type="button"
+                onClick={() => setOtherOpen((v) => !v)}
+                className="flex items-center gap-1 text-muted-foreground"
+              >
+                Other
+                <ChevronUp
+                  className={cn('size-4 transition-transform', !otherOpen && 'rotate-180')}
+                />
+              </button>
+              {otherOpen ? (
+                <div className="mt-2 space-y-2">
+                  {charges.map((charge) => (
+                    <div key={charge.label} className="flex justify-between">
+                      <span className="text-muted-foreground">{charge.label}</span>
+                      <span className="text-muted-foreground">
+                        {charge.amount < 0
+                          ? `-${formatCurrency(Math.abs(charge.amount))}`
+                          : formatCurrency(charge.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div className="flex justify-between text-base font-medium text-foreground">
+              <span>Total</span>
+              <span>{formatCurrency(total)}</span>
+            </div>
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Other */}
+      <CollapsibleSection title="Other">
+        <DetailRow
+          icon={ClipboardList}
+          label={order.channel === 'POS' ? 'Notes' : 'Do you have any special requests?:'}
+        >
+          <p>{specialRequest}</p>
+        </DetailRow>
+      </CollapsibleSection>
+
+      {/* Payment */}
+      <CollapsibleSection title="Payment">
+        <div className="space-y-4">
+          {!hasPaymentLink ? (
+            <DetailRow icon={Banknote} label="Method">
+              <p className="flex items-center gap-1">
+                <span>{order.payment.method}</span>
+                {!order.payment.automated ? (
+                  <span className="inline-flex items-center gap-0.5 text-muted-foreground">
+                    (Manual
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="About manual payments"
+                          className="inline-flex"
+                        >
+                          <Info className="size-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-56 text-center">
+                        Manual payments are not processed by Cococart. You need to collect them from
+                        the customer.
+                      </TooltipContent>
+                    </Tooltip>
+                    )
+                  </span>
+                ) : null}
+              </p>
+            </DetailRow>
+          ) : null}
+          {!hasPaymentLink && order.payment.method === 'Admin added' ? (
+            <Button variant="outline" className="h-10 w-full">
+              <CircleDollarSign className="size-4" />
+              Create payment link
+            </Button>
+          ) : null}
+          {hasPaymentLink ? (
+            <DetailRow icon={Link2} label="Payment link">
+              <div className="flex items-center gap-1">
+                <span className="min-w-0 flex-1 truncate">
+                  https://cococart.co/pay/ord_8f3a9c2b4e7d1f6a0b5c2d8e
+                </span>
+                <CopyLinkButton value="https://cococart.co/pay/ord_8f3a9c2b4e7d1f6a0b5c2d8e" />
+              </div>
+            </DetailRow>
+          ) : null}
+          {order.payment.automated && order.payment.method === 'Card' ? (
+            <DetailRow icon={CreditCard} label="Details">
+              <p>Credit card **** 4242</p>
+            </DetailRow>
+          ) : null}
+          {order.payment.automated ? (
+            <DetailRow icon={CircleDollarSign} label="Amount collected">
+              <p>{formatCurrency(total)}</p>
+            </DetailRow>
+          ) : null}
+        </div>
+      </CollapsibleSection>
+
+      {/* Customer — hidden entirely when there's no customer (e.g. POS) */}
+      {hasCustomer ? (
+        <CollapsibleSection title="Customer">
+          <div className="space-y-4">
+            {order.customer.name ? (
+              <DetailRow icon={User} label="Name">
+                <p>{order.customer.name}</p>
+              </DetailRow>
+            ) : null}
+            {order.customer.email ? (
+              <DetailRow icon={Mail} label="Email">
+                <p className="flex items-center gap-1.5">
+                  {order.customer.email}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="View in CRM"
+                        className="text-foreground"
+                      >
+                        <Search className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>View in CRM</TooltipContent>
+                  </Tooltip>
+                </p>
+              </DetailRow>
+            ) : null}
+            {order.customer.phone ? (
+              <DetailRow icon={Phone} label="Phone">
+                <ContactPhone phone={order.customer.phone} />
+              </DetailRow>
+            ) : null}
+
+            <DetailRow icon={Tag} label="Tags">
+              <TagsCombobox defaultTags={['Wholesale', 'Regular', 'Repeat buyer']} />
+            </DetailRow>
+
+            <DetailRow icon={FileText} label="Notes">
+              <NotesField />
+            </DetailRow>
+          </div>
+        </CollapsibleSection>
+      ) : null}
+
+      {/* Activity */}
+      <CollapsibleSection title="Activity" defaultOpen={false}>
+        <ol>
+          {activity.map((event, idx) => {
+            const isLast = idx === activity.length - 1
+            return (
+              <li key={`${event.label}-${idx}`} className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <span className="mt-1 flex size-3.5 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                    <span className="size-2 rounded-full bg-amber-400" />
+                  </span>
+                  {!isLast ? <span className="w-px flex-1 bg-border" /> : null}
+                </div>
+                <div className={cn('leading-tight', !isLast && 'pb-5')}>
+                  <p className="text-sm font-medium text-foreground">{event.label}</p>
+                  <p className="text-sm text-muted-foreground">{event.at}</p>
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+      </CollapsibleSection>
+    </aside>
+  )
+}
+
+function getOrderColumns(
+  onStatusChange: (id: string, status: OrderStatus) => void,
+): ColumnDef<Order>[] {
+  return [
   {
     id: 'select',
     enableSorting: false,
@@ -543,7 +1382,7 @@ const ORDER_COLUMNS: ColumnDef<Order>[] = [
   },
   {
     accessorKey: 'id',
-    header: 'Order',
+    header: 'ID',
     enableSorting: false,
     cell: ({ row }) => {
       const order = row.original
@@ -561,7 +1400,7 @@ const ORDER_COLUMNS: ColumnDef<Order>[] = [
           </Tooltip>
           <div className="min-w-0">
             <p className="font-semibold text-foreground">{order.id}</p>
-            <p className="text-sm text-muted-foreground">{order.customer}</p>
+            <CustomerDetails customer={order.customer} />
           </div>
         </div>
       )
@@ -570,7 +1409,7 @@ const ORDER_COLUMNS: ColumnDef<Order>[] = [
   {
     accessorKey: 'orderedAt',
     sortingFn: 'datetime',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Order date" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Ordered" />,
     cell: ({ row }) => (
       <div className="leading-tight text-muted-foreground">
         <p>{formatDate(row.original.orderedAt)}</p>
@@ -607,8 +1446,8 @@ const ORDER_COLUMNS: ColumnDef<Order>[] = [
     cell: ({ row }) => {
       const Icon = row.original.fulfillment.icon
       return (
-        <div className="flex items-start gap-2 text-muted-foreground">
-          <Icon className="mt-0.5 size-4 shrink-0" />
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Icon className="size-4 shrink-0" />
           <div className="leading-tight">
             <p>{formatDate(row.original.fulfillAt)}</p>
             <p className="text-sm">{formatTime(row.original.fulfillAt)}</p>
@@ -620,15 +1459,21 @@ const ORDER_COLUMNS: ColumnDef<Order>[] = [
   {
     accessorKey: 'status',
     enableSorting: false,
-    meta: { className: 'text-right', headerClassName: 'text-right' },
+    // Fixed to the status pill width (132px) plus the cell's horizontal padding.
+    meta: { className: 'w-[164px] text-right', headerClassName: 'w-[164px] text-left' },
     header: 'Status',
     cell: ({ row }) => (
       <div className="flex justify-end">
-        <StatusPill status={row.original.status} />
+        <StatusPill
+          status={row.original.status}
+          category={getStatusCategory(row.original.payment)}
+          onChange={(status) => onStatusChange(row.original.id, status)}
+        />
       </div>
     ),
   },
-]
+  ]
+}
 
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
@@ -649,12 +1494,53 @@ export function AdminOrdersAllPage() {
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const selectedCount = Object.keys(rowSelection).length
 
+  const [orders, setOrders] = React.useState<Order[]>(ORDERS)
+  // Selecting a status closes the portaled dropdown, whose follow-up click can
+  // land on the row underneath. Suppress row clicks briefly after a change so
+  // the detail pane doesn't open.
+  const suppressRowClickUntil = React.useRef(0)
+  const handleStatusChange = React.useCallback((id: string, status: OrderStatus) => {
+    suppressRowClickUntil.current = Date.now() + 300
+    setOrders((prev) =>
+      prev.map((order) => (order.id === id ? { ...order, status } : order)),
+    )
+  }, [])
+  const columns = React.useMemo(() => getOrderColumns(handleStatusChange), [handleStatusChange])
+
+  const [selectedOrderId, setSelectedOrderId] = React.useState<string | null>(null)
+  const selectedOrder = selectedOrderId
+    ? (orders.find((order) => order.id === selectedOrderId) ?? null)
+    : null
+
+  // Keep the last opened order around so its content stays visible while the
+  // pane animates closed.
+  const lastOrderRef = React.useRef<Order | null>(null)
+  if (selectedOrder) lastOrderRef.current = selectedOrder
+  const paneOrder = selectedOrder ?? lastOrderRef.current
+
   const [channel, setChannel] = React.useState<string | null>(null)
   const [fulfillmentType, setFulfillmentType] = React.useState<string | null>(null)
   const [statusFilter, setStatusFilter] = React.useState<string | null>(null)
   const [activeFilter, setActiveFilter] = React.useState('Active')
   const [dateField, setDateField] = React.useState('fulfillment')
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined)
+
+  // Apply the channel, fulfillment type and status filters. The "Approved"
+  // status filter also surfaces Paid orders (there's no separate Paid option).
+  const filteredOrders = React.useMemo(() => {
+    return orders.filter((order) => {
+      if (channel && order.channel !== channel) return false
+      if (fulfillmentType && order.fulfillment.label !== fulfillmentType) return false
+      if (statusFilter) {
+        const matches =
+          statusFilter === 'Approved'
+            ? order.status === 'Approved' || order.status === 'Paid'
+            : order.status === statusFilter
+        if (!matches) return false
+      }
+      return true
+    })
+  }, [orders, channel, fulfillmentType, statusFilter])
 
   function resetFilters() {
     setChannel(null)
@@ -701,7 +1587,7 @@ export function AdminOrdersAllPage() {
   }
 
   return (
-    <div className="flex w-full flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <TypographyH3>All Orders</TypographyH3>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -830,14 +1716,40 @@ export function AdminOrdersAllPage() {
         </div>
       </div>
 
-      {/* Orders data table */}
-      <DataTable
-        columns={ORDER_COLUMNS}
-        data={ORDERS}
-        defaultSorting={[{ id: 'orderedAt', desc: true }]}
-        rowSelection={rowSelection}
-        onRowSelectionChange={setRowSelection}
-      />
+      {/* Orders data table + detail side pane */}
+      <div className="flex">
+        <div className="min-w-0 flex-1">
+          <DataTable
+            columns={columns}
+            data={filteredOrders}
+            defaultSorting={[{ id: 'orderedAt', desc: true }]}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
+            onRowClick={(order) => {
+              if (Date.now() < suppressRowClickUntil.current) return
+              setSelectedOrderId(order.id)
+            }}
+            isRowActive={(order) => order.id === selectedOrderId}
+            tableClassName={selectedOrder ? 'min-w-[820px]' : undefined}
+          />
+        </div>
+        {/* Pane stays mounted so its width/margin can animate in and out, which
+            in turn smoothly resizes the flex table beside it. */}
+        <div
+          className={cn(
+            'sticky top-4 shrink-0 self-start overflow-hidden transition-[width,margin] duration-300 ease-in-out',
+            selectedOrder ? 'ml-6 w-[360px]' : 'ml-0 w-0',
+          )}
+        >
+          {paneOrder ? (
+            <OrderDetailPane
+              order={paneOrder}
+              onClose={() => setSelectedOrderId(null)}
+              onStatusChange={handleStatusChange}
+            />
+          ) : null}
+        </div>
+      </div>
     </div>
   )
 }

@@ -36,7 +36,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
   return (
     <SidebarProvider open onOpenChange={() => {}}>
       <AppSidebar pathname={activeRoute.path} />
-      <SidebarInset>
+      <SidebarInset className="min-w-0">
         <MobileHeader pathname={activeRoute.path} />
         {showDesktopHeader ? (
           <header className="hidden h-16 shrink-0 items-center gap-2 border-b border-border px-4 md:flex">
@@ -54,7 +54,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
           </header>
         ) : null}
 
-        <section className="flex flex-1 flex-col gap-6 p-4 pt-5 pb-24 sm:px-6 sm:pt-5 sm:pb-24 md:pb-6 lg:px-8 lg:pt-5 lg:pb-8">
+        <section className="flex min-w-0 flex-1 flex-col gap-6 p-4 pt-5 pb-24 sm:px-6 sm:pt-5 sm:pb-24 md:pb-6 lg:px-8 lg:pt-5 lg:pb-8">
           {showPageTitle ? (
             <header>
               <h1 className="text-2xl font-semibold tracking-normal text-neutral-900">

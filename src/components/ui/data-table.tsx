@@ -55,6 +55,9 @@ type DataTableProps<TData, TValue> = {
   defaultSorting?: SortingState
   rowSelection?: RowSelectionState
   onRowSelectionChange?: OnChangeFn<RowSelectionState>
+  onRowClick?: (row: TData) => void
+  isRowActive?: (row: TData) => boolean
+  tableClassName?: string
 }
 
 export function DataTable<TData, TValue>({
@@ -63,6 +66,9 @@ export function DataTable<TData, TValue>({
   defaultSorting = [],
   rowSelection,
   onRowSelectionChange,
+  onRowClick,
+  isRowActive,
+  tableClassName,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>(defaultSorting)
   const [internalSelection, setInternalSelection] = React.useState<RowSelectionState>({})
@@ -90,7 +96,7 @@ export function DataTable<TData, TValue>({
   return (
     <div className="flex flex-col gap-4">
     <div className="rounded-lg border border-border">
-      <Table>
+      <Table className={tableClassName}>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="hover:bg-transparent">
@@ -115,7 +121,30 @@ export function DataTable<TData, TValue>({
             table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
-                data-state={row.getIsSelected() ? "selected" : undefined}
+                data-state={
+                  isRowActive?.(row.original)
+                    ? "selected"
+                    : row.getIsSelected()
+                      ? "selected"
+                      : undefined
+                }
+                className={cn(onRowClick && "cursor-pointer")}
+                onClick={
+                  onRowClick
+                    ? (event) => {
+                        // Ignore clicks on interactive cell content (checkbox,
+                        // status dropdown, links) so only the row body opens it.
+                        if (
+                          (event.target as HTMLElement).closest(
+                            'button, a, input, [role="checkbox"]',
+                          )
+                        ) {
+                          return
+                        }
+                        onRowClick(row.original)
+                      }
+                    : undefined
+                }
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
