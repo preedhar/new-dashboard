@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 type InputGroupSize = "default" | "xl"
 
@@ -37,9 +38,11 @@ function InputGroup({
 function InputGroupAddon({
   className,
   inputGroupSize = "default",
+  align,
   ...props
 }: React.ComponentProps<"span"> & {
   inputGroupSize?: InputGroupSize
+  align?: "inline-start" | "inline-end" | "block-start" | "block-end"
 }) {
   return (
     <span
@@ -47,8 +50,26 @@ function InputGroupAddon({
       className={cn(
         "flex shrink-0 items-center whitespace-nowrap text-muted-foreground",
         inputGroupAddonSizeClasses[inputGroupSize],
+        align === "inline-end" && "ml-auto",
         className
       )}
+      {...props}
+    />
+  )
+}
+
+function InputGroupButton({
+  className,
+  size = "icon-xs",
+  variant = "ghost",
+  ...props
+}: React.ComponentProps<typeof Button>) {
+  return (
+    <Button
+      data-slot="input-group-button"
+      className={cn(className)}
+      size={size}
+      variant={variant}
       {...props}
     />
   )
@@ -68,4 +89,4 @@ function InputGroupInput({ className, type, ...props }: React.ComponentProps<"in
   )
 }
 
-export { InputGroup, InputGroupAddon, InputGroupInput }
+export { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput }
