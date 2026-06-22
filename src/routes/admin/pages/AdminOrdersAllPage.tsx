@@ -741,7 +741,7 @@ function StatusPill({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="h-10 w-[132px] px-3 font-medium">
+        <Button variant="outline" className="h-10 w-[152px] px-3 font-medium">
           <TriggerIcon className="size-5" />
           {status}
           <ChevronDown className="ml-auto size-4 text-muted-foreground" />
@@ -1089,7 +1089,7 @@ function OrderDetailPane({
       </div>
 
       {/* Header */}
-      <div className="space-y-3 border-b border-border p-4">
+      <div className="space-y-4 border-b border-border p-4">
         <div className="flex items-center justify-between gap-2">
           <TypographyH4>{order.id}</TypographyH4>
           <StatusPill
@@ -1120,7 +1120,7 @@ function OrderDetailPane({
           </DetailRow>
 
           {order.gift ? (
-            <DetailRow icon={Gift} label="Gift order">
+            <DetailRow icon={Gift} label="Gift recipient">
               {recipient ? <p>{recipient}</p> : null}
               {order.customer.phone ? <ContactPhone phone={order.customer.phone} /> : null}
               <p>"{order.gift.message}"</p>
@@ -1422,7 +1422,7 @@ function getOrderColumns(
     sortingFn: 'basic',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Total" />,
     cell: ({ row }) => (
-      <p className="font-normal text-muted-foreground tabular-nums">
+      <p className="font-normal text-muted-foreground">
         {formatCurrency(row.original.total)}
       </p>
     ),
@@ -1459,8 +1459,8 @@ function getOrderColumns(
   {
     accessorKey: 'status',
     enableSorting: false,
-    // Fixed to the status pill width (132px) plus the cell's horizontal padding.
-    meta: { className: 'w-[164px] text-right', headerClassName: 'w-[164px] text-left' },
+    // Fixed to the status pill width (152px) plus the cell's horizontal padding.
+    meta: { className: 'w-[184px] text-right', headerClassName: 'w-[184px] text-left' },
     header: 'Status',
     cell: ({ row }) => (
       <div className="flex justify-end">
@@ -1491,6 +1491,7 @@ function isSameDay(a?: Date, b?: Date) {
 
 export function AdminOrdersAllPage() {
   const [searching, setSearching] = React.useState(false)
+  const [searchQuery, setSearchQuery] = React.useState('')
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const selectedCount = Object.keys(rowSelection).length
 
@@ -1527,7 +1528,9 @@ export function AdminOrdersAllPage() {
 
   // Apply the channel, fulfillment type and status filters. The "Approved"
   // status filter also surfaces Paid orders (there's no separate Paid option).
+  // The search query matches the order id, customer name or email.
   const filteredOrders = React.useMemo(() => {
+    const search = searchQuery.trim().toLowerCase()
     return orders.filter((order) => {
       if (channel && order.channel !== channel) return false
       if (fulfillmentType && order.fulfillment.label !== fulfillmentType) return false
@@ -1538,9 +1541,16 @@ export function AdminOrdersAllPage() {
             : order.status === statusFilter
         if (!matches) return false
       }
+      if (search) {
+        const haystack = [order.id, order.customer.name, order.customer.email]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+        if (!haystack.includes(search)) return false
+      }
       return true
     })
-  }, [orders, channel, fulfillmentType, statusFilter])
+  }, [orders, channel, fulfillmentType, statusFilter, searchQuery])
 
   function resetFilters() {
     setChannel(null)
@@ -1625,13 +1635,25 @@ export function AdminOrdersAllPage() {
             <InputGroupAddon>
               <Search className="size-4" />
             </InputGroupAddon>
-            <InputGroupInput placeholder="Search order id, customer info" autoFocus />
+            <InputGroupInput
+              placeholder="Search order id, customer info"
+              autoFocus
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              // Collapse back to the filter buttons when the field is left empty.
+              onBlur={() => {
+                if (searchQuery.trim() === '') setSearching(false)
+              }}
+            />
             <InputGroupAddon className="pr-1">
               <Button
                 variant="ghost"
                 size="icon-sm"
                 aria-label="Dismiss search"
-                onClick={() => setSearching(false)}
+                onClick={() => {
+                  setSearchQuery('')
+                  setSearching(false)
+                }}
               >
                 <X className="size-4 text-muted-foreground" />
               </Button>
