@@ -15,7 +15,7 @@ import {
   appsAdminNav,
   primaryAdminNav,
   type AdminNavItem,
-} from "@/routes/admin/adminRoutes"
+} from "../adminRoutes"
 
 type CommandNavItem = {
   title: string

@@ -103,7 +103,7 @@ export function SignupPage() {
     }
 
     if (step === TOTAL_STEPS - 1) {
-      window.history.pushState(null, '', '/admin-2')
+      window.history.pushState(null, '', '/admin')
       window.dispatchEvent(new PopStateEvent('popstate'))
       return
     }

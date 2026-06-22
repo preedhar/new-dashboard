@@ -1,13 +1,13 @@
 import * as React from "react"
-import { HomeIcon, SearchIcon } from "lucide-react"
+import { SearchIcon } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { SearchCommandDialog } from "@/components/search-command-dialog"
-import { UserMenuContent } from "@/components/user-menu-content"
+import { SearchCommandDialog } from "./search-command-dialog"
+import { UserMenuContent } from "./user-menu-content"
 
 const HIDE_THRESHOLD = 64
 
@@ -47,34 +47,25 @@ export function MobileHeader({ pathname }: MobileHeaderProps) {
     <>
       <header
         data-hidden={hidden}
-        className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background px-4 transition-transform duration-200 ease-out data-[hidden=true]:-translate-y-full md:hidden"
+        className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background pl-2 pr-4 transition-transform duration-200 ease-out data-[hidden=true]:-translate-y-full md:hidden"
       >
         <a
           href="/admin"
-          className="flex shrink-0 items-center"
           aria-label="Cococart home"
+          data-active={pathname === "/admin"}
+          className="flex h-10 shrink-0 items-center gap-2 rounded-md px-2 text-sm text-muted-foreground outline-hidden transition-colors hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_6%)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring data-[active=true]:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_10%)] data-[active=true]:text-foreground"
         >
-          <img src="/cococart-logomark.svg" alt="Cococart" className="h-8 w-8" />
+          <img src="/cococart-logomark.svg" alt="Cococart" className="h-8 w-8 shrink-0" />
+          <span className="truncate">Home</span>
         </a>
-        <div className="flex flex-1 items-center gap-2">
-          <a
-            href="/admin"
-            aria-label="Cococart home"
-            data-active={pathname === "/admin"}
-            className="flex h-8 flex-1 items-center justify-center gap-2 rounded-md bg-muted px-2 text-sm text-muted-foreground outline-hidden transition-colors hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_6%)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring data-[active=true]:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_10%)] data-[active=true]:text-foreground"
-          >
-            <HomeIcon className="size-4 shrink-0" />
-            <span className="truncate">Home</span>
-          </a>
-          <button
-            type="button"
-            className="flex h-8 flex-1 items-center justify-center gap-2 rounded-md bg-muted px-2 text-sm text-muted-foreground outline-hidden transition-colors hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_6%)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={() => setSearchOpen(true)}
-          >
-            <SearchIcon className="size-4 shrink-0" />
-            <span className="truncate">Search</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          className="ml-auto flex h-8 shrink-0 items-center justify-center gap-2 rounded-md px-2 text-sm text-muted-foreground outline-hidden transition-colors hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_6%)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={() => setSearchOpen(true)}
+        >
+          <SearchIcon className="size-4 shrink-0" />
+          <span className="truncate">Search</span>
+        </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button

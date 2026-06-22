@@ -43,7 +43,18 @@ export function NavMain({
         {items.map((item) => (
           <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={item.isActive} tooltip={item.title}>
+              <SidebarMenuButton
+                asChild
+                isActive={item.isActive}
+                tooltip={item.title}
+                className={cn(
+                  !item.isActive && "text-muted-foreground",
+                  item.isActive &&
+                    (item.items?.length
+                      ? "data-[active=true]:bg-transparent"
+                      : "data-[active=true]:bg-[color-mix(in_oklch,var(--sidebar-accent),var(--sidebar-foreground)_5%)]"),
+                )}
+              >
                 <a href={item.url}>
                   {item.icon}
                   <span>{item.title}</span>
@@ -52,7 +63,7 @@ export function NavMain({
               {item.items?.length ? (
                 <>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuAction className="data-[state=open]:rotate-90">
+                    <SidebarMenuAction className="text-muted-foreground data-[state=open]:rotate-90">
                       <ChevronRightIcon />
                       <span className="sr-only">Toggle</span>
                     </SidebarMenuAction>
@@ -61,7 +72,15 @@ export function NavMain({
                     <SidebarMenuSub>
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild isActive={subItem.isActive}>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={subItem.isActive}
+                            className={cn(
+                              !subItem.isActive && "text-muted-foreground",
+                              subItem.isActive &&
+                                "data-[active=true]:bg-[color-mix(in_oklch,var(--sidebar-accent),var(--sidebar-foreground)_5%)]",
+                            )}
+                          >
                             <a href={subItem.url}>
                               <span>{subItem.title}</span>
                             </a>
