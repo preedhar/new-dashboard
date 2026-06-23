@@ -1,16 +1,26 @@
 import {
   BarChart3,
+  Boxes,
   CalendarDays,
+  CalendarRange,
+  ClipboardList,
+  CreditCard,
+  Gift,
   Globe,
   Home,
   LayoutGrid,
+  LayoutList,
   Mail,
   Megaphone,
   Monitor,
   Package,
+  Percent,
   Settings,
   ReceiptText,
+  Star,
+  Store,
   Tag,
+  Tags,
   Truck,
   Users,
   type LucideIcon,
@@ -37,6 +47,7 @@ export type AdminNavItem = {
   items?: {
     title: string
     url: string
+    icon?: LucideIcon
   }[]
 }
 
@@ -52,11 +63,11 @@ export const primaryAdminNav: AdminNavItem[] = [
     url: '/admin/orders/all',
     icon: ReceiptText,
     items: [
-      { title: 'All Orders', url: '/admin/orders/all' },
-      { title: 'Summary', url: '/admin/orders/summary' },
-      { title: 'Deliveries', url: '/admin/orders/deliveries' },
-      { title: 'Reviews', url: '/admin/orders/reviews' },
-      { title: 'Analytics', url: '/admin/orders/analytics' },
+      { title: 'All Orders', url: '/admin/orders/all', icon: ReceiptText },
+      { title: 'Summary', url: '/admin/orders/summary', icon: LayoutList },
+      { title: 'Deliveries', url: '/admin/orders/deliveries', icon: Truck },
+      { title: 'Reviews', url: '/admin/orders/reviews', icon: Star },
+      { title: 'Analytics', url: '/admin/orders/analytics', icon: BarChart3 },
     ],
   },
   {
@@ -64,9 +75,9 @@ export const primaryAdminNav: AdminNavItem[] = [
     url: '/admin/products/all',
     icon: Package,
     items: [
-      { title: 'All Products', url: '/admin/products/all' },
-      { title: 'Categories', url: '/admin/products/categories' },
-      { title: 'Bundles', url: '/admin/products/bundles' },
+      { title: 'All Products', url: '/admin/products/all', icon: Package },
+      { title: 'Categories', url: '/admin/products/categories', icon: Tags },
+      { title: 'Bundles', url: '/admin/products/bundles', icon: Boxes },
     ],
   },
   {
@@ -74,10 +85,10 @@ export const primaryAdminNav: AdminNavItem[] = [
     url: '/admin/bookings/all',
     icon: CalendarDays,
     items: [
-      { title: 'All Bookings', url: '/admin/bookings/all' },
-      { title: 'Booking Forms', url: '/admin/bookings/forms' },
-      { title: 'Timeline', url: '/admin/bookings/timeline' },
-      { title: 'Analytics', url: '/admin/bookings/analytics' },
+      { title: 'All Bookings', url: '/admin/bookings/all', icon: CalendarDays },
+      { title: 'Booking Forms', url: '/admin/bookings/forms', icon: ClipboardList },
+      { title: 'Timeline', url: '/admin/bookings/timeline', icon: CalendarRange },
+      { title: 'Analytics', url: '/admin/bookings/analytics', icon: BarChart3 },
     ],
   },
   {
@@ -85,11 +96,11 @@ export const primaryAdminNav: AdminNavItem[] = [
     url: '/admin/marketing/share',
     icon: Megaphone,
     items: [
-      { title: 'Share', url: '/admin/marketing/share' },
-      { title: 'Discounts', url: '/admin/marketing/discounts' },
-      { title: 'Customers', url: '/admin/marketing/customers' },
-      { title: 'Email Marketing', url: '/admin/marketing/email' },
-      { title: 'Loyalty', url: '/admin/marketing/loyalty' },
+      { title: 'Share', url: '/admin/marketing/share', icon: Megaphone },
+      { title: 'Discounts', url: '/admin/marketing/discounts', icon: Percent },
+      { title: 'Customers', url: '/admin/marketing/customers', icon: Users },
+      { title: 'Email Marketing', url: '/admin/marketing/email', icon: Mail },
+      { title: 'Loyalty', url: '/admin/marketing/loyalty', icon: Gift },
     ],
   },
   {
@@ -97,11 +108,11 @@ export const primaryAdminNav: AdminNavItem[] = [
     url: '/admin/settings/payments',
     icon: Settings,
     items: [
-      { title: 'Payments', url: '/admin/settings/payments' },
-      { title: 'Website', url: '/admin/settings/website' },
-      { title: 'Store', url: '/admin/settings/store' },
-      { title: 'Team', url: '/admin/settings/team' },
-      { title: 'Billing', url: '/admin/settings/billing' },
+      { title: 'Payments', url: '/admin/settings/payments', icon: CreditCard },
+      { title: 'Website', url: '/admin/settings/website', icon: Globe },
+      { title: 'Store', url: '/admin/settings/store', icon: Store },
+      { title: 'Team', url: '/admin/settings/team', icon: Users },
+      { title: 'Billing', url: '/admin/settings/billing', icon: ReceiptText },
     ],
   },
 ]
@@ -474,4 +485,25 @@ export const adminRoutes: AdminRoute[] = [
 export function getAdminRoute(pathname: string) {
   const normalizedPath = pathname.replace(/\/+$/, '') || '/admin'
   return adminRoutes.find((route) => route.path === normalizedPath)
+}
+
+// Maps each parent section route (e.g. /admin/orders) to its first subpage
+// (e.g. /admin/orders/all). Derived from the nav config so it stays in sync:
+// each nav item's `url` already points at its first subpage, so the parent is
+// that url with its last segment removed.
+const adminParentRedirects: Record<string, string> = primaryAdminNav.reduce(
+  (redirects, item) => {
+    if (item.items && item.items.length > 0) {
+      const firstSubpage = item.items[0].url
+      const parentPath = firstSubpage.slice(0, firstSubpage.lastIndexOf('/'))
+      redirects[parentPath] = firstSubpage
+    }
+    return redirects
+  },
+  {} as Record<string, string>,
+)
+
+export function getAdminRedirect(pathname: string) {
+  const normalizedPath = pathname.replace(/\/+$/, '') || '/admin'
+  return adminParentRedirects[normalizedPath]
 }

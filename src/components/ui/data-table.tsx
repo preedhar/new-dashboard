@@ -83,12 +83,25 @@ export function DataTable<TData, TValue>({
     onRowSelectionChange: handleSelectionChange,
     enableRowSelection: true,
     initialState: { pagination: { pageSize: 10 } },
+    // Keep the current page when the data updates (e.g. editing a row's status);
+    // we clamp the page below if filtering ever shrinks the row count.
+    autoResetPageIndex: false,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   })
 
   const { pageIndex, pageSize } = table.getState().pagination
+
+  // With auto-reset disabled, a shrinking row count (filtering) could leave the
+  // user on a page past the end — pull them back to the last valid page.
+  const pageCount = table.getPageCount()
+  React.useEffect(() => {
+    if (pageIndex > 0 && pageIndex > pageCount - 1) {
+      table.setPageIndex(Math.max(0, pageCount - 1))
+    }
+  }, [pageCount, pageIndex, table])
+
   const totalRows = data.length
   const firstRow = totalRows === 0 ? 0 : pageIndex * pageSize + 1
   const lastRow = Math.min((pageIndex + 1) * pageSize, totalRows)
