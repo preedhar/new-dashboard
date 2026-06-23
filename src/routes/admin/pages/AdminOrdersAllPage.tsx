@@ -22,10 +22,11 @@ import {
   Pencil,
   Phone,
   Plus,
-  Receipt,
   Tag,
   Search,
   ShoppingBag,
+  SlidersHorizontal,
+  SquareDashed,
   Store,
   Truck,
   Undo2,
@@ -34,6 +35,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import type { DateRange } from 'react-day-picker'
+import { toast } from 'sonner'
 
 import LalamoveIcon from '@/assets/lalamove.svg?react'
 import WhatsappIcon from '@/assets/whatsapp.svg?react'
@@ -49,8 +51,27 @@ import CancelledIcon from '@/assets/status/cancelled.svg?react'
 import RejectedIcon from '@/assets/status/rejected.svg?react'
 
 import { cn } from '@/lib/utils'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import {
   Combobox,
   ComboboxChip,
@@ -171,6 +192,159 @@ const STATUS_ICONS: Record<OrderStatus, IconComponent> = {
   Fulfilled: FulfilledIcon,
   Canceled: CancelledIcon,
   Rejected: RejectedIcon,
+}
+
+// Actions that ask for confirmation before they run. Reject/Canceled are status
+// transitions; the rest are standalone actions.
+type ConfirmableAction =
+  | 'Reject'
+  | 'Canceled'
+  | 'Archive'
+  | 'Receipt'
+  | 'Create payment link'
+
+// Per-action context (order id, customer email) used to fill in the dialog copy.
+type ConfirmContext = { orderId?: string; customerEmail?: string }
+
+const CONFIRM_COPY: Record<
+  ConfirmableAction,
+  {
+    title: (ctx: ConfirmContext) => string
+    // One entry per paragraph; rendered on its own line.
+    description: (ctx: ConfirmContext) => string[]
+    cancelLabel: string
+    confirmLabel: string
+    destructive?: boolean
+    toast: string
+  }
+> = {
+  Reject: {
+    title: (ctx) => `Reject ${ctx.orderId ?? 'order'}?`,
+    description: (ctx) => [
+      `We will notify ${ctx.customerEmail ?? 'the customer'} that their order was rejected. The inventory from this order will be restocked.`,
+    ],
+    cancelLabel: 'Cancel',
+    confirmLabel: 'Reject order',
+    destructive: true,
+    toast: 'Order rejected',
+  },
+  Canceled: {
+    title: (ctx) => `Cancel ${ctx.orderId ?? 'order'}?`,
+    description: (ctx) => [
+      `We will notify ${ctx.customerEmail ?? 'the customer'} that their order was canceled. The inventory from this order will be restocked.`,
+      "If you'd like to refund the customer, please do so separately.",
+    ],
+    cancelLabel: 'Keep order',
+    confirmLabel: 'Cancel order',
+    destructive: true,
+    toast: 'Order canceled',
+  },
+  Archive: {
+    title: (ctx) => `Archive ${ctx.orderId ?? 'orders'}?`,
+    description: () => [
+      'Archived orders are hidden from your active orders list. You can find archived orders again using the "Active/Archived" filter.',
+      'Archived orders are not excluded from your inventory, fulfilment slots and analytics.',
+    ],
+    cancelLabel: 'Cancel',
+    confirmLabel: 'Archive order',
+    toast: 'Order archived',
+  },
+  Receipt: {
+    title: () => 'Send receipt?',
+    description: (ctx) => [
+      `A receipt for this order will be emailed to ${ctx.customerEmail ?? 'the customer'}`,
+    ],
+    cancelLabel: 'Cancel',
+    confirmLabel: 'Send',
+    toast: 'Receipt will be sent to the customer',
+  },
+  'Create payment link': {
+    title: () => 'Need to collect payment?',
+    description: () => ['Create a link for your customer to pay'],
+    cancelLabel: 'Cancel',
+    confirmLabel: 'Create link',
+    toast: 'Payment link created',
+  },
+}
+
+// Map a target status to its confirmation action, or null if no confirmation is
+// needed for that transition.
+function statusConfirmAction(status: OrderStatus): ConfirmableAction | null {
+  if (status === 'Rejected') return 'Reject'
+  if (status === 'Canceled') return 'Canceled'
+  return null
+}
+
+// Toast shown after a status transition that doesn't go through a confirmation
+// dialog (paid/approved/pending). Other statuses get no toast here.
+function showStatusChangeToast(status: OrderStatus, customerEmail?: string) {
+  if (status === 'Paid' || status === 'Approved') {
+    toast.success(`Receipt will be sent to ${customerEmail ?? 'the customer'}`)
+  } else if (status === 'Pending') {
+    toast.success('Order marked as pending')
+  } else if (status === 'Fulfilled') {
+    toast.success('Order marked as fulfilled')
+  }
+}
+
+type ConfirmRequest = ConfirmContext & {
+  action: ConfirmableAction
+  onConfirm: () => void
+}
+
+const ConfirmActionContext = React.createContext<(request: ConfirmRequest) => void>(() => {})
+
+function useConfirmAction() {
+  return React.useContext(ConfirmActionContext)
+}
+
+// Holds the pending confirmation and renders a single shared AlertDialog. On
+// confirm it runs the action and shows a sonner toast. Used on both desktop and
+// mobile since it wraps the whole page.
+function ConfirmActionProvider({ children }: { children: React.ReactNode }) {
+  const [pending, setPending] = React.useState<ConfirmRequest | null>(null)
+  const requestConfirm = React.useCallback((request: ConfirmRequest) => {
+    setPending(request)
+  }, [])
+  const copy = pending ? CONFIRM_COPY[pending.action] : null
+
+  return (
+    <ConfirmActionContext.Provider value={requestConfirm}>
+      {children}
+      <AlertDialog
+        open={pending !== null}
+        onOpenChange={(open) => {
+          if (!open) setPending(null)
+        }}
+      >
+        {pending && copy ? (
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{copy.title(pending)}</AlertDialogTitle>
+              <AlertDialogDescription className="flex flex-col gap-3">
+                {copy.description(pending).map((line, index) => (
+                  <span key={index}>{line}</span>
+                ))}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{copy.cancelLabel}</AlertDialogCancel>
+              <AlertDialogAction
+                variant={copy.destructive ? 'destructive' : undefined}
+                onClick={() => {
+                  pending.onConfirm()
+                  toast.success(copy.toast)
+                  setPending(null)
+                }}
+              >
+                {copy.confirmLabel}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        ) : null}
+      </AlertDialog>
+    </ConfirmActionContext.Provider>
+  )
 }
 
 type FulfillmentMethod = { label: string; icon: IconComponent }
@@ -487,7 +661,7 @@ function ClearFilterButton({
           onClear()
         }
       }}
-      className="-mr-1 inline-flex size-5 items-center justify-center rounded-sm text-foreground hover:bg-muted"
+      className="-mr-1 ml-auto inline-flex size-5 items-center justify-center rounded-sm text-foreground hover:bg-muted"
     >
       <X className="size-4" />
     </span>
@@ -499,11 +673,15 @@ function SelectFilter({
   options,
   value,
   onChange,
+  className,
+  contentClassName,
 }: {
   label: string
   options: Array<string | FilterOption>
   value: string | null
   onChange: (value: string | null) => void
+  className?: string
+  contentClassName?: string
 }) {
   const normalized = options.map((option) =>
     typeof option === 'string' ? { label: option } : option,
@@ -518,7 +696,7 @@ function SelectFilter({
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          className={cn(FILTER_BUTTON_CLASS, active && FILTER_BUTTON_ACTIVE_CLASS)}
+          className={cn(FILTER_BUTTON_CLASS, active && FILTER_BUTTON_ACTIVE_CLASS, className)}
         >
           {selectedOption?.iconSrc ? (
             <img src={selectedOption.iconSrc} alt="" className="size-4" />
@@ -529,11 +707,11 @@ function SelectFilter({
           {active ? (
             <ClearFilterButton label={label} onClear={() => onChange(null)} />
           ) : (
-            <ChevronDown className="size-4" />
+            <ChevronDown className="ml-auto size-4" />
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-auto min-w-44">
+      <DropdownMenuContent align="start" className={cn('w-auto min-w-44', contentClassName)}>
         <DropdownMenuRadioGroup value={selected ?? ''} onValueChange={onChange}>
           {normalized.map((option) => {
             const Icon = option.icon
@@ -561,9 +739,13 @@ function SelectFilter({
 function ActiveFilter({
   value,
   onChange,
+  className,
+  contentClassName,
 }: {
   value: string
   onChange: (value: string) => void
+  className?: string
+  contentClassName?: string
 }) {
   const active = value !== 'Active'
 
@@ -572,17 +754,17 @@ function ActiveFilter({
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          className={cn(FILTER_BUTTON_CLASS, active && FILTER_BUTTON_ACTIVE_CLASS)}
+          className={cn(FILTER_BUTTON_CLASS, active && FILTER_BUTTON_ACTIVE_CLASS, className)}
         >
           {value}
           {active ? (
             <ClearFilterButton label="Active" onClear={() => onChange('Active')} />
           ) : (
-            <ChevronDown className="size-4" />
+            <ChevronDown className="ml-auto size-4" />
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-44">
+      <DropdownMenuContent align="start" className={cn('w-44', contentClassName)}>
         <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
           {ACTIVE_OPTIONS.map((option) => (
             <DropdownMenuRadioItem key={option} value={option}>
@@ -607,11 +789,15 @@ function DatesFilter({
   onFieldChange,
   appliedRange,
   onApply,
+  className,
+  contentClassName,
 }: {
   field: string
   onFieldChange: (value: string) => void
   appliedRange: DateRange | undefined
   onApply: (range: DateRange | undefined) => void
+  className?: string
+  contentClassName?: string
 }) {
   const [open, setOpen] = React.useState(false)
   const [range, setRange] = React.useState<DateRange | undefined>(appliedRange)
@@ -652,17 +838,17 @@ function DatesFilter({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className={cn(FILTER_BUTTON_CLASS, active && FILTER_BUTTON_ACTIVE_CLASS)}
+          className={cn(FILTER_BUTTON_CLASS, active && FILTER_BUTTON_ACTIVE_CLASS, className)}
         >
           {active ? 'Dates: Selected' : 'Dates'}
           {active ? (
             <ClearFilterButton label="Dates" onClear={clearAll} />
           ) : (
-            <ChevronDown className="size-4" />
+            <ChevronDown className="ml-auto size-4" />
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[300px] p-3">
+      <PopoverContent align="start" className={cn('w-[300px] p-3', contentClassName)}>
         <Tabs value={field} onValueChange={onFieldChange}>
           <TabsList className="w-full">
             <TabsTrigger value="fulfillment">Fulfillment date</TabsTrigger>
@@ -714,11 +900,20 @@ function StatusPill({
   status,
   category,
   onChange,
+  orderId,
+  customerEmail,
+  className,
+  iconClassName,
 }: {
   status: OrderStatus
   category: StatusCategory
   onChange: (status: OrderStatus) => void
+  orderId?: string
+  customerEmail?: string
+  className?: string
+  iconClassName?: string
 }) {
+  const requestConfirm = useConfirmAction()
   const { statuses, actions } = STATUS_CATEGORY_CONFIG[category]
 
   // Pending and Rejected orders get a restricted menu of transitions; every
@@ -729,10 +924,24 @@ function StatusPill({
     statusItems = PENDING_TRANSITIONS[category]
     actionItems = []
   } else if (status === 'Rejected') {
-    statusItems = REJECTED_TRANSITIONS[category]
+    statusItems = [{ label: 'Rejected', status: 'Rejected' }, ...REJECTED_TRANSITIONS[category]]
     actionItems = actions.filter((action) => action.label === 'Archive')
   } else {
-    statusItems = statuses.map((s) => ({ label: s, status: s }))
+    // Rejected is only offered for orders currently in Pending or Rejected.
+    const allowed = statuses.filter((s) => s !== 'Rejected')
+    // Paid, Approved, Canceled and Fulfilled orders always list Fulfilled, even
+    // when their payment category doesn't otherwise include it. Fulfilled always
+    // sits right after the Paid/Approved option.
+    const canFulfill =
+      status === 'Paid' ||
+      status === 'Approved' ||
+      status === 'Canceled' ||
+      status === 'Fulfilled'
+    if (canFulfill && !allowed.includes('Fulfilled')) {
+      const anchor = allowed.findIndex((s) => s === 'Paid' || s === 'Approved')
+      allowed.splice(anchor === -1 ? allowed.length : anchor + 1, 0, 'Fulfilled')
+    }
+    statusItems = allowed.map((s) => ({ label: s, status: s }))
     actionItems = actions
   }
 
@@ -741,8 +950,11 @@ function StatusPill({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="h-10 w-[152px] px-3 font-medium">
-          <TriggerIcon className="size-5" />
+        <Button
+          variant="outline"
+          className={cn('h-10 w-[152px] px-3 font-medium', className)}
+        >
+          <TriggerIcon className={cn('size-5', iconClassName)} />
           {status}
           <ChevronDown className="ml-auto size-4 text-muted-foreground" />
         </Button>
@@ -750,10 +962,27 @@ function StatusPill({
       <DropdownMenuContent align="end" className="w-40">
         {statusItems.map((option) => {
           const Icon = STATUS_ICONS[option.status]
+          const confirmAction = statusConfirmAction(option.status)
           return (
-            <DropdownMenuItem key={option.label} onSelect={() => onChange(option.status)}>
+            <DropdownMenuItem
+              key={option.label}
+              onSelect={() => {
+                if (confirmAction) {
+                  requestConfirm({
+                    action: confirmAction,
+                    orderId,
+                    customerEmail,
+                    onConfirm: () => onChange(option.status),
+                  })
+                } else {
+                  onChange(option.status)
+                  showStatusChangeToast(option.status, customerEmail)
+                }
+              }}
+            >
               <Icon className="size-4" />
               {option.label}
+              {option.status === status ? <Check className="ml-auto size-4" /> : null}
             </DropdownMenuItem>
           )
         })}
@@ -761,7 +990,14 @@ function StatusPill({
         {actionItems.map((action) => {
           const Icon = action.icon
           return (
-            <DropdownMenuItem key={action.label}>
+            <DropdownMenuItem
+              key={action.label}
+              onSelect={
+                action.label === 'Archive'
+                  ? () => requestConfirm({ action: 'Archive', orderId, onConfirm: () => {} })
+                  : undefined
+              }
+            >
               <Icon className="size-4 text-muted-foreground" />
               {action.label}
             </DropdownMenuItem>
@@ -793,7 +1029,7 @@ function parseLineItem(raw: string) {
 
 const DETAIL_ACTIONS: { label: string; icon: IconComponent }[] = [
   { label: 'Edit', icon: Pencil },
-  { label: 'Receipt', icon: Receipt },
+  { label: 'Receipt', icon: Mail },
   { label: 'Delivery', icon: LalamoveIcon },
   { label: 'Copy', icon: Copy },
   { label: 'Archive', icon: Archive },
@@ -816,7 +1052,7 @@ function CollapsibleSection({
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between"
       >
-        <TypographyLarge>{title}</TypographyLarge>
+        <TypographyLarge className="text-base md:text-lg">{title}</TypographyLarge>
         <ChevronUp
           className={cn('size-4 text-muted-foreground transition-transform', !open && 'rotate-180')}
         />
@@ -840,7 +1076,7 @@ function DetailRow({
       <Icon className="size-5 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
         <p className="flex h-5 items-center text-sm text-muted-foreground">{label}</p>
-        <div className="space-y-0.5 text-base text-foreground">{children}</div>
+        <div className="space-y-0.5 text-sm text-foreground md:text-base">{children}</div>
       </div>
     </div>
   )
@@ -941,7 +1177,7 @@ function TagsCombobox({ defaultTags = [] }: { defaultTags?: string[] }) {
       onInputValueChange={(next) => setQuery(next)}
       multiple
     >
-      <ComboboxChips ref={anchor} className="mt-1">
+      <ComboboxChips ref={anchor} className="mt-1 bg-background">
         <ComboboxValue>
           {(tags: string[]) => (
             <>
@@ -994,7 +1230,7 @@ function NotesField() {
         value={value}
         onChange={(event) => setValue(event.target.value)}
         placeholder="Add notes about customer"
-        className="min-h-10 text-sm"
+        className="min-h-10 bg-background text-sm"
       />
       {dirty ? (
         <Button size="sm" onClick={() => setSaved(value)}>
@@ -1009,11 +1245,18 @@ function OrderDetailPane({
   order,
   onClose,
   onStatusChange,
+  className,
+  hideTitle = false,
+  hideClose = false,
 }: {
   order: Order
   onClose: () => void
   onStatusChange: (id: string, status: OrderStatus) => void
+  className?: string
+  hideTitle?: boolean
+  hideClose?: boolean
 }) {
+  const requestConfirm = useConfirmAction()
   const [otherOpen, setOtherOpen] = React.useState(false)
   const FulfillmentIcon = order.fulfillment.icon
   // Every item shows a special instruction and add-ons, picked deterministically
@@ -1061,49 +1304,75 @@ function OrderDetailPane({
   ]
 
   return (
-    <aside className="max-h-[calc(100vh-2rem)] w-[360px] overflow-y-auto rounded-lg border border-border">
+    <aside
+      className={cn(
+        'max-h-[calc(100vh-2rem)] w-[360px] overflow-y-auto rounded-lg border border-border',
+        className,
+      )}
+    >
       {/* Action toolbar */}
       <div className="flex items-stretch border-b border-border p-1">
         {DETAIL_ACTIONS.map((action) => {
           const Icon = action.icon
+          // Archive and Receipt ask for confirmation before running.
+          const confirmAction =
+            action.label in CONFIRM_COPY ? (action.label as ConfirmableAction) : null
           return (
             <Button
               key={action.label}
               variant="ghost"
               className="h-auto flex-1 flex-col gap-1 py-1 text-[10px] font-normal text-muted-foreground [&_svg]:size-5"
+              onClick={() => {
+                if (confirmAction) {
+                  requestConfirm({
+                    action: confirmAction,
+                    orderId: order.id,
+                    customerEmail: order.customer.email,
+                    onConfirm: () => {},
+                  })
+                } else if (action.label === 'Copy') {
+                  toast.success('Order copied')
+                }
+              }}
             >
               <Icon className="size-5" />
               {action.label}
             </Button>
           )
         })}
-        <Button
-          variant="ghost"
-          onClick={onClose}
-          aria-label="Close"
-          className="h-auto flex-1 flex-col gap-1 py-2 text-xs font-normal text-muted-foreground"
-        >
-          <X className="size-5" />
-          Close
-        </Button>
+        {hideClose ? null : (
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            aria-label="Close"
+            className="h-auto flex-1 flex-col gap-1 py-2 text-xs font-normal text-muted-foreground"
+          >
+            <X className="size-5" />
+            Close
+          </Button>
+        )}
       </div>
 
       {/* Header */}
       <div className="space-y-4 border-b border-border p-4">
-        <div className="flex items-center justify-between gap-2">
-          <TypographyH4>{order.id}</TypographyH4>
-          <StatusPill
-            status={order.status}
-            category={getStatusCategory(order.payment)}
-            onChange={(status) => onStatusChange(order.id, status)}
-          />
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        {hideTitle ? null : (
+          <div className="flex items-center justify-between gap-2">
+            <TypographyH4>{order.id}</TypographyH4>
+            <StatusPill
+              status={order.status}
+              category={getStatusCategory(order.payment)}
+              onChange={(status) => onStatusChange(order.id, status)}
+              orderId={order.id}
+              customerEmail={order.customer.email}
+            />
+          </div>
+        )}
+        <div className="flex flex-col items-start gap-1 text-sm text-muted-foreground md:flex-row md:items-center md:gap-2">
           <span className="flex items-center gap-1">
             <img src={CHANNEL_ICON_SRC[order.channel]} alt="" className="size-5" />
             {order.channel}
           </span>
-          <span aria-hidden className="size-1 rounded-full bg-muted-foreground/40" />
+          <span aria-hidden className="hidden size-1 rounded-full bg-muted-foreground/40 md:block" />
           <span>{formatDateTime(order.orderedAt)}</span>
         </div>
       </div>
@@ -1154,7 +1423,7 @@ function OrderDetailPane({
               />
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="font-medium text-foreground">
+                  <p className="text-sm font-medium text-foreground md:text-base">
                     {item.qty}x {item.name}
                   </p>
                   <p className="shrink-0 text-sm font-normal text-muted-foreground">
@@ -1204,7 +1473,7 @@ function OrderDetailPane({
                 </div>
               ) : null}
             </div>
-            <div className="flex justify-between text-base font-medium text-foreground">
+            <div className="flex justify-between text-sm font-medium text-foreground md:text-base">
               <span>Total</span>
               <span>{formatCurrency(total)}</span>
             </div>
@@ -1254,7 +1523,17 @@ function OrderDetailPane({
             </DetailRow>
           ) : null}
           {!hasPaymentLink && order.payment.method === 'Admin added' ? (
-            <Button variant="outline" className="h-10 w-full">
+            <Button
+              variant="outline"
+              className="h-10 w-full"
+              onClick={() =>
+                requestConfirm({
+                  action: 'Create payment link',
+                  orderId: order.id,
+                  onConfirm: () => {},
+                })
+              }
+            >
               <CircleDollarSign className="size-4" />
               Create payment link
             </Button>
@@ -1468,6 +1747,8 @@ function getOrderColumns(
           status={row.original.status}
           category={getStatusCategory(row.original.payment)}
           onChange={(status) => onStatusChange(row.original.id, status)}
+          orderId={row.original.id}
+          customerEmail={row.original.customer.email}
         />
       </div>
     ),
@@ -1489,9 +1770,72 @@ function isSameDay(a?: Date, b?: Date) {
   )
 }
 
+function OrdersActionsMenu({
+  selectedCount,
+  triggerClassName,
+}: {
+  selectedCount: number
+  triggerClassName?: string
+}) {
+  const requestConfirm = useConfirmAction()
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" className={cn('h-10 px-3', triggerClassName)}>
+          Actions
+          {selectedCount > 0 ? (
+            <Badge className="ml-0.5 h-5 min-w-5 justify-center px-1 tabular-nums">
+              {selectedCount}
+            </Badge>
+          ) : (
+            <ChevronDown className="size-4 text-muted-foreground" />
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        {ACTION_GROUPS.map((group, groupIndex) => (
+          <React.Fragment key={group[0].label}>
+            {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
+            {group.map((action) => {
+              const Icon = action.icon
+              return (
+                <DropdownMenuItem
+                  key={action.label}
+                  disabled={isActionDisabled(action.label, selectedCount)}
+                  onSelect={
+                    action.label === 'Archive'
+                      ? () => requestConfirm({ action: 'Archive', onConfirm: () => {} })
+                      : action.label === 'Copy'
+                        ? () =>
+                            toast.success(selectedCount > 1 ? 'Orders copied' : 'Order copied')
+                        : action.label === 'Mark as Fulfilled'
+                          ? () =>
+                              toast.success(
+                                selectedCount > 1
+                                  ? 'Orders marked as fulfilled'
+                                  : 'Order marked as fulfilled',
+                              )
+                          : undefined
+                  }
+                >
+                  <Icon className="size-4" />
+                  {action.label}
+                </DropdownMenuItem>
+              )
+            })}
+          </React.Fragment>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 export function AdminOrdersAllPage() {
   const [searching, setSearching] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState('')
+  const [mobileSearchOpen, setMobileSearchOpen] = React.useState(false)
+  const [selectMode, setSelectMode] = React.useState(false)
+  const [filtersOpen, setFiltersOpen] = React.useState(false)
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const selectedCount = Object.keys(rowSelection).length
 
@@ -1561,6 +1905,16 @@ export function AdminOrdersAllPage() {
     setDateRange(undefined)
   }
 
+  // Number of filters currently narrowing the results, used to badge the
+  // Filters button. "Active" is the default state so it only counts when changed.
+  const activeFilterCount = [
+    channel !== null,
+    fulfillmentType !== null,
+    statusFilter !== null,
+    Boolean(dateRange?.from),
+    activeFilter !== 'Active',
+  ].filter(Boolean).length
+
   function applyCard(label: string) {
     resetFilters()
     if (label === 'For today') {
@@ -1597,10 +1951,11 @@ export function AdminOrdersAllPage() {
   }
 
   return (
+    <ConfirmActionProvider>
     <div className="flex w-full min-w-0 flex-col gap-6">
       <TypographyH3>All Orders</TypographyH3>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {ORDER_STATS.map((stat) => (
           <Card
             key={stat.label}
@@ -1614,13 +1969,13 @@ export function AdminOrdersAllPage() {
               }
             }}
             className={cn(
-              'cursor-pointer shadow-none transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'cursor-pointer py-4 shadow-none transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:py-6',
               activeCard === stat.label && 'border-foreground',
             )}
           >
-            <CardHeader>
+            <CardHeader className="px-4 md:px-6">
               <CardDescription>{stat.label}</CardDescription>
-              <CardTitle className="text-3xl font-semibold tabular-nums">
+              <CardTitle className="text-2xl font-semibold tabular-nums md:text-3xl">
                 {stat.count.toLocaleString()}
               </CardTitle>
             </CardHeader>
@@ -1628,8 +1983,158 @@ export function AdminOrdersAllPage() {
         ))}
       </div>
 
-      {/* Filters + actions toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Mobile toolbar: search on its own row, then equal-width Filters /
+          Actions / Add order. Filters are collapsed into a dialog. */}
+      <div className="flex flex-col gap-4 md:hidden">
+        {mobileSearchOpen ? (
+          <InputGroup className="h-10 w-full">
+            <InputGroupAddon>
+              <Search className="size-4" />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search order id, customer info"
+              autoFocus
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+            <InputGroupAddon className="pr-1">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Dismiss search"
+                onClick={() => {
+                  setSearchQuery('')
+                  setMobileSearchOpen(false)
+                }}
+              >
+                <X className="size-4 text-muted-foreground" />
+              </Button>
+            </InputGroupAddon>
+          </InputGroup>
+        ) : (
+          <div className="flex w-full items-center justify-between">
+            <Button
+              variant="ghost"
+              className="h-10 px-3"
+              disabled={selectMode}
+              onClick={() => setMobileSearchOpen(true)}
+            >
+              <Search className="size-4 text-muted-foreground" />
+              Search
+            </Button>
+            <Button
+              variant="ghost"
+              className="h-10 px-3"
+              onClick={() => {
+                if (selectMode) {
+                  // Leaving select mode discards the current selection.
+                  setRowSelection({})
+                  setSelectMode(false)
+                } else {
+                  // Entering select mode collapses any open order detail.
+                  setSelectedOrderId(null)
+                  setSelectMode(true)
+                }
+              }}
+            >
+              {selectMode ? (
+                'Cancel'
+              ) : (
+                <>
+                  <SquareDashed className="size-4 text-muted-foreground" />
+                  Select
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        <div className="flex w-full items-center gap-2">
+          <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="h-10 flex-1 px-3" disabled={selectMode}>
+                <SlidersHorizontal className="size-4 text-muted-foreground" />
+                Filters
+                {activeFilterCount > 0 ? (
+                  <Badge className="ml-0.5 h-5 min-w-5 justify-center px-1 tabular-nums">
+                    {activeFilterCount}
+                  </Badge>
+                ) : null}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Filters</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-3">
+                <SelectFilter
+                  label="Channel"
+                  options={CHANNEL_OPTIONS}
+                  value={channel}
+                  onChange={setChannel}
+                  className="w-full justify-start"
+                  contentClassName="w-(--radix-dropdown-menu-trigger-width)"
+                />
+                <SelectFilter
+                  label="Fulfillment type"
+                  options={FULFILLMENT_TYPE_OPTIONS}
+                  value={fulfillmentType}
+                  onChange={setFulfillmentType}
+                  className="w-full justify-start"
+                  contentClassName="w-(--radix-dropdown-menu-trigger-width)"
+                />
+                <DatesFilter
+                  field={dateField}
+                  onFieldChange={setDateField}
+                  appliedRange={dateRange}
+                  onApply={setDateRange}
+                  className="w-full justify-start"
+                  contentClassName="w-(--radix-popover-trigger-width)"
+                />
+                <SelectFilter
+                  label="Status"
+                  options={STATUS_OPTIONS}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  className="w-full justify-start"
+                  contentClassName="w-(--radix-dropdown-menu-trigger-width)"
+                />
+                <ActiveFilter
+                  value={activeFilter}
+                  onChange={setActiveFilter}
+                  className="w-full justify-start"
+                  contentClassName="w-(--radix-dropdown-menu-trigger-width)"
+                />
+              </div>
+              <DialogFooter className="flex-row gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    resetFilters()
+                    setFiltersOpen(false)
+                  }}
+                >
+                  Clear
+                </Button>
+                <Button className="flex-1" onClick={() => setFiltersOpen(false)}>
+                  Done
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <OrdersActionsMenu selectedCount={selectedCount} triggerClassName="flex-1" />
+
+          <Button className="h-10 flex-1 px-3">
+            <Plus className="size-4" />
+            Add order
+          </Button>
+        </div>
+      </div>
+
+      {/* Desktop toolbar: inline filters with a toggleable search field. */}
+      <div className="hidden flex-wrap items-center gap-2 md:flex">
         {searching ? (
           <InputGroup className="h-10 w-auto max-w-[400px] flex-1">
             <InputGroupAddon>
@@ -1698,38 +2203,7 @@ export function AdminOrdersAllPage() {
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-10 px-3">
-                Actions
-                {selectedCount > 0 ? (
-                  <span className="ml-0.5 rounded-full bg-foreground px-1.5 text-xs font-medium text-background">
-                    {selectedCount}
-                  </span>
-                ) : null}
-                <ChevronDown className="size-4 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {ACTION_GROUPS.map((group, groupIndex) => (
-                <React.Fragment key={group[0].label}>
-                  {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
-                  {group.map((action) => {
-                    const Icon = action.icon
-                    return (
-                      <DropdownMenuItem
-                        key={action.label}
-                        disabled={isActionDisabled(action.label, selectedCount)}
-                      >
-                        <Icon className="size-4" />
-                        {action.label}
-                      </DropdownMenuItem>
-                    )
-                  })}
-                </React.Fragment>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <OrdersActionsMenu selectedCount={selectedCount} />
 
           <Button className="h-10 px-3">
             <Plus className="size-4" />
@@ -1738,8 +2212,123 @@ export function AdminOrdersAllPage() {
         </div>
       </div>
 
-      {/* Orders data table + detail side pane */}
-      <div className="flex">
+      {/* Mobile: orders as a card list, with the detail pane expanding below
+          the tapped card. Tapping the same card again collapses it. */}
+      <div className="-mx-4 flex flex-col divide-y divide-border sm:-mx-6 md:hidden">
+        {filteredOrders.map((order) => {
+          const expanded = order.id === selectedOrderId
+          const FulfillmentIcon = order.fulfillment.icon
+          const isSelected = Boolean(rowSelection[order.id])
+          const toggleSelected = () =>
+            setRowSelection((prev) => {
+              const next = { ...prev }
+              if (next[order.id]) {
+                delete next[order.id]
+              } else {
+                next[order.id] = true
+              }
+              return next
+            })
+          const handleActivate = () => {
+            if (Date.now() < suppressRowClickUntil.current) return
+            if (selectMode) {
+              toggleSelected()
+            } else {
+              setSelectedOrderId(expanded ? null : order.id)
+            }
+          }
+          return (
+            <div key={order.id}>
+              <div
+                role="button"
+                tabIndex={0}
+                aria-expanded={selectMode ? undefined : expanded}
+                aria-pressed={selectMode ? isSelected : undefined}
+                onClick={handleActivate}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    handleActivate()
+                  }
+                }}
+                className="flex w-full flex-col gap-1 px-4 py-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-6"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <img
+                      src={CHANNEL_ICON_SRC[order.channel]}
+                      alt={order.channel}
+                      className="size-6 shrink-0"
+                    />
+                    <p className="text-sm font-semibold text-foreground">{order.id}</p>
+                  </div>
+                  {/* Stop propagation so changing status doesn't toggle the card. */}
+                  <span onClick={(event) => event.stopPropagation()}>
+                    <StatusPill
+                      status={order.status}
+                      category={getStatusCategory(order.payment)}
+                      onChange={(status) => handleStatusChange(order.id, status)}
+                      orderId={order.id}
+                      customerEmail={order.customer.email}
+                      className="h-9 w-auto text-xs"
+                      iconClassName="size-4"
+                    />
+                  </span>
+                </div>
+                {order.customer.name ? (
+                  <CustomerDetails customer={order.customer} />
+                ) : null}
+                <p className="text-sm text-muted-foreground">
+                  {order.items.join(', ')}
+                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-sm text-foreground">
+                    <FulfillmentIcon className="size-4 shrink-0" />
+                    <span>
+                      {formatDate(order.fulfillAt)} · {formatTime(order.fulfillAt)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-foreground">
+                      {formatCurrency(order.total)}
+                    </p>
+                    {selectMode ? (
+                      <Checkbox
+                        checked={isSelected}
+                        aria-hidden
+                        tabIndex={-1}
+                        className="pointer-events-none size-4 shrink-0"
+                      />
+                    ) : (
+                      <ChevronDown
+                        className={cn(
+                          'size-4 shrink-0 text-muted-foreground transition-transform',
+                          !expanded && '-rotate-90',
+                        )}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+              {expanded ? (
+                <div className="px-4 pb-4 sm:px-6">
+                  <OrderDetailPane
+                    order={order}
+                    onClose={() => setSelectedOrderId(null)}
+                    onStatusChange={handleStatusChange}
+                    hideTitle
+                    hideClose
+                    className="max-h-none w-full overflow-visible rounded-lg border border-border bg-muted/50"
+                  />
+                </div>
+              ) : null}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Desktop: orders data table + detail side pane */}
+      <div className="hidden md:flex">
         <div className="min-w-0 flex-1">
           <DataTable
             columns={columns}
@@ -1773,5 +2362,6 @@ export function AdminOrdersAllPage() {
         </div>
       </div>
     </div>
+    </ConfirmActionProvider>
   )
 }

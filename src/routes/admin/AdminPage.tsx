@@ -1,6 +1,7 @@
 import { AppSidebar } from './components/app-sidebar'
 import { MobileBottomNav } from './components/mobile-bottom-nav'
 import { MobileHeader } from './components/mobile-header'
+import { MobileSectionMenu } from './components/mobile-section-menu'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -62,6 +63,8 @@ export function AdminPage({ pathname }: AdminPageProps) {
               </h1>
             </header>
           ) : null}
+
+          <MobileSectionMenu pathname={activeRoute.path} />
 
           <Page />
         </section>
