@@ -17,6 +17,7 @@ import {
   Gift,
   Info,
   Link2,
+  Loader2,
   Mail,
   MapPin,
   Pencil,
@@ -92,6 +93,19 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+  FieldTitle,
+} from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -202,9 +216,11 @@ type ConfirmableAction =
   | 'Archive'
   | 'Receipt'
   | 'Create payment link'
+  | 'Export for Lalamove'
 
-// Per-action context (order id, customer email) used to fill in the dialog copy.
-type ConfirmContext = { orderId?: string; customerEmail?: string }
+// Per-action context (order id, customer email, count) used to fill in the
+// dialog copy.
+type ConfirmContext = { orderId?: string; customerEmail?: string; count?: number }
 
 const CONFIRM_COPY: Record<
   ConfirmableAction,
@@ -264,6 +280,15 @@ const CONFIRM_COPY: Record<
     cancelLabel: 'Cancel',
     confirmLabel: 'Create link',
     toast: 'Payment link created',
+  },
+  'Export for Lalamove': {
+    title: (ctx) => `Export orders (${ctx.count ?? 0})?`,
+    description: () => [
+      'This will download delivery addresses as a CSV file that can be imported into Lalamove to book deliveries',
+    ],
+    cancelLabel: 'Cancel',
+    confirmLabel: 'Export',
+    toast: 'Orders exported',
   },
 }
 
@@ -896,12 +921,117 @@ function DatesFilter({
   )
 }
 
+// Refund dialog for automated-payment orders. The amount defaults to the order
+// total and can be edited or reset via "Refund total"; an optional switch also
+// cancels the order (restocking inventory).
+function RefundDialog({
+  open,
+  onOpenChange,
+  paymentMethod,
+  total,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  paymentMethod: PaymentMethod
+  total: number
+}) {
+  const [amount, setAmount] = React.useState('')
+  const [cancelOrder, setCancelOrder] = React.useState(false)
+
+  // Reset the form whenever the dialog is opened for a (possibly different) order.
+  React.useEffect(() => {
+    if (open) {
+      setAmount('')
+      setCancelOrder(false)
+    }
+  }, [open])
+
+  const numericAmount = Number.parseFloat(amount) || 0
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="[&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader>
+          <DialogTitle asChild>
+            <TypographyH4 className="text-center font-semibold">
+              Refund to {paymentMethod}
+            </TypographyH4>
+          </DialogTitle>
+        </DialogHeader>
+        <FieldGroup className="gap-6">
+          <div className="relative">
+            <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-2xl text-muted-foreground">
+              $
+            </span>
+            <Input
+              inputSize="xl"
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              className="pl-9 font-semibold tabular-nums"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Order total: {formatCurrency(total)}
+            </span>
+            <Button
+              variant="link"
+              className="h-auto p-0"
+              onClick={() => setAmount(total.toFixed(2))}
+            >
+              Refund total
+            </Button>
+          </div>
+          <FieldLabel
+            htmlFor="refund-cancel-order"
+            className="transition-colors hover:bg-muted/50"
+          >
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldTitle>Cancel order</FieldTitle>
+                <FieldDescription>
+                  Inventory will be restocked and order will be excluded from order summary
+                </FieldDescription>
+              </FieldContent>
+              <Switch
+                id="refund-cancel-order"
+                checked={cancelOrder}
+                onCheckedChange={setCancelOrder}
+              />
+            </Field>
+          </FieldLabel>
+        </FieldGroup>
+        <DialogFooter className="flex-row">
+          <Button variant="outline" className="h-10 flex-1" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            className="h-10 flex-1"
+            disabled={numericAmount <= 0}
+            onClick={() => {
+              onOpenChange(false)
+              toast.success(`Refunded ${formatCurrency(numericAmount)}`)
+            }}
+          >
+            Refund {formatCurrency(numericAmount)}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function StatusPill({
   status,
   category,
   onChange,
   orderId,
   customerEmail,
+  paymentMethod,
+  total,
   className,
   iconClassName,
 }: {
@@ -910,10 +1040,13 @@ function StatusPill({
   onChange: (status: OrderStatus) => void
   orderId?: string
   customerEmail?: string
+  paymentMethod: PaymentMethod
+  total: number
   className?: string
   iconClassName?: string
 }) {
   const requestConfirm = useConfirmAction()
+  const [refundOpen, setRefundOpen] = React.useState(false)
   const { statuses, actions } = STATUS_CATEGORY_CONFIG[category]
 
   // Pending and Rejected orders get a restricted menu of transitions; every
@@ -948,6 +1081,7 @@ function StatusPill({
   const TriggerIcon = STATUS_ICONS[status]
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
@@ -995,7 +1129,9 @@ function StatusPill({
               onSelect={
                 action.label === 'Archive'
                   ? () => requestConfirm({ action: 'Archive', orderId, onConfirm: () => {} })
-                  : undefined
+                  : action.label === 'Refund'
+                    ? () => setRefundOpen(true)
+                    : undefined
               }
             >
               <Icon className="size-4 text-muted-foreground" />
@@ -1005,6 +1141,13 @@ function StatusPill({
         })}
       </DropdownMenuContent>
     </DropdownMenu>
+    <RefundDialog
+      open={refundOpen}
+      onOpenChange={setRefundOpen}
+      paymentMethod={paymentMethod}
+      total={total}
+    />
+    </>
   )
 }
 
@@ -1364,6 +1507,8 @@ function OrderDetailPane({
               onChange={(status) => onStatusChange(order.id, status)}
               orderId={order.id}
               customerEmail={order.customer.email}
+              paymentMethod={order.payment.method}
+              total={order.total}
             />
           </div>
         )}
@@ -1749,6 +1894,8 @@ function getOrderColumns(
           onChange={(status) => onStatusChange(row.original.id, status)}
           orderId={row.original.id}
           customerEmail={row.original.customer.email}
+          paymentMethod={row.original.payment.method}
+          total={row.original.total}
         />
       </div>
     ),
@@ -1770,15 +1917,160 @@ function isSameDay(a?: Date, b?: Date) {
   )
 }
 
+type ProductLayout = 'per-column' | 'per-row' | 'one-cell'
+
+// Options dialog for the "Export to CSV" action. Two choice-card switches plus a
+// radio field controlling how product columns are laid out in the export.
+function ExportCsvDialog({
+  open,
+  onOpenChange,
+  count,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  count: number
+}) {
+  const [bundleSeparately, setBundleSeparately] = React.useState(false)
+  const [includeStatus, setIncludeStatus] = React.useState(false)
+  const [productLayout, setProductLayout] = React.useState<ProductLayout>('per-column')
+  const [exporting, setExporting] = React.useState(false)
+
+  function handleOpenChange(next: boolean) {
+    onOpenChange(next)
+    // Reset back to the options form once the dialog has closed.
+    if (!next) setExporting(false)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="[&_[data-slot=dialog-close]]:size-10">
+        {exporting ? (
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <Loader2 className="size-8 animate-spin text-primary" />
+            <div className="flex flex-col gap-2">
+              <DialogTitle asChild>
+                <TypographyH4 className="font-semibold">Exporting {count} orders</TypographyH4>
+              </DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                We'll email you when it is ready. You can close this and come back later to
+                download.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+        <DialogHeader>
+          <DialogTitle asChild>
+            <TypographyH4 className="text-center font-semibold">Export orders ({count})</TypographyH4>
+          </DialogTitle>
+        </DialogHeader>
+        <FieldGroup className="gap-6">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-foreground">
+            <div className="flex items-center gap-2">
+              <FileText className="size-4 shrink-0" />
+              <span className="text-sm font-medium">
+                Download your previous CSV export
+              </span>
+            </div>
+            <Button
+              size="icon"
+              className="size-8 shrink-0"
+              aria-label="Download previous export"
+            >
+              <Download className="size-4" />
+            </Button>
+          </div>
+          <FieldLabel
+            htmlFor="export-bundle-separately"
+            className="transition-colors hover:bg-muted/50"
+          >
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldTitle>Show bundle products separately</FieldTitle>
+              </FieldContent>
+              <Switch
+                id="export-bundle-separately"
+                checked={bundleSeparately}
+                onCheckedChange={setBundleSeparately}
+              />
+            </Field>
+          </FieldLabel>
+          <FieldLabel
+            htmlFor="export-include-status"
+            className="transition-colors hover:bg-muted/50"
+          >
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldTitle>Include order status</FieldTitle>
+              </FieldContent>
+              <Switch
+                id="export-include-status"
+                checked={includeStatus}
+                onCheckedChange={setIncludeStatus}
+              />
+            </Field>
+          </FieldLabel>
+          <FieldSet>
+            <FieldLegend variant="label">Show products</FieldLegend>
+            <RadioGroup
+              value={productLayout}
+              onValueChange={(value) => setProductLayout(value as ProductLayout)}
+              className="gap-0 divide-y overflow-hidden rounded-lg border"
+            >
+              <FieldLabel
+                htmlFor="products-per-column"
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 font-normal transition-colors hover:bg-muted/50"
+              >
+                One product per column
+                <RadioGroupItem value="per-column" id="products-per-column" />
+              </FieldLabel>
+              <FieldLabel
+                htmlFor="products-per-row"
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 font-normal transition-colors hover:bg-muted/50"
+              >
+                One product per row
+                <RadioGroupItem value="per-row" id="products-per-row" />
+              </FieldLabel>
+              <FieldLabel
+                htmlFor="products-one-cell"
+                className="flex w-full items-center justify-between gap-3 px-4 py-3 font-normal transition-colors hover:bg-muted/50"
+              >
+                All products in one cell
+                <RadioGroupItem value="one-cell" id="products-one-cell" />
+              </FieldLabel>
+            </RadioGroup>
+          </FieldSet>
+        </FieldGroup>
+        <DialogFooter className="flex-row">
+          <Button variant="outline" className="h-10 flex-1" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button className="h-10 flex-1" onClick={() => setExporting(true)}>
+            Export
+          </Button>
+        </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function OrdersActionsMenu({
   selectedCount,
+  totalCount,
   triggerClassName,
 }: {
   selectedCount: number
+  totalCount: number
   triggerClassName?: string
 }) {
   const requestConfirm = useConfirmAction()
+  const [exportCsvOpen, setExportCsvOpen] = React.useState(false)
+  // With no selection, every order is exported.
+  const exportCount = selectedCount > 0 ? selectedCount : totalCount
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className={cn('h-10 px-3', triggerClassName)}>
@@ -1805,6 +2097,15 @@ function OrdersActionsMenu({
                   onSelect={
                     action.label === 'Archive'
                       ? () => requestConfirm({ action: 'Archive', onConfirm: () => {} })
+                      : action.label === 'Export for Lalamove'
+                        ? () =>
+                            requestConfirm({
+                              action: 'Export for Lalamove',
+                              count: exportCount,
+                              onConfirm: () => {},
+                            })
+                      : action.label === 'Export to CSV'
+                        ? () => setExportCsvOpen(true)
                       : action.label === 'Copy'
                         ? () =>
                             toast.success(selectedCount > 1 ? 'Orders copied' : 'Order copied')
@@ -1827,6 +2128,8 @@ function OrdersActionsMenu({
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
+    <ExportCsvDialog open={exportCsvOpen} onOpenChange={setExportCsvOpen} count={exportCount} />
+    </>
   )
 }
 
@@ -2124,7 +2427,11 @@ export function AdminOrdersAllPage() {
             </DialogContent>
           </Dialog>
 
-          <OrdersActionsMenu selectedCount={selectedCount} triggerClassName="flex-1" />
+          <OrdersActionsMenu
+            selectedCount={selectedCount}
+            totalCount={filteredOrders.length}
+            triggerClassName="flex-1"
+          />
 
           <Button className="h-10 flex-1 px-3">
             <Plus className="size-4" />
@@ -2203,7 +2510,7 @@ export function AdminOrdersAllPage() {
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          <OrdersActionsMenu selectedCount={selectedCount} />
+          <OrdersActionsMenu selectedCount={selectedCount} totalCount={filteredOrders.length} />
 
           <Button className="h-10 px-3">
             <Plus className="size-4" />
@@ -2270,6 +2577,8 @@ export function AdminOrdersAllPage() {
                       onChange={(status) => handleStatusChange(order.id, status)}
                       orderId={order.id}
                       customerEmail={order.customer.email}
+                      paymentMethod={order.payment.method}
+                      total={order.total}
                       className="h-9 w-auto text-xs"
                       iconClassName="size-4"
                     />
