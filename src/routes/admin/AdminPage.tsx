@@ -25,16 +25,25 @@ export function AdminPage({ pathname }: AdminPageProps) {
   }
 
   const Page = activeRoute.component
+  // The order create/edit form provides its own header (back button + title) and
+  // a wider top padding, so the shared chrome is suppressed for it.
+  const isOrderFormPage =
+    activeRoute.path === '/admin/orders/edit' ||
+    activeRoute.path === '/admin/orders/new'
   const showDesktopHeader =
     activeRoute.path !== '/admin' &&
     activeRoute.path !== '/admin/apps' &&
     activeRoute.path !== '/admin/orders/all' &&
-    activeRoute.path !== '/admin/orders/summary'
+    activeRoute.path !== '/admin/orders/summary' &&
+    activeRoute.path !== '/admin/orders/reviews' &&
+    !isOrderFormPage
   const showPageTitle =
     activeRoute.path !== '/admin' &&
     activeRoute.path !== '/admin/apps' &&
     activeRoute.path !== '/admin/orders/all' &&
-    activeRoute.path !== '/admin/orders/summary'
+    activeRoute.path !== '/admin/orders/summary' &&
+    activeRoute.path !== '/admin/orders/reviews' &&
+    !isOrderFormPage
 
   return (
     <SidebarProvider open onOpenChange={() => {}}>
@@ -57,7 +66,13 @@ export function AdminPage({ pathname }: AdminPageProps) {
           </header>
         ) : null}
 
-        <section className="flex min-w-0 flex-1 flex-col gap-6 p-4 pt-5 pb-24 sm:px-6 sm:pt-5 sm:pb-24 md:pb-6 lg:px-8 lg:pt-5 lg:pb-8">
+        <section
+          className={`flex min-w-0 flex-1 flex-col gap-6 p-4 pb-24 sm:px-6 sm:pb-24 md:pb-6 lg:px-8 lg:pb-8 ${
+            isOrderFormPage
+              ? 'pt-8 sm:pt-8 lg:pt-8'
+              : 'pt-5 sm:pt-5 lg:pt-5'
+          }`}
+        >
           {showPageTitle ? (
             <header>
               <h1 className="text-2xl font-semibold tracking-normal text-neutral-900">
@@ -71,7 +86,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
           <Page />
         </section>
       </SidebarInset>
-      <MobileBottomNav pathname={activeRoute.path} />
+      {isOrderFormPage ? null : <MobileBottomNav pathname={activeRoute.path} />}
     </SidebarProvider>
   )
 }

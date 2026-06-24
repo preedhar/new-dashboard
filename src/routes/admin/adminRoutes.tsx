@@ -28,7 +28,9 @@ import {
 
 import { AdminCustomersPage } from './pages/AdminCustomersPage'
 import { AdminOrdersAllPage } from './pages/AdminOrdersAllPage'
+import { AdminOrderEditPage } from './pages/AdminOrderEditPage'
 import { AdminOrdersSummaryPage } from './pages/AdminOrdersSummaryPage'
+import { AdminOrdersReviewsPage } from './pages/AdminOrdersReviewsPage'
 import { AdminAppsPage } from './pages/AdminAppsPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
 import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
@@ -175,6 +177,20 @@ export const adminRoutes: AdminRoute[] = [
     component: AdminOrdersSummaryPage,
   },
   {
+    path: '/admin/orders/edit',
+    label: 'Edit Order',
+    title: 'Edit Order',
+    icon: ReceiptText,
+    component: () => <AdminOrderEditPage />,
+  },
+  {
+    path: '/admin/orders/new',
+    label: 'Add Order',
+    title: 'Add Order',
+    icon: ReceiptText,
+    component: () => <AdminOrderEditPage title="Add order" />,
+  },
+  {
     path: '/admin/orders/deliveries',
     label: 'Deliveries',
     title: 'Deliveries',
@@ -188,11 +204,8 @@ export const adminRoutes: AdminRoute[] = [
     path: '/admin/orders/reviews',
     label: 'Reviews',
     title: 'Reviews',
-    icon: ReceiptText,
-    component: createAdminPlaceholder(
-      'Reviews',
-      'A future workspace for customer order reviews and post-purchase feedback.',
-    ),
+    icon: Star,
+    component: AdminOrdersReviewsPage,
   },
   {
     path: '/admin/orders/analytics',

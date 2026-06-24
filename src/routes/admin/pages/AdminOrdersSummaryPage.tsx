@@ -219,7 +219,7 @@ export function AdminOrdersSummaryPage() {
     <div className="flex w-full min-w-0 flex-col gap-4 md:gap-6">
       <div className="flex flex-col gap-2">
         <Breadcrumb className="md:hidden">
-          <BreadcrumbList className="justify-center md:justify-start">
+          <BreadcrumbList className="justify-start">
             <BreadcrumbItem>
               <BreadcrumbLink href="/admin/orders/all">Orders</BreadcrumbLink>
             </BreadcrumbItem>
@@ -232,7 +232,7 @@ export function AdminOrdersSummaryPage() {
 
         <div className="flex items-center md:block">
           <Button
-            variant="ghost"
+            variant="outline"
             className="h-10 w-10 shrink-0 px-0 md:hidden"
             aria-label="Go back"
             onClick={() => window.history.back()}

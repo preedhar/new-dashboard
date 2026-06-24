@@ -1,0 +1,11 @@
+#:schema https://conductor.build/schemas/settings.repo.schema.json
+
+[scripts]
+# Install dependencies from the committed package-lock.json (npm is the project's package manager).
+setup = "npm install"
+
+# Start the Vite dev server on this workspace's assigned port so workspaces never collide.
+run = "npm run dev -- --port $CONDUCTOR_PORT"
+
+# Each workspace runs on its own CONDUCTOR_PORT, so multiple dev servers are safe at once.
+run_mode = "concurrent"
