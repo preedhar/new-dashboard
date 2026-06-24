@@ -809,7 +809,7 @@ function rangesEqual(a?: DateRange, b?: DateRange) {
   )
 }
 
-function DatesFilter({
+export function DatesFilter({
   field,
   onFieldChange,
   appliedRange,
@@ -2255,8 +2255,8 @@ export function AdminOrdersAllPage() {
 
   return (
     <ConfirmActionProvider>
-    <div className="flex w-full min-w-0 flex-col gap-6">
-      <TypographyH3>All Orders</TypographyH3>
+    <div className="flex w-full min-w-0 flex-col gap-4 md:gap-6">
+      <TypographyH3 className="text-center md:text-left">All Orders</TypographyH3>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {ORDER_STATS.map((stat) => (

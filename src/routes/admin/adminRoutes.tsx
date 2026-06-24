@@ -28,6 +28,7 @@ import {
 
 import { AdminCustomersPage } from './pages/AdminCustomersPage'
 import { AdminOrdersAllPage } from './pages/AdminOrdersAllPage'
+import { AdminOrdersSummaryPage } from './pages/AdminOrdersSummaryPage'
 import { AdminAppsPage } from './pages/AdminAppsPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
 import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
@@ -171,10 +172,7 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Summary',
     title: 'Order Summary',
     icon: ReceiptText,
-    component: createAdminPlaceholder(
-      'Order Summary',
-      'A future workspace for order totals, trends, and operational snapshots.',
-    ),
+    component: AdminOrdersSummaryPage,
   },
   {
     path: '/admin/orders/deliveries',
