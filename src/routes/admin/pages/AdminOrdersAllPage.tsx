@@ -481,6 +481,12 @@ function formatCurrency(amount: number) {
   return `$${amount.toFixed(2)}`
 }
 
+// Client-side navigation to the order create form (matches the app's router).
+function navigateToAddOrder() {
+  window.history.pushState(null, '', '/admin/orders/new')
+  window.dispatchEvent(new PopStateEvent('popstate'))
+}
+
 const CHANNELS: Channel[] = ['Online Store', 'POS', 'QR Code Ordering', 'Admin Dashboard']
 
 // POS and QR Code Ordering can only be fulfilled in-store.
@@ -1473,6 +1479,9 @@ function OrderDetailPane({
                     customerEmail: order.customer.email,
                     onConfirm: () => {},
                   })
+                } else if (action.label === 'Edit') {
+                  window.history.pushState(null, '', '/admin/orders/edit')
+                  window.dispatchEvent(new PopStateEvent('popstate'))
                 } else if (action.label === 'Copy') {
                   toast.success('Order copied')
                 }
@@ -2433,7 +2442,7 @@ export function AdminOrdersAllPage() {
             triggerClassName="flex-1"
           />
 
-          <Button className="h-10 flex-1 px-3">
+          <Button className="h-10 flex-1 px-3" onClick={navigateToAddOrder}>
             <Plus className="size-4" />
             Add order
           </Button>
@@ -2512,7 +2521,7 @@ export function AdminOrdersAllPage() {
         <div className="ml-auto flex items-center gap-2">
           <OrdersActionsMenu selectedCount={selectedCount} totalCount={filteredOrders.length} />
 
-          <Button className="h-10 px-3">
+          <Button className="h-10 px-3" onClick={navigateToAddOrder}>
             <Plus className="size-4" />
             Add order
           </Button>
