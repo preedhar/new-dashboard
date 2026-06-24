@@ -181,7 +181,7 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Edit Order',
     title: 'Edit Order',
     icon: ReceiptText,
-    component: AdminOrderEditPage,
+    component: () => <AdminOrderEditPage />,
   },
   {
     path: '/admin/orders/new',
