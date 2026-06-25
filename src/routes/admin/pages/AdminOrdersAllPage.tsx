@@ -1,10 +1,12 @@
 import * as React from 'react'
 import {
   Archive,
+  ArrowLeft,
   Banknote,
   Calendar as CalendarIcon,
   Check,
   ChevronDown,
+  ChevronRight,
   CircleDollarSign,
   ClipboardList,
   CreditCard,
@@ -93,6 +95,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Kbd } from '@/components/ui/kbd'
 import {
   Field,
   FieldContent,
@@ -122,7 +125,7 @@ import {
 } from '@/components/ui/input-group'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { TypographyH3, TypographyH4, TypographyLarge } from '@/components/ui/typography'
 import type { ColumnDef, RowSelectionState } from '@tanstack/react-table'
@@ -176,6 +179,7 @@ const ACTION_GROUPS: { label: string; icon: IconComponent }[][] = [
   [
     { label: 'Edit', icon: Pencil },
     { label: 'Copy', icon: Copy },
+    { label: 'Receipt', icon: Mail },
     { label: 'Delivery', icon: LalamoveIcon },
   ],
   [
@@ -462,16 +466,17 @@ type Order = {
 }
 
 function formatDate(date: Date) {
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
+  // Only show the year when it differs from the current year.
+  if (date.getFullYear() !== new Date().getFullYear()) {
+    options.year = 'numeric'
+  }
+  return date.toLocaleDateString('en-US', options)
 }
 
 function formatTime(date: Date) {
   return date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
     hour12: true,
   })
@@ -484,6 +489,13 @@ function formatCurrency(amount: number) {
 // Client-side navigation to the order create form (matches the app's router).
 function navigateToAddOrder() {
   window.history.pushState(null, '', '/admin/orders/new')
+  window.dispatchEvent(new PopStateEvent('popstate'))
+}
+
+// Client-side navigation to a full-page order detail view. The order id rides
+// in the query string since the router matches on pathname only.
+function navigateToOrderDetail(orderId: string) {
+  window.history.pushState(null, '', `/admin/orders/detail?order=${encodeURIComponent(orderId)}`)
   window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
@@ -594,9 +606,12 @@ const ORDERS: Order[] = Array.from({ length: 40 }, (_, i) => {
     : SELECTABLE_FULFILLMENTS[(i * 3) % SELECTABLE_FULFILLMENTS.length]
   const customer = getOrderCustomer(channel, CUSTOMERS[i % CUSTOMERS.length])
 
-  // Spread orders across 2025, 2026 and 2027; fulfillment is always a few
-  // (5–25) hours after the order is placed.
-  const year = 2025 + (i % 3)
+  // The table sorts by date (newest first) with 10 rows per page, and year is
+  // the most significant part of a date. So making the first 3 orders 2027, the
+  // next 4 orders 2026 and every remaining order 2025 lands the first page as
+  // 3×2027, 4×2026, 3×2025 and leaves all later pages in 2025. Fulfillment is
+  // always a few (5–25) hours after the order, so it stays in the same year.
+  const year = i < 3 ? 2027 : i < 7 ? 2026 : 2025
   const orderedAt = new Date(year, (i * 5) % 12, 1 + ((i * 7) % 27), 8 + ((i * 5) % 12), (i * 13) % 60)
   const fulfillAt = new Date(orderedAt.getTime() + (5 + (i % 6) * 4) * 60 * 60 * 1000)
 
@@ -1086,13 +1101,23 @@ function StatusPill({
 
   const TriggerIcon = STATUS_ICONS[status]
 
+  // Pending and Approved/Paid get a colored, translucent-background treatment
+  // (like the destructive button style); every other status keeps the default
+  // secondary look.
+  let statusTriggerClass: string | undefined
+  if (status === 'Pending') {
+    statusTriggerClass = 'bg-primary/10 hover:bg-primary/20 aria-expanded:bg-primary/10'
+  } else if (status === 'Approved' || status === 'Paid') {
+    statusTriggerClass = 'bg-[#2040B0]/10 hover:bg-[#2040B0]/20 aria-expanded:bg-[#2040B0]/10'
+  }
+
   return (
     <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
-          className={cn('h-10 w-[152px] px-3 font-medium', className)}
+          variant="secondary"
+          className={cn('h-10 w-[152px] px-3 font-medium', statusTriggerClass, className)}
         >
           <TriggerIcon className={cn('size-5', iconClassName)} />
           {status}
@@ -1161,19 +1186,25 @@ function CustomerDetails({ customer }: { customer: Order['customer'] }) {
   // Phone and email are intentionally hidden here — they are shown separately
   // alongside payment info elsewhere.
   if (!customer.name) {
-    return <p className="text-sm text-muted-foreground">-</p>
+    return null
   }
 
   return <p className="text-sm text-muted-foreground">{customer.name}</p>
 }
 
 function formatDateTime(date: Date) {
-  return `${formatDate(date)} ${formatTime(date)}`
+  return `${formatDate(date)}, ${formatTime(date)}`
 }
 
 function parseLineItem(raw: string) {
   const match = raw.match(/^(\d+)x\s+(.*)$/)
   return match ? { qty: Number(match[1]), name: match[2] } : { qty: 1, name: raw }
+}
+
+// Render a raw line item ("1x Latte") as "1 Latte" — quantity without the "x".
+function formatLineItem(raw: string) {
+  const { qty, name } = parseLineItem(raw)
+  return `${qty} ${name}`
 }
 
 const DETAIL_ACTIONS: { label: string; icon: IconComponent }[] = [
@@ -1201,7 +1232,7 @@ function CollapsibleSection({
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between"
       >
-        <TypographyLarge className="text-base md:text-lg">{title}</TypographyLarge>
+        <TypographyLarge className="text-lg">{title}</TypographyLarge>
         <ChevronUp
           className={cn('size-4 text-muted-foreground transition-transform', !open && 'rotate-180')}
         />
@@ -1221,11 +1252,11 @@ function DetailRow({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex gap-3">
-      <Icon className="size-5 shrink-0 text-muted-foreground" />
+    <div className="flex gap-[18px]">
+      <Icon className="ml-1.5 size-5 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
         <p className="flex h-5 items-center text-sm text-muted-foreground">{label}</p>
-        <div className="space-y-0.5 text-sm text-foreground md:text-base">{children}</div>
+        <div className="space-y-0.5 text-base text-foreground">{children}</div>
       </div>
     </div>
   )
@@ -1397,6 +1428,8 @@ function OrderDetailPane({
   className,
   hideTitle = false,
   hideClose = false,
+  onBack,
+  stickyActions = false,
 }: {
   order: Order
   onClose: () => void
@@ -1404,6 +1437,10 @@ function OrderDetailPane({
   className?: string
   hideTitle?: boolean
   hideClose?: boolean
+  // When provided, a back button is shown before the order id in the header.
+  onBack?: () => void
+  // When true, the action toolbar sticks to the top while the pane scrolls.
+  stickyActions?: boolean
 }) {
   const requestConfirm = useConfirmAction()
   const [otherOpen, setOtherOpen] = React.useState(false)
@@ -1452,83 +1489,209 @@ function OrderDetailPane({
     { label: 'Event', at: formatDateTime(order.orderedAt) },
   ]
 
+  // The per-action toolbar (Edit / Receipt / Delivery / Copy / Archive as one
+  // horizontal bar) is disabled — these actions now live in the header "Actions"
+  // dropdown on mobile. Kept commented in case we re-enable the bar later.
+  /*
+  const actionToolbar = (
+    <div
+      className={cn(
+        'flex items-stretch border-border bg-background p-1',
+        stickyActions ? 'sticky bottom-0 z-20 h-16 border-t' : 'border-b',
+      )}
+    >
+      {DETAIL_ACTIONS.map((action) => {
+        const Icon = action.icon
+        // Archive and Receipt ask for confirmation before running.
+        const confirmAction =
+          action.label in CONFIRM_COPY ? (action.label as ConfirmableAction) : null
+        return (
+          <Button
+            key={action.label}
+            variant="ghost"
+            className="h-auto flex-1 flex-col gap-1 py-1 text-[10px] font-normal text-muted-foreground [&_svg]:size-5"
+            onClick={() => {
+              if (confirmAction) {
+                requestConfirm({
+                  action: confirmAction,
+                  orderId: order.id,
+                  customerEmail: order.customer.email,
+                  onConfirm: () => {},
+                })
+              } else if (action.label === 'Edit') {
+                window.history.pushState(null, '', '/admin/orders/edit')
+                window.dispatchEvent(new PopStateEvent('popstate'))
+              } else if (action.label === 'Copy') {
+                toast.success('Order copied')
+              }
+            }}
+          >
+            <Icon className="size-5" />
+            {action.label}
+          </Button>
+        )
+      })}
+      {hideClose ? null : (
+        <Button
+          variant="ghost"
+          onClick={onClose}
+          aria-label="Close"
+          className="h-auto flex-1 flex-col gap-1 py-2 text-xs font-normal text-muted-foreground"
+        >
+          <X className="size-5" />
+          Close
+        </Button>
+      )}
+    </div>
+  )
+  */
+
   return (
     <aside
       className={cn(
-        'max-h-[calc(100vh-2rem)] w-[360px] overflow-y-auto rounded-lg border border-border',
+        // Default (desktop) max height leaves room for the sticky filters/actions
+        // row above the pane (top-[72px]) plus a 16px bottom margin. The
+        // full-page mobile view overrides this with max-h-none.
+        'max-h-[calc(100vh-88px)] w-[360px] overflow-y-auto rounded-lg border border-border',
         className,
       )}
     >
-      {/* Action toolbar */}
-      <div className="flex items-stretch border-b border-border p-1">
-        {DETAIL_ACTIONS.map((action) => {
-          const Icon = action.icon
-          // Archive and Receipt ask for confirmation before running.
-          const confirmAction =
-            action.label in CONFIRM_COPY ? (action.label as ConfirmableAction) : null
-          return (
-            <Button
-              key={action.label}
-              variant="ghost"
-              className="h-auto flex-1 flex-col gap-1 py-1 text-[10px] font-normal text-muted-foreground [&_svg]:size-5"
-              onClick={() => {
-                if (confirmAction) {
-                  requestConfirm({
-                    action: confirmAction,
-                    orderId: order.id,
-                    customerEmail: order.customer.email,
-                    onConfirm: () => {},
-                  })
-                } else if (action.label === 'Edit') {
-                  window.history.pushState(null, '', '/admin/orders/edit')
-                  window.dispatchEvent(new PopStateEvent('popstate'))
-                } else if (action.label === 'Copy') {
-                  toast.success('Order copied')
-                }
-              }}
-            >
-              <Icon className="size-5" />
-              {action.label}
-            </Button>
-          )
-        })}
-        {hideClose ? null : (
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            aria-label="Close"
-            className="h-auto flex-1 flex-col gap-1 py-2 text-xs font-normal text-muted-foreground"
-          >
-            <X className="size-5" />
-            Close
-          </Button>
-        )}
-      </div>
+      {/* The action toolbar at the top of the desktop pane is disabled for now;
+          we may re-enable it later. The mobile full-page view still shows it
+          pinned to the bottom (rendered below). */}
+      {/* {stickyActions ? null : actionToolbar} */}
 
-      {/* Header */}
+      <Tabs defaultValue="order" className="gap-0">
+      {/* Header: title row + the tab switcher */}
       <div className="space-y-4 border-b border-border p-4">
-        {hideTitle ? null : (
+        {hideTitle ? null : stickyActions ? (
+          // Mobile full-page layout: a centered order id, then a row with the
+          // status dropdown and an "Actions" dropdown, each filling half the row.
+          <div className="space-y-4">
+            <div className="relative flex h-10 items-center justify-center">
+              {onBack ? (
+                <Button
+                  variant="outline"
+                  size="icon-lg"
+                  aria-label="Back to orders"
+                  className="absolute left-0 text-foreground"
+                  onClick={onBack}
+                >
+                  <ArrowLeft className="size-5" />
+                </Button>
+              ) : null}
+              <TypographyH4>{order.id}</TypographyH4>
+            </div>
+            <div className="flex items-center gap-2">
+              <StatusPill
+                status={order.status}
+                category={getStatusCategory(order.payment)}
+                onChange={(status) => onStatusChange(order.id, status)}
+                orderId={order.id}
+                customerEmail={order.customer.email}
+                paymentMethod={order.payment.method}
+                total={order.total}
+                className="w-full flex-1"
+              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="secondary" className="h-10 flex-1 px-3 font-medium">
+                    Actions
+                    <ChevronDown className="ml-auto size-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {DETAIL_ACTIONS.map((action) => {
+                    const Icon = action.icon
+                    const confirmAction =
+                      action.label in CONFIRM_COPY ? (action.label as ConfirmableAction) : null
+                    return (
+                      <DropdownMenuItem
+                        key={action.label}
+                        onSelect={
+                          confirmAction
+                            ? () =>
+                                requestConfirm({
+                                  action: confirmAction,
+                                  orderId: order.id,
+                                  customerEmail: order.customer.email,
+                                  onConfirm: () => {},
+                                })
+                            : action.label === 'Edit'
+                              ? () => {
+                                  window.history.pushState(null, '', '/admin/orders/edit')
+                                  window.dispatchEvent(new PopStateEvent('popstate'))
+                                }
+                              : action.label === 'Copy'
+                                ? () => toast.success('Order copied')
+                                : undefined
+                        }
+                      >
+                        <Icon className="size-4 text-muted-foreground" />
+                        {action.label}
+                      </DropdownMenuItem>
+                    )
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        ) : (
           <div className="flex items-center justify-between gap-2">
-            <TypographyH4>{order.id}</TypographyH4>
-            <StatusPill
-              status={order.status}
-              category={getStatusCategory(order.payment)}
-              onChange={(status) => onStatusChange(order.id, status)}
-              orderId={order.id}
-              customerEmail={order.customer.email}
-              paymentMethod={order.payment.method}
-              total={order.total}
-            />
+            <div className="flex min-w-0 items-center gap-3">
+              {onBack ? (
+                <Button
+                  variant="outline"
+                  size="icon-lg"
+                  aria-label="Back to orders"
+                  className="shrink-0 text-foreground"
+                  onClick={onBack}
+                >
+                  <ArrowLeft className="size-5" />
+                </Button>
+              ) : null}
+              <TypographyH4>{order.id}</TypographyH4>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <StatusPill
+                status={order.status}
+                category={getStatusCategory(order.payment)}
+                onChange={(status) => onStatusChange(order.id, status)}
+                orderId={order.id}
+                customerEmail={order.customer.email}
+                paymentMethod={order.payment.method}
+                total={order.total}
+              />
+              {hideClose ? null : (
+                <Button
+                  variant="secondary"
+                  size="icon-lg"
+                  aria-label="Close"
+                  className="text-muted-foreground"
+                  onClick={onClose}
+                >
+                  <X className="size-5" />
+                </Button>
+              )}
+            </div>
           </div>
         )}
-        <div className="flex flex-col items-start gap-1 text-sm text-muted-foreground md:flex-row md:items-center md:gap-2">
-          <span className="flex items-center gap-1">
-            <img src={CHANNEL_ICON_SRC[order.channel]} alt="" className="size-5" />
-            {order.channel}
-          </span>
-          <span aria-hidden className="hidden size-1 rounded-full bg-muted-foreground/40 md:block" />
-          <span>{formatDateTime(order.orderedAt)}</span>
-        </div>
+        <TabsList className="w-full">
+          <TabsTrigger value="order">Order</TabsTrigger>
+          <TabsTrigger value="customer">Customer</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
+        </TabsList>
+      </div>
+
+      <TabsContent value="order">
+      {/* Channel + ordered time */}
+      <div className="flex items-center justify-between gap-2 border-b border-border p-4 text-sm text-muted-foreground md:justify-start">
+        <span className="flex items-center gap-1">
+          <img src={CHANNEL_ICON_SRC[order.channel]} alt="" className="size-5" />
+          {order.channel}
+        </span>
+        <span aria-hidden className="hidden size-1 rounded-full bg-muted-foreground/40 md:block" />
+        <span>{formatDateTime(order.orderedAt)}</span>
       </div>
 
       {/* Fulfillment */}
@@ -1573,30 +1736,31 @@ function OrderDetailPane({
               <img
                 src={productImage}
                 alt=""
-                className="size-10 shrink-0 rounded-md object-cover"
+                className="size-8 shrink-0 rounded-md object-cover"
               />
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium text-foreground md:text-base">
-                    {item.qty}x {item.name}
+                  <p className="flex items-center gap-1.5 text-base font-medium text-foreground">
+                    {item.name}
+                    <Kbd className="text-sm text-foreground">{item.qty}</Kbd>
                   </p>
-                  <p className="shrink-0 text-sm font-normal text-muted-foreground">
+                  <p className="shrink-0 text-base font-normal text-muted-foreground">
                     {formatCurrency(prices[idx])}
                   </p>
                 </div>
                 <div className="text-sm">
                   <p className="text-muted-foreground">Special instructions:</p>
-                  <p className="text-foreground">{item.note}</p>
+                  <p className="text-muted-foreground">{item.note}</p>
                 </div>
                 <div className="text-sm">
                   <p className="text-muted-foreground">Add-ons:</p>
-                  <p className="text-foreground">{item.addOns.join(', ')}</p>
+                  <p className="text-muted-foreground">{item.addOns.join(', ')}</p>
                 </div>
               </div>
             </div>
           ))}
 
-          <div className="space-y-2 text-sm">
+          <div className="ml-11 space-y-2 text-sm">
             <div className="flex justify-between text-muted-foreground">
               <span>Subtotal</span>
               <span>{formatCurrency(order.total)}</span>
@@ -1627,7 +1791,7 @@ function OrderDetailPane({
                 </div>
               ) : null}
             </div>
-            <div className="flex justify-between text-sm font-medium text-foreground md:text-base">
+            <div className="flex justify-between text-sm font-medium text-foreground">
               <span>Total</span>
               <span>{formatCurrency(total)}</span>
             </div>
@@ -1714,8 +1878,10 @@ function OrderDetailPane({
           ) : null}
         </div>
       </CollapsibleSection>
+      </TabsContent>
 
-      {/* Customer — hidden entirely when there's no customer (e.g. POS) */}
+      <TabsContent value="customer">
+      {/* Customer — an empty state stands in when there's no customer (e.g. POS) */}
       {hasCustomer ? (
         <CollapsibleSection title="Customer">
           <div className="space-y-4">
@@ -1759,16 +1925,22 @@ function OrderDetailPane({
             </DetailRow>
           </div>
         </CollapsibleSection>
-      ) : null}
+      ) : (
+        <p className="p-4 text-sm text-muted-foreground">
+          No customer details for this order.
+        </p>
+      )}
+      </TabsContent>
 
+      <TabsContent value="activity">
       {/* Activity */}
-      <CollapsibleSection title="Activity" defaultOpen={false}>
+      <CollapsibleSection title="Activity">
         <ol>
           {activity.map((event, idx) => {
             const isLast = idx === activity.length - 1
             return (
-              <li key={`${event.label}-${idx}`} className="flex gap-3">
-                <div className="flex flex-col items-center">
+              <li key={`${event.label}-${idx}`} className="flex gap-[18px]">
+                <div className="ml-3 flex flex-col items-center">
                   <span className="mt-1 flex size-3.5 shrink-0 items-center justify-center rounded-full bg-amber-100">
                     <span className="size-2 rounded-full bg-amber-400" />
                   </span>
@@ -1783,6 +1955,8 @@ function OrderDetailPane({
           })}
         </ol>
       </CollapsibleSection>
+      </TabsContent>
+      </Tabs>
     </aside>
   )
 }
@@ -1845,8 +2019,9 @@ function getOrderColumns(
     header: ({ column }) => <DataTableColumnHeader column={column} title="Ordered" />,
     cell: ({ row }) => (
       <div className="leading-tight text-muted-foreground">
-        <p>{formatDate(row.original.orderedAt)}</p>
-        <p className="text-sm">{formatTime(row.original.orderedAt)}</p>
+        <p>
+          {formatDate(row.original.orderedAt)}, {formatTime(row.original.orderedAt)}
+        </p>
       </div>
     ),
   },
@@ -1867,7 +2042,7 @@ function getOrderColumns(
     cell: ({ row }) => (
       <ul className="space-y-0.5 text-sm text-muted-foreground">
         {row.original.items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item}>{formatLineItem(item)}</li>
         ))}
       </ul>
     ),
@@ -1880,10 +2055,16 @@ function getOrderColumns(
       const Icon = row.original.fulfillment.icon
       return (
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Icon className="size-4 shrink-0" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Icon className="size-4 shrink-0" />
+            </TooltipTrigger>
+            <TooltipContent>{row.original.fulfillment.label}</TooltipContent>
+          </Tooltip>
           <div className="leading-tight">
-            <p>{formatDate(row.original.fulfillAt)}</p>
-            <p className="text-sm">{formatTime(row.original.fulfillAt)}</p>
+            <p>
+              {formatDate(row.original.fulfillAt)}, {formatTime(row.original.fulfillAt)}
+            </p>
           </div>
         </div>
       )
@@ -2106,6 +2287,8 @@ function OrdersActionsMenu({
                   onSelect={
                     action.label === 'Archive'
                       ? () => requestConfirm({ action: 'Archive', onConfirm: () => {} })
+                      : action.label === 'Receipt'
+                        ? () => requestConfirm({ action: 'Receipt', onConfirm: () => {} })
                       : action.label === 'Export for Lalamove'
                         ? () =>
                             requestConfirm({
@@ -2264,8 +2447,11 @@ export function AdminOrdersAllPage() {
 
   return (
     <ConfirmActionProvider>
-    <div className="flex w-full min-w-0 flex-col gap-4 md:gap-6">
-      <TypographyH3 className="text-center md:text-left">All Orders</TypographyH3>
+    <div className="flex w-full min-w-0 flex-col gap-2">
+      {/* The 8px (gap-2) spacing between the cards, the sticky filters/actions
+          row and the table pairs with the row's 16px py to read as 24px. The
+          title keeps its original 16/24px spacing to the cards via mb. */}
+      <TypographyH3 className="mb-2 text-center md:mb-4 md:text-left">All Orders</TypographyH3>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {ORDER_STATS.map((stat) => (
@@ -2285,9 +2471,11 @@ export function AdminOrdersAllPage() {
               activeCard === stat.label && 'border-foreground',
             )}
           >
-            <CardHeader className="px-4 md:px-6">
+            {/* Mobile: label and number share one row at the same size. Desktop:
+                restore the stacked grid with the large number. */}
+            <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 md:grid md:items-start md:gap-1.5 md:px-6">
               <CardDescription>{stat.label}</CardDescription>
-              <CardTitle className="text-2xl font-semibold tabular-nums md:text-3xl">
+              <CardTitle className="text-sm font-semibold tabular-nums md:text-3xl">
                 {stat.count.toLocaleString()}
               </CardTitle>
             </CardHeader>
@@ -2296,15 +2484,20 @@ export function AdminOrdersAllPage() {
       </div>
 
       {/* Mobile toolbar: search on its own row, then equal-width Filters /
-          Actions / Add order. Filters are collapsed into a dialog. */}
-      <div className="flex flex-col gap-4 md:hidden">
+          Actions / Add order. Filters are collapsed into a dialog. Sticks to
+          the top so it stays reachable while the list scrolls. The top spacing
+          splits into an 8px margin (scrolls away when pinned) plus an 8px sticky
+          top padding, keeping the at-rest gap to the cards the same.
+          Spans the full viewport width (-mx + matching px) so the full-bleed
+          card list can't peek through the horizontal padding behind it. */}
+      <div className="sticky top-0 z-20 -mx-4 mt-2 flex flex-col gap-2 bg-background px-4 pb-2 pt-2 sm:-mx-6 sm:px-6 md:hidden">
         {mobileSearchOpen ? (
           <InputGroup className="h-10 w-full">
             <InputGroupAddon>
               <Search className="size-4" />
             </InputGroupAddon>
             <InputGroupInput
-              placeholder="Search order id, customer info"
+              placeholder="Search by ID, customer, product, total"
               autoFocus
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
@@ -2449,15 +2642,17 @@ export function AdminOrdersAllPage() {
         </div>
       </div>
 
-      {/* Desktop toolbar: inline filters with a toggleable search field. */}
-      <div className="hidden flex-wrap items-center gap-2 md:flex">
+      {/* Desktop toolbar: inline filters with a toggleable search field.
+          Sticks to the top so the filters/actions stay reachable while the
+          table scrolls beneath it. */}
+      <div className="sticky top-0 z-20 hidden flex-wrap items-center gap-2 bg-background py-4 md:flex">
         {searching ? (
           <InputGroup className="h-10 w-auto max-w-[400px] flex-1">
             <InputGroupAddon>
               <Search className="size-4" />
             </InputGroupAddon>
             <InputGroupInput
-              placeholder="Search order id, customer info"
+              placeholder="Search by ID, customer, product, total"
               autoFocus
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
@@ -2484,11 +2679,12 @@ export function AdminOrdersAllPage() {
           <>
             <Button
               variant="outline"
-              size="icon-lg"
+              className="h-10 px-3 font-normal text-muted-foreground"
               aria-label="Search orders"
               onClick={() => setSearching(true)}
             >
-              <Search className="size-4 text-muted-foreground" />
+              <Search className="size-4" />
+              Order
             </Button>
             <SelectFilter
               label="Channel"
@@ -2532,7 +2728,6 @@ export function AdminOrdersAllPage() {
           the tapped card. Tapping the same card again collapses it. */}
       <div className="-mx-4 flex flex-col divide-y divide-border sm:-mx-6 md:hidden">
         {filteredOrders.map((order) => {
-          const expanded = order.id === selectedOrderId
           const FulfillmentIcon = order.fulfillment.icon
           const isSelected = Boolean(rowSelection[order.id])
           const toggleSelected = () =>
@@ -2550,7 +2745,9 @@ export function AdminOrdersAllPage() {
             if (selectMode) {
               toggleSelected()
             } else {
-              setSelectedOrderId(expanded ? null : order.id)
+              // On mobile the detail view is its own page rather than an inline
+              // expansion below the card.
+              navigateToOrderDetail(order.id)
             }
           }
           return (
@@ -2558,7 +2755,6 @@ export function AdminOrdersAllPage() {
               <div
                 role="button"
                 tabIndex={0}
-                aria-expanded={selectMode ? undefined : expanded}
                 aria-pressed={selectMode ? isSelected : undefined}
                 onClick={handleActivate}
                 onKeyDown={(event) => {
@@ -2597,13 +2793,13 @@ export function AdminOrdersAllPage() {
                   <CustomerDetails customer={order.customer} />
                 ) : null}
                 <p className="text-sm text-muted-foreground">
-                  {order.items.join(', ')}
+                  {order.items.map(formatLineItem).join(', ')}
                 </p>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 text-sm text-foreground">
                     <FulfillmentIcon className="size-4 shrink-0" />
                     <span>
-                      {formatDate(order.fulfillAt)} · {formatTime(order.fulfillAt)}
+                      {formatDate(order.fulfillAt)}, {formatTime(order.fulfillAt)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -2618,28 +2814,11 @@ export function AdminOrdersAllPage() {
                         className="pointer-events-none size-4 shrink-0"
                       />
                     ) : (
-                      <ChevronDown
-                        className={cn(
-                          'size-4 shrink-0 text-muted-foreground transition-transform',
-                          !expanded && '-rotate-90',
-                        )}
-                      />
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                     )}
                   </div>
                 </div>
               </div>
-              {expanded ? (
-                <div className="px-4 pb-4 sm:px-6">
-                  <OrderDetailPane
-                    order={order}
-                    onClose={() => setSelectedOrderId(null)}
-                    onStatusChange={handleStatusChange}
-                    hideTitle
-                    hideClose
-                    className="max-h-none w-full overflow-visible rounded-lg border border-border bg-muted/50"
-                  />
-                </div>
-              ) : null}
             </div>
           )
         })}
@@ -2654,9 +2833,14 @@ export function AdminOrdersAllPage() {
             defaultSorting={[{ id: 'orderedAt', desc: true }]}
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
+            getRowId={(order) => order.id}
             onRowClick={(order) => {
               if (Date.now() < suppressRowClickUntil.current) return
               setSelectedOrderId(order.id)
+              // A row click is a single selection: replace whatever was selected
+              // before. Checkbox selection (handled by the table) preserves the
+              // previous selection for multi-select.
+              setRowSelection({ [order.id]: true })
             }}
             isRowActive={(order) => order.id === selectedOrderId}
             tableClassName={selectedOrder ? 'min-w-[820px]' : undefined}
@@ -2666,7 +2850,9 @@ export function AdminOrdersAllPage() {
             in turn smoothly resizes the flex table beside it. */}
         <div
           className={cn(
-            'sticky top-4 shrink-0 self-start overflow-hidden transition-[width,margin] duration-300 ease-in-out',
+            // top-[72px] clears the sticky toolbar: h-10 buttons (40px) plus its
+            // py-4 (32px) white space, so the pane pins just under the bar.
+            'sticky top-[72px] shrink-0 self-start overflow-hidden transition-[width,margin] duration-300 ease-in-out',
             selectedOrder ? 'ml-6 w-[360px]' : 'ml-0 w-0',
           )}
         >
@@ -2680,6 +2866,50 @@ export function AdminOrdersAllPage() {
         </div>
       </div>
     </div>
+    </ConfirmActionProvider>
+  )
+}
+
+// Full-page order detail, used on mobile where tapping a card opens its own page
+// (instead of expanding inline). The order id comes from the `order` query param.
+export function AdminOrderDetailPage() {
+  const orderId =
+    typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('order')
+  const [orders, setOrders] = React.useState<Order[]>(ORDERS)
+  const order = orders.find((o) => o.id === orderId)
+
+  // Opening a detail page should always start at the top, regardless of how far
+  // the list was scrolled when the card was tapped.
+  React.useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [orderId])
+
+  const handleStatusChange = React.useCallback((id: string, status: OrderStatus) => {
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)))
+  }, [])
+
+  function goBack() {
+    window.history.pushState(null, '', '/admin/orders/all')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
+  return (
+    <ConfirmActionProvider>
+      {order ? (
+        <OrderDetailPane
+          order={order}
+          onClose={goBack}
+          onBack={goBack}
+          stickyActions
+          onStatusChange={handleStatusChange}
+          hideClose
+          className="max-h-none w-full overflow-visible rounded-none border-0"
+        />
+      ) : (
+        <p className="px-4 text-sm text-muted-foreground">Order not found.</p>
+      )}
     </ConfirmActionProvider>
   )
 }

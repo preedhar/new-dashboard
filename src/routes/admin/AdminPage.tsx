@@ -11,6 +11,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { cn } from '@/lib/utils'
 import { getAdminRoute } from './adminRoutes'
 
 type AdminPageProps = {
@@ -30,12 +31,17 @@ export function AdminPage({ pathname }: AdminPageProps) {
   const isOrderFormPage =
     activeRoute.path === '/admin/orders/edit' ||
     activeRoute.path === '/admin/orders/new'
+  // The order detail page provides its own back button and renders a full-bleed
+  // card, so the shared title/header and the section's horizontal padding are
+  // suppressed for it.
+  const isOrderDetailPage = activeRoute.path === '/admin/orders/detail'
   const showDesktopHeader =
     activeRoute.path !== '/admin' &&
     activeRoute.path !== '/admin/apps' &&
     activeRoute.path !== '/admin/orders/all' &&
     activeRoute.path !== '/admin/orders/summary' &&
     activeRoute.path !== '/admin/orders/reviews' &&
+    !isOrderDetailPage &&
     !isOrderFormPage
   const showPageTitle =
     activeRoute.path !== '/admin' &&
@@ -43,6 +49,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/orders/all' &&
     activeRoute.path !== '/admin/orders/summary' &&
     activeRoute.path !== '/admin/orders/reviews' &&
+    !isOrderDetailPage &&
     !isOrderFormPage
 
   return (
@@ -67,11 +74,16 @@ export function AdminPage({ pathname }: AdminPageProps) {
         ) : null}
 
         <section
-          className={`flex min-w-0 flex-1 flex-col gap-6 p-4 pb-24 sm:px-6 sm:pb-24 md:pb-6 lg:px-8 lg:pb-8 ${
-            isOrderFormPage
-              ? 'pt-8 sm:pt-8 lg:pt-8'
-              : 'pt-5 sm:pt-5 lg:pt-5'
-          }`}
+          className={cn(
+            'flex min-w-0 flex-1 flex-col gap-6',
+            // The order detail page is full-bleed (no horizontal padding) so its
+            // card sits flush to the screen edges, and it has no bottom padding
+            // since its action bar is pinned to the bottom edge.
+            isOrderDetailPage
+              ? 'pb-0 pt-0'
+              : 'px-4 pb-24 pt-5 sm:px-6 sm:pb-24 md:pb-6 lg:px-8 lg:pb-8',
+            isOrderFormPage && 'pt-4 sm:pt-8 lg:pt-8',
+          )}
         >
           {showPageTitle ? (
             <header>
@@ -86,7 +98,9 @@ export function AdminPage({ pathname }: AdminPageProps) {
           <Page />
         </section>
       </SidebarInset>
-      {isOrderFormPage ? null : <MobileBottomNav pathname={activeRoute.path} />}
+      {isOrderFormPage || isOrderDetailPage ? null : (
+        <MobileBottomNav pathname={activeRoute.path} />
+      )}
     </SidebarProvider>
   )
 }

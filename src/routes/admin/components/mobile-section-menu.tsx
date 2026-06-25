@@ -1,5 +1,3 @@
-import { ChevronRightIcon } from "lucide-react"
-
 import { cn } from "@/lib/utils"
 import { primaryAdminNav } from "../adminRoutes"
 
@@ -19,23 +17,20 @@ export function MobileSectionMenu({ pathname }: MobileSectionMenuProps) {
 
   return (
     <nav aria-label={`${section.title} pages`} className="md:hidden">
-      <ul className="grid grid-cols-2 gap-3">
+      <ul className="flex gap-2">
         {subpages.map((sub) => {
           const Icon = sub.icon
           return (
-            <li key={sub.url}>
+            <li key={sub.url} className="flex-1">
               <a
                 href={sub.url}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-3.5 text-sm font-medium text-foreground transition-colors",
+                  "flex w-full flex-col items-center justify-center gap-1 rounded-lg border border-border bg-background px-2 py-2 text-[10px] font-normal text-muted-foreground transition-colors",
                   "hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_6%)]",
                 )}
               >
-                {Icon ? (
-                  <Icon className="size-5 shrink-0 text-muted-foreground" />
-                ) : null}
-                <span className="flex-1 truncate">{sub.title}</span>
-                <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
+                {Icon ? <Icon className="size-5 shrink-0" /> : null}
+                <span className="w-full truncate text-center">{sub.title}</span>
               </a>
             </li>
           )
