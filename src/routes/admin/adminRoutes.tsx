@@ -32,6 +32,7 @@ import { AdminOrdersAllPage, AdminOrderDetailPage } from './pages/AdminOrdersAll
 import { AdminOrderEditPage } from './pages/AdminOrderEditPage'
 import { AdminOrdersSummaryPage } from './pages/AdminOrdersSummaryPage'
 import { AdminOrdersReviewsPage } from './pages/AdminOrdersReviewsPage'
+import { AdminOrdersAnalyticsPage } from './pages/AdminOrdersAnalyticsPage'
 import { AdminAppsPage } from './pages/AdminAppsPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
 import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
@@ -93,7 +94,6 @@ export const primaryAdminNav: AdminNavItem[] = [
       { title: 'All Bookings', url: '/admin/bookings/all', icon: CalendarDays },
       { title: 'Booking Forms', url: '/admin/bookings/forms', icon: ClipboardList },
       { title: 'Timeline', url: '/admin/bookings/timeline', icon: CalendarRange },
-      { title: 'Analytics', url: '/admin/bookings/analytics', icon: BarChart3 },
     ],
   },
   {
@@ -231,10 +231,7 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Analytics',
     title: 'Order Analytics',
     icon: BarChart3,
-    component: createAdminPlaceholder(
-      'Order Analytics',
-      'A future workspace for order conversion, revenue, and fulfillment analytics.',
-    ),
+    component: () => <AdminOrdersAnalyticsPage />,
   },
   {
     path: '/admin/products',

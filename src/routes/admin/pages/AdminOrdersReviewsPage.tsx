@@ -1,16 +1,8 @@
 import * as React from 'react'
-import { ArrowLeft, Eye, Mail, Search, Settings } from 'lucide-react'
+import { ArrowLeft, Eye, Mail, Settings } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { toast } from 'sonner'
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -209,6 +201,28 @@ function getReviewColumns(
       meta: { className: 'min-w-[220px]', headerClassName: 'min-w-[220px]' },
     },
     {
+      accessorKey: 'orderId',
+      header: 'Order',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="font-medium text-foreground transition-colors hover:text-muted-foreground"
+              >
+                {row.original.orderId}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>View order</TooltipContent>
+          </Tooltip>
+          <p className="text-sm text-muted-foreground">{row.original.customer}</p>
+        </div>
+      ),
+      meta: { className: 'w-[120px] max-w-[120px]', headerClassName: 'w-[120px] max-w-[120px]' },
+    },
+    {
       accessorKey: 'reviewedAt',
       sortingFn: 'datetime',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
@@ -219,33 +233,6 @@ function getReviewColumns(
           </p>
         </div>
       ),
-    },
-    {
-      accessorKey: 'orderId',
-      header: 'Order',
-      enableSorting: false,
-      cell: ({ row }) => (
-        <div className="min-w-0">
-          <p className="flex items-center gap-1 font-medium text-muted-foreground">
-            {row.original.orderId}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Open order"
-                  className="text-muted-foreground"
-                >
-                  <Search className="size-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Open order</TooltipContent>
-            </Tooltip>
-          </p>
-          <p className="text-sm text-muted-foreground">{row.original.customer}</p>
-        </div>
-      ),
-      meta: { className: 'min-w-[160px]', headerClassName: 'min-w-[160px]' },
     },
     {
       accessorKey: 'published',
@@ -411,18 +398,6 @@ export function AdminOrdersReviewsPage() {
   return (
     <div className="flex w-full min-w-0 flex-col gap-4 md:gap-6">
       <div className="flex flex-col gap-2">
-        <Breadcrumb className="md:hidden">
-          <BreadcrumbList className="justify-start">
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/admin/orders/all">Orders</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Reviews</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-
         <div className="flex items-center gap-2 md:justify-between">
           <Button
             variant="outline"
@@ -442,19 +417,16 @@ export function AdminOrdersReviewsPage() {
             <Settings className="size-4" />
             Settings
           </Button>
-          {/* Balances the back button so the title is truly centered */}
-          <div className="size-10 shrink-0 md:hidden" />
+          {/* Mobile: settings as an icon button, right-aligned in the title row */}
+          <Button
+            variant="outline"
+            className="h-10 w-10 shrink-0 px-0 md:hidden"
+            aria-label="Settings"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings className="size-5" />
+          </Button>
         </div>
-
-        {/* Mobile: settings below the title row */}
-        <Button
-          variant="outline"
-          className="h-10 w-full px-3 md:hidden"
-          onClick={() => setSettingsOpen(true)}
-        >
-          <Settings className="size-4" />
-          Settings
-        </Button>
       </div>
 
       <ReviewSettingsDialog
@@ -467,7 +439,7 @@ export function AdminOrdersReviewsPage() {
       />
 
       {/* Mobile: stats card above the review card list */}
-      <ReviewStatsPane reviews={reviews} className="md:hidden" />
+      <ReviewStatsPane reviews={reviews} className="p-4 md:hidden" />
 
       {/* Mobile: reviews as a card list */}
       <div className="-mx-4 flex flex-col divide-y divide-border sm:-mx-6 md:hidden">
