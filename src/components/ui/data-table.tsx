@@ -57,6 +57,7 @@ type DataTableProps<TData, TValue> = {
   onRowSelectionChange?: OnChangeFn<RowSelectionState>
   onRowClick?: (row: TData) => void
   isRowActive?: (row: TData) => boolean
+  getRowId?: (row: TData) => string
   tableClassName?: string
 }
 
@@ -68,6 +69,7 @@ export function DataTable<TData, TValue>({
   onRowSelectionChange,
   onRowClick,
   isRowActive,
+  getRowId,
   tableClassName,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>(defaultSorting)
@@ -81,6 +83,7 @@ export function DataTable<TData, TValue>({
     state: { sorting, rowSelection: selection },
     onSortingChange: setSorting,
     onRowSelectionChange: handleSelectionChange,
+    getRowId,
     enableRowSelection: true,
     initialState: { pagination: { pageSize: 10 } },
     // Keep the current page when the data updates (e.g. editing a row's status);

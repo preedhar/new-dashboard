@@ -130,7 +130,12 @@ function startOfDay(date: Date) {
 }
 
 function formatDate(date: Date) {
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
+  // Only show the year when it differs from the current year.
+  if (date.getFullYear() !== new Date().getFullYear()) {
+    options.year = 'numeric'
+  }
+  return date.toLocaleDateString('en-US', options)
 }
 
 function rangesEqual(a?: DateRange, b?: DateRange) {

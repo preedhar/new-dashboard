@@ -3,6 +3,7 @@ import {
   Boxes,
   CalendarDays,
   CalendarRange,
+  CircleDollarSign,
   ClipboardList,
   CreditCard,
   Gift,
@@ -27,7 +28,7 @@ import {
 } from 'lucide-react'
 
 import { AdminCustomersPage } from './pages/AdminCustomersPage'
-import { AdminOrdersAllPage } from './pages/AdminOrdersAllPage'
+import { AdminOrdersAllPage, AdminOrderDetailPage } from './pages/AdminOrdersAllPage'
 import { AdminOrderEditPage } from './pages/AdminOrderEditPage'
 import { AdminOrdersSummaryPage } from './pages/AdminOrdersSummaryPage'
 import { AdminOrdersReviewsPage } from './pages/AdminOrdersReviewsPage'
@@ -70,6 +71,7 @@ export const primaryAdminNav: AdminNavItem[] = [
       { title: 'Summary', url: '/admin/orders/summary', icon: LayoutList },
       { title: 'Deliveries', url: '/admin/orders/deliveries', icon: Truck },
       { title: 'Reviews', url: '/admin/orders/reviews', icon: Star },
+      { title: 'Earnings', url: '/admin/orders/earnings', icon: CircleDollarSign },
       { title: 'Analytics', url: '/admin/orders/analytics', icon: BarChart3 },
     ],
   },
@@ -170,6 +172,13 @@ export const adminRoutes: AdminRoute[] = [
     component: AdminOrdersAllPage,
   },
   {
+    path: '/admin/orders/detail',
+    label: 'Order Details',
+    title: 'Order Details',
+    icon: ReceiptText,
+    component: AdminOrderDetailPage,
+  },
+  {
     path: '/admin/orders/summary',
     label: 'Summary',
     title: 'Order Summary',
@@ -206,6 +215,16 @@ export const adminRoutes: AdminRoute[] = [
     title: 'Reviews',
     icon: Star,
     component: AdminOrdersReviewsPage,
+  },
+  {
+    path: '/admin/orders/earnings',
+    label: 'Earnings',
+    title: 'Order Earnings',
+    icon: CircleDollarSign,
+    component: createAdminPlaceholder(
+      'Order Earnings',
+      'A future workspace for earnings breakdown, payouts, and revenue trends.',
+    ),
   },
   {
     path: '/admin/orders/analytics',

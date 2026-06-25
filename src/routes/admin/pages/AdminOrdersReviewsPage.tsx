@@ -135,11 +135,16 @@ const REVIEWS: Review[] = Array.from({ length: 24 }, (_, i) => {
 })
 
 function formatDate(date: Date) {
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
+  // Only show the year when it differs from the current year.
+  if (date.getFullYear() !== new Date().getFullYear()) {
+    options.year = 'numeric'
+  }
+  return date.toLocaleDateString('en-US', options)
 }
 
 function formatTime(date: Date) {
-  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
 }
 
 // The rating emoji rendered like an icon, mirroring the channel icon shown in
@@ -209,8 +214,9 @@ function getReviewColumns(
       header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
       cell: ({ row }) => (
         <div className="leading-tight text-muted-foreground">
-          <p>{formatDate(row.original.reviewedAt)}</p>
-          <p className="text-sm">{formatTime(row.original.reviewedAt)}</p>
+          <p>
+            {formatDate(row.original.reviewedAt)}, {formatTime(row.original.reviewedAt)}
+          </p>
         </div>
       ),
     },

@@ -61,10 +61,10 @@ export function MobileBottomNav({ pathname }: MobileBottomNavProps) {
                 href={item.url}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex h-16 flex-col items-center justify-center gap-1 border-t-2 border-transparent text-[10px] font-medium transition-colors",
+                  "flex h-16 flex-col items-center justify-center gap-1 border-t-2 border-transparent text-[10px] transition-colors",
                   active
-                    ? "border-foreground text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "border-foreground font-medium text-foreground"
+                    : "font-normal text-muted-foreground hover:text-foreground",
                 )}
               >
                 <Icon className={cn("size-5", active && "text-foreground")} />
