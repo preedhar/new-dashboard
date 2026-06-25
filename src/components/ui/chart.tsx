@@ -237,7 +237,7 @@ function ChartTooltipContent({
                     {item.value !== undefined && (
                       <span className="text-foreground font-mono font-medium tabular-nums">
                         {valueFormatter
-                          ? valueFormatter(item.value)
+                          ? valueFormatter(item.value as number | string)
                           : item.value.toLocaleString()}
                       </span>
                     )}
