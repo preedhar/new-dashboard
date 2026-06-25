@@ -77,16 +77,13 @@ import {
 } from '@/components/ui/dialog'
 import {
   Combobox,
-  ComboboxChip,
-  ComboboxChips,
-  ComboboxChipsInput,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxInput,
   ComboboxItem,
   ComboboxList,
-  ComboboxValue,
-  useComboboxAnchor,
 } from '@/components/ui/combobox'
+import { Combobox as ComboboxPrimitive } from '@base-ui/react'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Card,
@@ -155,7 +152,7 @@ const CHANNEL_ICON_SRC: Record<Channel, string> = {
   'Admin Dashboard': adminIcon,
 }
 
-const CHANNEL_OPTIONS: FilterOption[] = (Object.keys(CHANNEL_ICON_SRC) as Channel[]).map(
+export const CHANNEL_OPTIONS: FilterOption[] = (Object.keys(CHANNEL_ICON_SRC) as Channel[]).map(
   (label) => ({ label, iconSrc: CHANNEL_ICON_SRC[label] }),
 )
 const FULFILLMENT_TYPE_OPTIONS: FilterOption[] = [
@@ -714,7 +711,7 @@ function ClearFilterButton({
   )
 }
 
-function SelectFilter({
+export function SelectFilter({
   label,
   options,
   value,
@@ -943,7 +940,7 @@ export function DatesFilter({
 }
 
 // Refund dialog for automated-payment orders. The amount defaults to the order
-// total and can be edited or reset via "Refund total"; an optional switch also
+// total and can be edited or reset via "Full refund"; an optional switch also
 // cancels the order (restocking inventory).
 function RefundDialog({
   open,
@@ -999,11 +996,11 @@ function RefundDialog({
               Order total: {formatCurrency(total)}
             </span>
             <Button
-              variant="link"
-              className="h-auto p-0"
+              variant="secondary"
+              className="h-9"
               onClick={() => setAmount(total.toFixed(2))}
             >
-              Refund total
+              Full refund
             </Button>
           </div>
           <FieldLabel
@@ -1265,7 +1262,7 @@ function DetailRow({
 function ContactPhone({ phone }: { phone: string }) {
   return (
     <p className="flex items-center gap-1.5">
-      {phone}
+      <CopyableText value={phone} />
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -1315,6 +1312,51 @@ function CopyLinkButton({ value }: { value: string }) {
   )
 }
 
+// Clickable text that copies `value` to the clipboard and flashes a "Copied"
+// tooltip for 2 seconds. Used for order detail fields on desktop and mobile.
+function CopyableText({
+  value,
+  children,
+  className,
+}: {
+  value: string
+  children?: React.ReactNode
+  className?: string
+}) {
+  const [copied, setCopied] = React.useState(false)
+  const timer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  function handleCopy() {
+    navigator.clipboard?.writeText(value)
+    setCopied(true)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => setCopied(false), 2000)
+  }
+
+  React.useEffect(() => () => clearTimeout(timer.current), [])
+
+  // Only the "Copied" confirmation shows; there's no "Copy" hint on hover.
+  return (
+    <Tooltip open={copied}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className={cn(
+            'cursor-pointer text-left transition-colors hover:text-muted-foreground',
+            className,
+          )}
+        >
+          {children ?? value}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="data-[state=instant-open]:animate-in data-[state=instant-open]:fade-in-0 data-[state=instant-open]:zoom-in-95 data-[state=instant-open]:slide-in-from-bottom-1 data-[state=instant-open]:duration-200">
+        Copied
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
 const CUSTOMER_TAG_OPTIONS = [
   'Wholesale',
   'Regular',
@@ -1325,7 +1367,8 @@ const CUSTOMER_TAG_OPTIONS = [
 ]
 
 function TagsCombobox({ defaultTags = [] }: { defaultTags?: string[] }) {
-  const anchor = useComboboxAnchor()
+  // Anchors the popover to the value area so it spans the full available width.
+  const anchor = React.useRef<HTMLDivElement | null>(null)
   const [options, setOptions] = React.useState<string[]>(() =>
     Array.from(new Set([...CUSTOMER_TAG_OPTIONS, ...defaultTags])),
   )
@@ -1344,6 +1387,14 @@ function TagsCombobox({ defaultTags = [] }: { defaultTags?: string[] }) {
     setQuery('')
   }
 
+  function removeTag(tag: string) {
+    setValue((prev) => prev.filter((t) => t !== tag))
+  }
+
+  // Shared chip styling for selected tags and the "Add" button.
+  const chipClass =
+    'inline-flex items-center gap-1 rounded-md bg-secondary px-3 py-1 text-base font-normal text-secondary-foreground'
+
   return (
     <Combobox
       items={options}
@@ -1357,21 +1408,43 @@ function TagsCombobox({ defaultTags = [] }: { defaultTags?: string[] }) {
       onInputValueChange={(next) => setQuery(next)}
       multiple
     >
-      <ComboboxChips ref={anchor} className="mt-1 bg-background">
-        <ComboboxValue>
-          {(tags: string[]) => (
-            <>
-              {tags.map((tag) => (
-                <ComboboxChip key={tag} aria-label={tag} className="h-auto py-0.5 text-sm font-normal">
-                  {tag}
-                </ComboboxChip>
-              ))}
-              <ComboboxChipsInput placeholder={tags.length ? '' : 'Add tags…'} />
-            </>
-          )}
-        </ComboboxValue>
-      </ComboboxChips>
+      {/* Selected tags render directly in the field, followed by an "Add"
+          button (styled like a tag) that opens the searchable tag list. */}
+      <div ref={anchor} className="mt-1 flex flex-wrap items-center gap-1.5">
+        {value.map((tag) => (
+          <span key={tag} className={chipClass}>
+            {tag}
+            <button
+              type="button"
+              aria-label={`Remove ${tag}`}
+              onClick={() => removeTag(tag)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-4" />
+            </button>
+          </span>
+        ))}
+        <ComboboxPrimitive.Trigger
+          render={
+            <button
+              type="button"
+              className={cn(
+                chipClass,
+                'text-muted-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] hover:text-foreground',
+              )}
+            >
+              <Plus className="size-4" />
+              Add
+            </button>
+          }
+        />
+      </div>
       <ComboboxContent anchor={anchor}>
+        <ComboboxInput
+          placeholder="Search tags…"
+          showTrigger={false}
+          className="m-3! h-10! bg-white! pl-2"
+        />
         {!canCreate ? <ComboboxEmpty>No tags found.</ComboboxEmpty> : null}
         <ComboboxList>
           {(tag: string) => (
@@ -1402,21 +1475,59 @@ function TagsCombobox({ defaultTags = [] }: { defaultTags?: string[] }) {
 function NotesField() {
   const [value, setValue] = React.useState('')
   const [saved, setSaved] = React.useState('')
-  const dirty = value !== saved
+  const [editing, setEditing] = React.useState(false)
+
+  function startEdit() {
+    setValue(saved)
+    setEditing(true)
+  }
+
+  function cancel() {
+    setValue(saved)
+    setEditing(false)
+  }
+
+  function save() {
+    setSaved(value)
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <div className="mt-1 space-y-2">
+        <Textarea
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          placeholder="Add notes about customer"
+          className="min-h-10 bg-background text-sm"
+          autoFocus
+        />
+        <div className="flex gap-2">
+          <Button variant="outline" size="lg" className="px-3" onClick={cancel}>
+            Cancel
+          </Button>
+          <Button size="lg" className="px-3" onClick={save}>
+            Save
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="mt-1 space-y-2">
-      <Textarea
-        value={value}
-        onChange={(event) => setValue(event.target.value)}
-        placeholder="Add notes about customer"
-        className="min-h-10 bg-background text-sm"
-      />
-      {dirty ? (
-        <Button size="sm" onClick={() => setSaved(value)}>
-          Save
-        </Button>
-      ) : null}
+    <div className="mt-1 flex items-center justify-between gap-2">
+      <p className={cn('text-base', saved ? 'text-foreground' : 'text-muted-foreground')}>
+        {saved || 'Empty'}
+      </p>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Edit notes"
+        className="shrink-0 text-foreground"
+        onClick={startEdit}
+      >
+        <Pencil className="size-4" />
+      </Button>
     </div>
   )
 }
@@ -1563,7 +1674,7 @@ function OrderDetailPane({
 
       <Tabs defaultValue="order" className="gap-0">
       {/* Header: title row + the tab switcher */}
-      <div className="space-y-4 border-b border-border p-4">
+      <div className="space-y-4 p-4">
         {hideTitle ? null : stickyActions ? (
           // Mobile full-page layout: a centered order id, then a row with the
           // status dropdown and an "Actions" dropdown, each filling half the row.
@@ -1678,7 +1789,7 @@ function OrderDetailPane({
         )}
         <TabsList className="w-full">
           <TabsTrigger value="order">Order</TabsTrigger>
-          <TabsTrigger value="customer">Customer</TabsTrigger>
+          {hasCustomer ? <TabsTrigger value="customer">Customer</TabsTrigger> : null}
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
       </div>
@@ -1707,22 +1818,24 @@ function OrderDetailPane({
 
           {order.gift ? (
             <DetailRow icon={Gift} label="Gift recipient">
-              {recipient ? <p>{recipient}</p> : null}
+              {recipient ? <CopyableText value={recipient} /> : null}
               {order.customer.phone ? <ContactPhone phone={order.customer.phone} /> : null}
-              <p>"{order.gift.message}"</p>
+              <CopyableText value={order.gift.message}>"{order.gift.message}"</CopyableText>
             </DetailRow>
           ) : !isInStore && (order.customer.name || order.customer.phone) ? (
             <DetailRow icon={User} label="Customer">
-              {order.customer.name ? <p>{order.customer.name}</p> : null}
+              {order.customer.name ? <CopyableText value={order.customer.name} /> : null}
               {order.customer.phone ? <ContactPhone phone={order.customer.phone} /> : null}
             </DetailRow>
           ) : null}
 
           {order.address ? (
             <DetailRow icon={MapPin} label="Address">
-              {order.address.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
+              <CopyableText value={order.address.join('\n')} className="flex flex-col items-start">
+                {order.address.map((line) => (
+                  <span key={line}>{line}</span>
+                ))}
+              </CopyableText>
             </DetailRow>
           ) : null}
         </div>
@@ -1750,11 +1863,14 @@ function OrderDetailPane({
                 </div>
                 <div className="text-sm">
                   <p className="text-muted-foreground">Special instructions:</p>
-                  <p className="text-muted-foreground">{item.note}</p>
+                  <CopyableText value={item.note} className="text-muted-foreground" />
                 </div>
                 <div className="text-sm">
                   <p className="text-muted-foreground">Add-ons:</p>
-                  <p className="text-muted-foreground">{item.addOns.join(', ')}</p>
+                  <CopyableText
+                    value={item.addOns.join(', ')}
+                    className="text-muted-foreground"
+                  />
                 </div>
               </div>
             </div>
@@ -1805,7 +1921,7 @@ function OrderDetailPane({
           icon={ClipboardList}
           label={order.channel === 'POS' ? 'Notes' : 'Do you have any special requests?:'}
         >
-          <p>{specialRequest}</p>
+          <CopyableText value={specialRequest} />
         </DetailRow>
       </CollapsibleSection>
 
@@ -1880,32 +1996,33 @@ function OrderDetailPane({
       </CollapsibleSection>
       </TabsContent>
 
-      <TabsContent value="customer">
-      {/* Customer — an empty state stands in when there's no customer (e.g. POS) */}
+      {/* Customer — the tab (trigger + content) is hidden when there's no
+          customer details for the order (e.g. POS). */}
       {hasCustomer ? (
+        <TabsContent value="customer">
         <CollapsibleSection title="Customer">
           <div className="space-y-4">
             {order.customer.name ? (
               <DetailRow icon={User} label="Name">
-                <p>{order.customer.name}</p>
+                <CopyableText value={order.customer.name} />
               </DetailRow>
             ) : null}
             {order.customer.email ? (
               <DetailRow icon={Mail} label="Email">
                 <p className="flex items-center gap-1.5">
-                  {order.customer.email}
+                  <CopyableText value={order.customer.email} />
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        aria-label="View in CRM"
+                        aria-label="View all orders"
                         className="text-foreground"
                       >
                         <Search className="size-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>View in CRM</TooltipContent>
+                    <TooltipContent>View all orders</TooltipContent>
                   </Tooltip>
                 </p>
               </DetailRow>
@@ -1925,12 +2042,8 @@ function OrderDetailPane({
             </DetailRow>
           </div>
         </CollapsibleSection>
-      ) : (
-        <p className="p-4 text-sm text-muted-foreground">
-          No customer details for this order.
-        </p>
-      )}
-      </TabsContent>
+        </TabsContent>
+      ) : null}
 
       <TabsContent value="activity">
       {/* Activity */}
@@ -2285,7 +2398,12 @@ function OrdersActionsMenu({
                   key={action.label}
                   disabled={isActionDisabled(action.label, selectedCount)}
                   onSelect={
-                    action.label === 'Archive'
+                    action.label === 'Edit'
+                      ? () => {
+                          window.history.pushState(null, '', '/admin/orders/edit')
+                          window.dispatchEvent(new PopStateEvent('popstate'))
+                        }
+                      : action.label === 'Archive'
                       ? () => requestConfirm({ action: 'Archive', onConfirm: () => {} })
                       : action.label === 'Receipt'
                         ? () => requestConfirm({ action: 'Receipt', onConfirm: () => {} })

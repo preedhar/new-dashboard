@@ -6,14 +6,6 @@ import { toast } from 'sonner'
 
 import productImage from '@/assets/product.png'
 import { cn } from '@/lib/utils'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -223,18 +215,6 @@ export function AdminOrdersSummaryPage() {
   return (
     <div className="flex w-full min-w-0 flex-col gap-4 md:gap-6">
       <div className="flex flex-col gap-2">
-        <Breadcrumb className="md:hidden">
-          <BreadcrumbList className="justify-start">
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/admin/orders/all">Orders</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Summary</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-
         <div className="flex items-center md:block">
           <Button
             variant="outline"
@@ -259,14 +239,21 @@ export function AdminOrdersSummaryPage() {
 
         <label
           htmlFor="summary-bundle-separately"
-          className="flex h-10 w-full cursor-pointer items-center justify-between gap-3 rounded-md border border-border px-3 transition-colors hover:bg-muted/50 md:w-auto"
+          className="flex h-10 w-full cursor-pointer flex-row-reverse items-center justify-between gap-3 rounded-md border border-border bg-background px-3 shadow-xs transition-colors hover:bg-muted/50 md:w-auto md:flex-row md:justify-start"
         >
-          <span className="text-sm font-normal">Show bundle products separately</span>
           <Switch
             id="summary-bundle-separately"
             checked={bundleSeparately}
             onCheckedChange={setBundleSeparately}
           />
+          <span
+            className={cn(
+              'text-sm font-normal',
+              !bundleSeparately && 'text-muted-foreground',
+            )}
+          >
+            Show bundle products separately
+          </span>
         </label>
 
         <div className="flex gap-2 md:ml-auto">

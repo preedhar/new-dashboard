@@ -76,7 +76,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 
 type IconComponent = React.ComponentType<{ className?: string }>
 
@@ -283,15 +282,15 @@ function FormRow({
   )
 }
 
-// An optional field: a switch (off by default) sits where the control would be;
-// toggling it on reveals the input below.
+// An optional field: a ghost Plus button (off by default) sits where the
+// control would be; clicking it reveals the input in that same spot/row.
 function OptionalField({
   fieldKey,
   label,
   icon: Icon,
   enabled,
   onToggle,
-  controlClassName = 'w-full sm:w-72 sm:self-end',
+  controlClassName = 'w-full sm:w-72 sm:shrink-0',
   children,
 }: {
   fieldKey: string
@@ -302,23 +301,39 @@ function OptionalField({
   controlClassName?: string
   children: React.ReactNode
 }) {
-  return (
-    <div className="flex flex-1 flex-col gap-3">
+  // Off: label on the left, Plus button on the right (where the toggle used to be).
+  if (!enabled) {
+    return (
       <div className="flex items-center justify-between gap-6">
-        <Label
-          htmlFor={`${fieldKey}-toggle`}
-          className="flex items-center gap-3 text-sm font-medium"
-        >
+        <Label className="flex items-center gap-3 text-sm font-medium">
           <Icon className="size-4 shrink-0 text-muted-foreground" />
           {label}
         </Label>
-        <Switch
-          id={`${fieldKey}-toggle`}
-          checked={enabled}
-          onCheckedChange={onToggle}
-        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-lg"
+          aria-label={`Add ${label}`}
+          className="shrink-0 text-muted-foreground"
+          onClick={() => onToggle(true)}
+        >
+          <Plus className="size-4" />
+        </Button>
       </div>
-      {enabled ? <div className={controlClassName}>{children}</div> : null}
+    )
+  }
+
+  // On: label and input share one row, matching the always-on FormRow layout.
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <Label
+        htmlFor={fieldKey}
+        className="flex items-center gap-3 text-sm font-medium sm:flex-1"
+      >
+        <Icon className="size-4 shrink-0 text-muted-foreground" />
+        {label}
+      </Label>
+      <div className={controlClassName}>{children}</div>
     </div>
   )
 }
@@ -939,7 +954,7 @@ export function AdminOrderEditPage({
               id="fulfill-instructions"
               value={form.instructions}
               onChange={(event) => update('instructions', event.target.value)}
-              placeholder="Leave at the front desk, ring the bell, etc."
+              placeholder="Unit number, landmarks, etc."
             />
           </OptionalFormRow>
           <OptionalFormRow
@@ -1089,7 +1104,7 @@ export function AdminOrderEditPage({
       </div>
 
       {isDirty ? (
-        <div className="sticky bottom-4 z-30 mx-auto mt-8 flex w-full max-w-[640px] items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary px-4 py-3">
+        <div className="sticky bottom-4 z-30 mx-auto mt-8 flex w-full max-w-[640px] items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary px-4 py-3 animate-in fade-in-0 slide-in-from-bottom-4 duration-300">
           <span className="text-sm font-medium text-muted-foreground">Unsaved changes</span>
           <div className="flex items-center gap-2">
             <Button type="button" variant="ghost" className="h-10" onClick={handleBack}>

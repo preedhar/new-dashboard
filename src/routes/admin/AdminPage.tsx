@@ -41,6 +41,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/orders/all' &&
     activeRoute.path !== '/admin/orders/summary' &&
     activeRoute.path !== '/admin/orders/reviews' &&
+    activeRoute.path !== '/admin/orders/analytics' &&
     !isOrderDetailPage &&
     !isOrderFormPage
   const showPageTitle =
@@ -49,6 +50,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/orders/all' &&
     activeRoute.path !== '/admin/orders/summary' &&
     activeRoute.path !== '/admin/orders/reviews' &&
+    activeRoute.path !== '/admin/orders/analytics' &&
     !isOrderDetailPage &&
     !isOrderFormPage
 
