@@ -262,8 +262,10 @@ function ReviewStatsPane({ reviews, className }: { reviews: Review[]; className?
     : 0
 
   return (
-    <aside className={cn('rounded-lg border border-border p-6', className)}>
-      <div className="space-y-6">
+    <aside className={cn('@container rounded-lg border border-border p-6', className)}>
+      {/* When the pane is wide enough, the aggregate stats sit on the left and
+          the distribution chart is pushed to the right; otherwise they stack. */}
+      <div className="flex flex-col gap-6 @xl:flex-row @xl:items-start @xl:justify-between">
         <div className="space-y-2">
           <p className="text-base font-semibold text-foreground">Published</p>
           <div className="flex items-baseline gap-2">
@@ -274,7 +276,7 @@ function ReviewStatsPane({ reviews, className }: { reviews: Review[]; className?
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 @xl:w-[360px] @xl:shrink-0">
           {RATINGS.map((rating) => {
             const count = published.filter((review) => review.rating === rating.value).length
             const pct = total ? (count / total) * 100 : 0
@@ -476,8 +478,10 @@ export function AdminOrdersReviewsPage() {
         ))}
       </div>
 
-      {/* Desktop: reviews data table + always-visible stats pane */}
-      <div className="hidden md:flex md:gap-6">
+      {/* Desktop: reviews data table + always-visible stats pane. Below lg the
+          pane stacks above the table (flex-col-reverse puts the last child on
+          top); at lg and up it sits beside the table on the right. */}
+      <div className="hidden md:flex md:flex-col-reverse md:gap-6 lg:flex-row">
         <div className="min-w-0 flex-1">
           <DataTable
             columns={columns}
@@ -487,7 +491,7 @@ export function AdminOrdersReviewsPage() {
         </div>
         <ReviewStatsPane
           reviews={reviews}
-          className="sticky top-4 w-[340px] shrink-0 self-start"
+          className="lg:sticky lg:top-4 lg:w-[340px] lg:shrink-0 lg:self-start"
         />
       </div>
     </div>

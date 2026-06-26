@@ -939,6 +939,127 @@ export function DatesFilter({
   )
 }
 
+// Collapses the inline filter buttons into a single "Filters" button that opens
+// a dialog. Used both on mobile and on narrow desktop widths (below xl). The
+// trigger badges the number of active filters; "Clear" resets them all.
+function FiltersDialog({
+  open,
+  onOpenChange,
+  activeFilterCount,
+  channel,
+  onChannelChange,
+  fulfillmentType,
+  onFulfillmentTypeChange,
+  dateField,
+  onDateFieldChange,
+  dateRange,
+  onDateRangeChange,
+  statusFilter,
+  onStatusFilterChange,
+  activeFilter,
+  onActiveFilterChange,
+  onClear,
+  triggerClassName,
+  disabled,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  activeFilterCount: number
+  channel: string | null
+  onChannelChange: (value: string | null) => void
+  fulfillmentType: string | null
+  onFulfillmentTypeChange: (value: string | null) => void
+  dateField: string
+  onDateFieldChange: (value: string) => void
+  dateRange: DateRange | undefined
+  onDateRangeChange: (range: DateRange | undefined) => void
+  statusFilter: string | null
+  onStatusFilterChange: (value: string | null) => void
+  activeFilter: string
+  onActiveFilterChange: (value: string) => void
+  onClear: () => void
+  triggerClassName?: string
+  disabled?: boolean
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className={cn('h-10 px-3', triggerClassName)} disabled={disabled}>
+          <SlidersHorizontal className="size-4 text-muted-foreground" />
+          Filters
+          {activeFilterCount > 0 ? (
+            <Badge className="ml-0.5 h-5 min-w-5 justify-center px-1 tabular-nums">
+              {activeFilterCount}
+            </Badge>
+          ) : null}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="[&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader>
+          <DialogTitle asChild>
+            <TypographyH4 className="text-center font-semibold">Filters</TypographyH4>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <SelectFilter
+            label="Channel"
+            options={CHANNEL_OPTIONS}
+            value={channel}
+            onChange={onChannelChange}
+            className="w-full justify-start"
+            contentClassName="w-(--radix-dropdown-menu-trigger-width)"
+          />
+          <SelectFilter
+            label="Fulfillment type"
+            options={FULFILLMENT_TYPE_OPTIONS}
+            value={fulfillmentType}
+            onChange={onFulfillmentTypeChange}
+            className="w-full justify-start"
+            contentClassName="w-(--radix-dropdown-menu-trigger-width)"
+          />
+          <DatesFilter
+            field={dateField}
+            onFieldChange={onDateFieldChange}
+            appliedRange={dateRange}
+            onApply={onDateRangeChange}
+            className="w-full justify-start"
+            contentClassName="w-(--radix-popover-trigger-width)"
+          />
+          <SelectFilter
+            label="Status"
+            options={STATUS_OPTIONS}
+            value={statusFilter}
+            onChange={onStatusFilterChange}
+            className="w-full justify-start"
+            contentClassName="w-(--radix-dropdown-menu-trigger-width)"
+          />
+          <ActiveFilter
+            value={activeFilter}
+            onChange={onActiveFilterChange}
+            className="w-full justify-start"
+            contentClassName="w-(--radix-dropdown-menu-trigger-width)"
+          />
+        </div>
+        <DialogFooter className="flex-row gap-2">
+          <Button
+            variant="outline"
+            className="h-10 flex-1"
+            onClick={() => {
+              onClear()
+              onOpenChange(false)
+            }}
+          >
+            Clear
+          </Button>
+          <Button className="h-10 flex-1" onClick={() => onOpenChange(false)}>
+            Done
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // Refund dialog for automated-payment orders. The amount defaults to the order
 // total and can be edited or reset via "Full refund"; an optional switch also
 // cancels the order (restocking inventory).
@@ -2643,7 +2764,7 @@ export function AdminOrdersAllPage() {
               onClick={() => setMobileSearchOpen(true)}
             >
               <Search className="size-4 text-muted-foreground" />
-              Search
+              Order
             </Button>
             <Button
               variant="ghost"
@@ -2673,79 +2794,26 @@ export function AdminOrdersAllPage() {
         )}
 
         <div className="flex w-full items-center gap-2">
-          <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="h-10 flex-1 px-3" disabled={selectMode}>
-                <SlidersHorizontal className="size-4 text-muted-foreground" />
-                Filters
-                {activeFilterCount > 0 ? (
-                  <Badge className="ml-0.5 h-5 min-w-5 justify-center px-1 tabular-nums">
-                    {activeFilterCount}
-                  </Badge>
-                ) : null}
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Filters</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-3">
-                <SelectFilter
-                  label="Channel"
-                  options={CHANNEL_OPTIONS}
-                  value={channel}
-                  onChange={setChannel}
-                  className="w-full justify-start"
-                  contentClassName="w-(--radix-dropdown-menu-trigger-width)"
-                />
-                <SelectFilter
-                  label="Fulfillment type"
-                  options={FULFILLMENT_TYPE_OPTIONS}
-                  value={fulfillmentType}
-                  onChange={setFulfillmentType}
-                  className="w-full justify-start"
-                  contentClassName="w-(--radix-dropdown-menu-trigger-width)"
-                />
-                <DatesFilter
-                  field={dateField}
-                  onFieldChange={setDateField}
-                  appliedRange={dateRange}
-                  onApply={setDateRange}
-                  className="w-full justify-start"
-                  contentClassName="w-(--radix-popover-trigger-width)"
-                />
-                <SelectFilter
-                  label="Status"
-                  options={STATUS_OPTIONS}
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  className="w-full justify-start"
-                  contentClassName="w-(--radix-dropdown-menu-trigger-width)"
-                />
-                <ActiveFilter
-                  value={activeFilter}
-                  onChange={setActiveFilter}
-                  className="w-full justify-start"
-                  contentClassName="w-(--radix-dropdown-menu-trigger-width)"
-                />
-              </div>
-              <DialogFooter className="flex-row gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    resetFilters()
-                    setFiltersOpen(false)
-                  }}
-                >
-                  Clear
-                </Button>
-                <Button className="flex-1" onClick={() => setFiltersOpen(false)}>
-                  Done
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <FiltersDialog
+            open={filtersOpen}
+            onOpenChange={setFiltersOpen}
+            activeFilterCount={activeFilterCount}
+            channel={channel}
+            onChannelChange={setChannel}
+            fulfillmentType={fulfillmentType}
+            onFulfillmentTypeChange={setFulfillmentType}
+            dateField={dateField}
+            onDateFieldChange={setDateField}
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            activeFilter={activeFilter}
+            onActiveFilterChange={setActiveFilter}
+            onClear={resetFilters}
+            triggerClassName="flex-1"
+            disabled={selectMode}
+          />
 
           <OrdersActionsMenu
             selectedCount={selectedCount}
@@ -2804,31 +2872,56 @@ export function AdminOrdersAllPage() {
               <Search className="size-4" />
               Order
             </Button>
-            <SelectFilter
-              label="Channel"
-              options={CHANNEL_OPTIONS}
-              value={channel}
-              onChange={setChannel}
-            />
-            <SelectFilter
-              label="Fulfillment type"
-              options={FULFILLMENT_TYPE_OPTIONS}
-              value={fulfillmentType}
-              onChange={setFulfillmentType}
-            />
-            <DatesFilter
-              field={dateField}
-              onFieldChange={setDateField}
-              appliedRange={dateRange}
-              onApply={setDateRange}
-            />
-            <SelectFilter
-              label="Status"
-              options={STATUS_OPTIONS}
-              value={statusFilter}
-              onChange={setStatusFilter}
-            />
-            <ActiveFilter value={activeFilter} onChange={setActiveFilter} />
+            {/* Inline filter buttons at xl and up; below that they collapse
+                into the Filters dialog. `contents` lets the buttons keep
+                participating in the toolbar's flex layout. */}
+            <div className="hidden xl:contents">
+              <SelectFilter
+                label="Channel"
+                options={CHANNEL_OPTIONS}
+                value={channel}
+                onChange={setChannel}
+              />
+              <SelectFilter
+                label="Fulfillment type"
+                options={FULFILLMENT_TYPE_OPTIONS}
+                value={fulfillmentType}
+                onChange={setFulfillmentType}
+              />
+              <DatesFilter
+                field={dateField}
+                onFieldChange={setDateField}
+                appliedRange={dateRange}
+                onApply={setDateRange}
+              />
+              <SelectFilter
+                label="Status"
+                options={STATUS_OPTIONS}
+                value={statusFilter}
+                onChange={setStatusFilter}
+              />
+              <ActiveFilter value={activeFilter} onChange={setActiveFilter} />
+            </div>
+            <div className="xl:hidden">
+              <FiltersDialog
+                open={filtersOpen}
+                onOpenChange={setFiltersOpen}
+                activeFilterCount={activeFilterCount}
+                channel={channel}
+                onChannelChange={setChannel}
+                fulfillmentType={fulfillmentType}
+                onFulfillmentTypeChange={setFulfillmentType}
+                dateField={dateField}
+                onDateFieldChange={setDateField}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                activeFilter={activeFilter}
+                onActiveFilterChange={setActiveFilter}
+                onClear={resetFilters}
+              />
+            </div>
           </>
         )}
 
