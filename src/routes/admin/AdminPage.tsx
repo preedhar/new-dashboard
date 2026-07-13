@@ -31,15 +31,18 @@ export function AdminPage({ pathname }: AdminPageProps) {
   const isOrderFormPage =
     activeRoute.path === '/admin/orders/edit' ||
     activeRoute.path === '/admin/orders/new'
-  // The order detail page provides its own back button and renders a full-bleed
-  // card, so the shared title/header and the section's horizontal padding are
-  // suppressed for it.
-  const isOrderDetailPage = activeRoute.path === '/admin/orders/detail'
+  // The order and delivery detail pages provide their own back button and
+  // render a full-bleed card, so the shared title/header and the section's
+  // horizontal padding are suppressed for them.
+  const isOrderDetailPage =
+    activeRoute.path === '/admin/orders/detail' ||
+    activeRoute.path === '/admin/orders/deliveries/detail'
   const showDesktopHeader =
     activeRoute.path !== '/admin' &&
     activeRoute.path !== '/admin/apps' &&
     activeRoute.path !== '/admin/orders/all' &&
     activeRoute.path !== '/admin/orders/summary' &&
+    activeRoute.path !== '/admin/orders/deliveries' &&
     activeRoute.path !== '/admin/orders/reviews' &&
     activeRoute.path !== '/admin/orders/analytics' &&
     !isOrderDetailPage &&
@@ -49,6 +52,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/apps' &&
     activeRoute.path !== '/admin/orders/all' &&
     activeRoute.path !== '/admin/orders/summary' &&
+    activeRoute.path !== '/admin/orders/deliveries' &&
     activeRoute.path !== '/admin/orders/reviews' &&
     activeRoute.path !== '/admin/orders/analytics' &&
     !isOrderDetailPage &&

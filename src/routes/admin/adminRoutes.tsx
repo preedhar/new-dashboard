@@ -32,6 +32,10 @@ import { AdminOrdersAllPage, AdminOrderDetailPage } from './pages/AdminOrdersAll
 import { AdminOrderEditPage } from './pages/AdminOrderEditPage'
 import { AdminOrdersSummaryPage } from './pages/AdminOrdersSummaryPage'
 import { AdminOrdersReviewsPage } from './pages/AdminOrdersReviewsPage'
+import {
+  AdminOrdersDeliveriesPage,
+  AdminDeliveryDetailPage,
+} from './pages/AdminOrdersDeliveriesPage'
 import { AdminOrdersAnalyticsPage } from './pages/AdminOrdersAnalyticsPage'
 import { AdminAppsPage } from './pages/AdminAppsPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
@@ -204,10 +208,14 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Deliveries',
     title: 'Deliveries',
     icon: Truck,
-    component: createAdminPlaceholder(
-      'Deliveries',
-      'A future workspace for delivery queues, handoffs, and fulfillment status.',
-    ),
+    component: AdminOrdersDeliveriesPage,
+  },
+  {
+    path: '/admin/orders/deliveries/detail',
+    label: 'Delivery Details',
+    title: 'Delivery Details',
+    icon: Truck,
+    component: AdminDeliveryDetailPage,
   },
   {
     path: '/admin/orders/reviews',
