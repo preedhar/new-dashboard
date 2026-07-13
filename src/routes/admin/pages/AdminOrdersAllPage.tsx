@@ -68,7 +68,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -834,6 +840,7 @@ export function DatesFilter({
   onApply,
   className,
   contentClassName,
+  variant = 'popover',
 }: {
   field: string
   onFieldChange: (value: string) => void
@@ -841,39 +848,115 @@ export function DatesFilter({
   onApply: (range: DateRange | undefined) => void
   className?: string
   contentClassName?: string
+  variant?: 'popover' | 'collapsible'
 }) {
   const [open, setOpen] = React.useState(false)
   const [range, setRange] = React.useState<DateRange | undefined>(appliedRange)
-  const [showCalendar, setShowCalendar] = React.useState(false)
+  const [draftField, setDraftField] = React.useState(field)
 
   const active = Boolean(appliedRange?.from)
   const canClear = Boolean(range?.from || appliedRange?.from)
-  const canApply = !rangesEqual(range, appliedRange)
+  const canApply = !rangesEqual(range, appliedRange) || draftField !== field
 
-  const rangeLabel =
-    range?.from && range?.to
-      ? `${formatDate(range.from)} – ${formatDate(range.to)}`
-      : range?.from
-        ? formatDate(range.from)
-        : 'Select dates'
+  const fieldLabel = field === 'order' ? 'Order' : 'Fulfillment'
+
+  function formatRange(value: DateRange | undefined) {
+    if (value?.from && value?.to)
+      return `${formatDate(value.from)} – ${formatDate(value.to)}`
+    if (value?.from) return formatDate(value.from)
+    return null
+  }
+
+  const rangeLabel = formatRange(range) ?? 'Select dates'
+  const appliedLabel = formatRange(appliedRange)
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (next) {
       setRange(appliedRange)
-      setShowCalendar(false)
+      setDraftField(field)
     }
   }
 
   function clearAll() {
     setRange(undefined)
+    setDraftField(field)
     onApply(undefined)
-    setShowCalendar(false)
+    setOpen(false)
   }
 
   function apply() {
+    onFieldChange(draftField)
     onApply(range)
     setOpen(false)
+  }
+
+  const body = (
+    <>
+      <Tabs value={draftField} onValueChange={setDraftField}>
+        <TabsList className="w-full">
+          <TabsTrigger value="fulfillment">Fulfillment date</TabsTrigger>
+          <TabsTrigger value="order">Order date</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      <div className="mt-3 flex h-10 w-full items-center gap-2 rounded-md border border-input bg-muted/40 px-3">
+        <CalendarIcon className="size-4 text-muted-foreground" />
+        <span className={range?.from ? 'text-sm' : 'text-sm text-muted-foreground'}>
+          {rangeLabel}
+        </span>
+      </div>
+
+      <div className="mt-3 flex justify-center">
+        <Calendar
+          mode="range"
+          selected={range}
+          onSelect={setRange}
+          numberOfMonths={1}
+        />
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <Button
+          variant="ghost"
+          className="h-10 px-3"
+          onClick={clearAll}
+          disabled={!canClear}
+        >
+          Clear
+        </Button>
+        <Button className="h-10 px-3" onClick={apply} disabled={!canApply}>
+          Apply
+        </Button>
+      </div>
+    </>
+  )
+
+  // On mobile the filter lives inside the Filters dialog, where a floating
+  // popover would overflow the dialog. Render an inline collapsible instead.
+  if (variant === 'collapsible') {
+    return (
+      <Collapsible open={open} onOpenChange={handleOpenChange}>
+        <CollapsibleTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(FILTER_BUTTON_CLASS, active && FILTER_BUTTON_ACTIVE_CLASS, className)}
+          >
+            {active ? `${fieldLabel}: ${appliedLabel}` : 'Dates'}
+            {active ? (
+              <ClearFilterButton label="Dates" onClear={clearAll} />
+            ) : (
+              <ChevronDown
+                className={cn('ml-auto size-4 transition-transform', open && 'rotate-180')}
+              />
+            )}
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="mt-2 rounded-md border border-input p-3">{body}</div>
+        </CollapsibleContent>
+      </Collapsible>
+    )
   }
 
   return (
@@ -883,7 +966,7 @@ export function DatesFilter({
           variant="outline"
           className={cn(FILTER_BUTTON_CLASS, active && FILTER_BUTTON_ACTIVE_CLASS, className)}
         >
-          {active ? 'Dates: Selected' : 'Dates'}
+          {active ? `${fieldLabel}: ${appliedLabel}` : 'Dates'}
           {active ? (
             <ClearFilterButton label="Dates" onClear={clearAll} />
           ) : (
@@ -892,48 +975,7 @@ export function DatesFilter({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className={cn('w-[300px] p-3', contentClassName)}>
-        <Tabs value={field} onValueChange={onFieldChange}>
-          <TabsList className="w-full">
-            <TabsTrigger value="fulfillment">Fulfillment date</TabsTrigger>
-            <TabsTrigger value="order">Order date</TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        <div className="mt-3">
-          <Popover open={showCalendar} onOpenChange={setShowCalendar}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-10 w-full justify-start px-3 font-normal"
-              >
-                <CalendarIcon className="size-4 text-muted-foreground" />
-                <span className={range?.from ? '' : 'text-muted-foreground'}>{rangeLabel}</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-(--radix-popover-trigger-width) p-0">
-              <Calendar
-                mode="range"
-                selected={range}
-                onSelect={setRange}
-                numberOfMonths={1}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <Button
-            variant="ghost"
-            className="h-10 px-3"
-            onClick={clearAll}
-            disabled={!canClear}
-          >
-            Clear
-          </Button>
-          <Button className="h-10 px-3" onClick={apply} disabled={!canApply}>
-            Apply
-          </Button>
-        </div>
+        {body}
       </PopoverContent>
     </Popover>
   )
@@ -994,67 +1036,82 @@ function FiltersDialog({
           ) : null}
         </Button>
       </DialogTrigger>
-      <DialogContent className="[&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader>
-          <DialogTitle asChild>
-            <TypographyH4 className="text-center font-semibold">Filters</TypographyH4>
-          </DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-3">
-          <SelectFilter
-            label="Channel"
-            options={CHANNEL_OPTIONS}
-            value={channel}
-            onChange={onChannelChange}
-            className="w-full justify-start"
-            contentClassName="w-(--radix-dropdown-menu-trigger-width)"
-          />
-          <SelectFilter
-            label="Fulfillment type"
-            options={FULFILLMENT_TYPE_OPTIONS}
-            value={fulfillmentType}
-            onChange={onFulfillmentTypeChange}
-            className="w-full justify-start"
-            contentClassName="w-(--radix-dropdown-menu-trigger-width)"
-          />
-          <DatesFilter
-            field={dateField}
-            onFieldChange={onDateFieldChange}
-            appliedRange={dateRange}
-            onApply={onDateRangeChange}
-            className="w-full justify-start"
-            contentClassName="w-(--radix-popover-trigger-width)"
-          />
-          <SelectFilter
-            label="Status"
-            options={STATUS_OPTIONS}
-            value={statusFilter}
-            onChange={onStatusFilterChange}
-            className="w-full justify-start"
-            contentClassName="w-(--radix-dropdown-menu-trigger-width)"
-          />
-          <ActiveFilter
-            value={activeFilter}
-            onChange={onActiveFilterChange}
-            className="w-full justify-start"
-            contentClassName="w-(--radix-dropdown-menu-trigger-width)"
-          />
+      <DialogContent
+        showCloseButton={false}
+        className="flex h-[100dvh] w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none p-0 sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:w-full sm:max-w-md sm:rounded-xl"
+      >
+        <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-6 py-6">
+          <DialogHeader className="relative mb-3">
+            <DialogTitle asChild>
+              <TypographyH4 className="text-center font-semibold">Filters</TypographyH4>
+            </DialogTitle>
+            <DialogClose asChild>
+              <Button
+                variant="ghost"
+                className="absolute inset-y-0 right-0 my-auto size-10"
+                size="icon-sm"
+              >
+                <X />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogClose>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <SelectFilter
+              label="Channel"
+              options={CHANNEL_OPTIONS}
+              value={channel}
+              onChange={onChannelChange}
+              className="w-full justify-start"
+              contentClassName="w-(--radix-dropdown-menu-trigger-width)"
+            />
+            <SelectFilter
+              label="Fulfillment type"
+              options={FULFILLMENT_TYPE_OPTIONS}
+              value={fulfillmentType}
+              onChange={onFulfillmentTypeChange}
+              className="w-full justify-start"
+              contentClassName="w-(--radix-dropdown-menu-trigger-width)"
+            />
+            <DatesFilter
+              variant="collapsible"
+              field={dateField}
+              onFieldChange={onDateFieldChange}
+              appliedRange={dateRange}
+              onApply={onDateRangeChange}
+              className="w-full justify-start"
+            />
+            <SelectFilter
+              label="Status"
+              options={STATUS_OPTIONS}
+              value={statusFilter}
+              onChange={onStatusFilterChange}
+              className="w-full justify-start"
+              contentClassName="w-(--radix-dropdown-menu-trigger-width)"
+            />
+            <ActiveFilter
+              value={activeFilter}
+              onChange={onActiveFilterChange}
+              className="w-full justify-start"
+              contentClassName="w-(--radix-dropdown-menu-trigger-width)"
+            />
+          </div>
+          <DialogFooter className="mt-auto flex-row gap-2 pt-6">
+            <Button
+              variant="outline"
+              className="h-10 flex-1"
+              onClick={() => {
+                onClear()
+                onOpenChange(false)
+              }}
+            >
+              Clear
+            </Button>
+            <Button className="h-10 flex-1" onClick={() => onOpenChange(false)}>
+              Done
+            </Button>
+          </DialogFooter>
         </div>
-        <DialogFooter className="flex-row gap-2">
-          <Button
-            variant="outline"
-            className="h-10 flex-1"
-            onClick={() => {
-              onClear()
-              onOpenChange(false)
-            }}
-          >
-            Clear
-          </Button>
-          <Button className="h-10 flex-1" onClick={() => onOpenChange(false)}>
-            Done
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
