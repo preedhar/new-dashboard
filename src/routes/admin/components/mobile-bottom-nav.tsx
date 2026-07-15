@@ -28,7 +28,7 @@ const items: MobileNavItem[] = [
   },
   {
     title: "Settings",
-    url: "/admin/settings/payments",
+    url: "/admin/settings/store",
     icon: Settings,
     matchPrefix: "/admin/settings",
   },

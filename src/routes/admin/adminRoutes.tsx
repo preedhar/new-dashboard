@@ -120,12 +120,12 @@ export const primaryAdminNav: AdminNavItem[] = [
   },
   {
     title: 'Settings',
-    url: '/admin/settings/payments',
+    url: '/admin/settings/store',
     icon: Settings,
     items: [
-      { title: 'Payments', url: '/admin/settings/payments', icon: CreditCard },
-      { title: 'Website', url: '/admin/settings/website', icon: Globe },
       { title: 'Store', url: '/admin/settings/store', icon: Store },
+      { title: 'Website', url: '/admin/settings/website', icon: Globe },
+      { title: 'Payments', url: '/admin/settings/payments', icon: CreditCard },
       { title: 'Team', url: '/admin/settings/team', icon: Users },
       { title: 'Billing', url: '/admin/settings/billing', icon: ReceiptText },
     ],
