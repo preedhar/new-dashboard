@@ -36,6 +36,10 @@ import {
   AdminOrdersDeliveriesPage,
   AdminDeliveryDetailPage,
 } from './pages/AdminOrdersDeliveriesPage'
+import {
+  AdminOrdersEarningsPage,
+  AdminPayoutDetailPage,
+} from './pages/AdminOrdersEarningsPage'
 import { AdminOrdersAnalyticsPage } from './pages/AdminOrdersAnalyticsPage'
 import { AdminAppsPage } from './pages/AdminAppsPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
@@ -227,12 +231,16 @@ export const adminRoutes: AdminRoute[] = [
   {
     path: '/admin/orders/earnings',
     label: 'Earnings',
-    title: 'Order Earnings',
+    title: 'Earnings',
     icon: CircleDollarSign,
-    component: createAdminPlaceholder(
-      'Order Earnings',
-      'A future workspace for earnings breakdown, payouts, and revenue trends.',
-    ),
+    component: AdminOrdersEarningsPage,
+  },
+  {
+    path: '/admin/orders/earnings/detail',
+    label: 'Payout Details',
+    title: 'Payout Details',
+    icon: CircleDollarSign,
+    component: AdminPayoutDetailPage,
   },
   {
     path: '/admin/orders/analytics',

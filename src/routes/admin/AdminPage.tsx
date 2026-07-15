@@ -36,7 +36,8 @@ export function AdminPage({ pathname }: AdminPageProps) {
   // horizontal padding are suppressed for them.
   const isOrderDetailPage =
     activeRoute.path === '/admin/orders/detail' ||
-    activeRoute.path === '/admin/orders/deliveries/detail'
+    activeRoute.path === '/admin/orders/deliveries/detail' ||
+    activeRoute.path === '/admin/orders/earnings/detail'
   const showDesktopHeader =
     activeRoute.path !== '/admin' &&
     activeRoute.path !== '/admin/apps' &&
@@ -44,6 +45,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/orders/summary' &&
     activeRoute.path !== '/admin/orders/deliveries' &&
     activeRoute.path !== '/admin/orders/reviews' &&
+    activeRoute.path !== '/admin/orders/earnings' &&
     activeRoute.path !== '/admin/orders/analytics' &&
     !isOrderDetailPage &&
     !isOrderFormPage
@@ -54,6 +56,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/orders/summary' &&
     activeRoute.path !== '/admin/orders/deliveries' &&
     activeRoute.path !== '/admin/orders/reviews' &&
+    activeRoute.path !== '/admin/orders/earnings' &&
     activeRoute.path !== '/admin/orders/analytics' &&
     !isOrderDetailPage &&
     !isOrderFormPage
