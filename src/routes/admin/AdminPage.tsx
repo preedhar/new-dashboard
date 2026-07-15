@@ -26,11 +26,14 @@ export function AdminPage({ pathname }: AdminPageProps) {
   }
 
   const Page = activeRoute.component
-  // The order create/edit form provides its own header (back button + title) and
-  // a wider top padding, so the shared chrome is suppressed for it.
+  // The order create/edit form and the store/team settings pages provide their
+  // own header (back button + title) and a wider top padding, so the shared
+  // chrome is suppressed for them.
   const isOrderFormPage =
     activeRoute.path === '/admin/orders/edit' ||
-    activeRoute.path === '/admin/orders/new'
+    activeRoute.path === '/admin/orders/new' ||
+    activeRoute.path === '/admin/settings/store' ||
+    activeRoute.path === '/admin/settings/team'
   // The order and delivery detail pages provide their own back button and
   // render a full-bleed card, so the shared title/header and the section's
   // horizontal padding are suppressed for them.

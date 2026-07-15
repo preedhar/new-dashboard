@@ -42,6 +42,8 @@ import {
 } from './pages/AdminOrdersEarningsPage'
 import { AdminOrdersAnalyticsPage } from './pages/AdminOrdersAnalyticsPage'
 import { AdminAppsPage } from './pages/AdminAppsPage'
+import { AdminSettingsStorePage } from './pages/AdminSettingsStorePage'
+import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
 import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
 
@@ -431,20 +433,14 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Store',
     title: 'Store',
     icon: Settings,
-    component: createAdminPlaceholder(
-      'Store',
-      'A future workspace for store details, locations, policies, and operating preferences.',
-    ),
+    component: AdminSettingsStorePage,
   },
   {
     path: '/admin/settings/team',
     label: 'Team',
     title: 'Team',
     icon: Settings,
-    component: createAdminPlaceholder(
-      'Team',
-      'A future workspace for team members, roles, and access permissions.',
-    ),
+    component: AdminSettingsTeamPage,
   },
   {
     path: '/admin/settings/billing',
