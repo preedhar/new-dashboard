@@ -31,6 +31,7 @@ import {
   SlidersHorizontal,
   SquareDashed,
   Store,
+  Trash2,
   Truck,
   Undo2,
   User,
@@ -52,6 +53,10 @@ import PaidIcon from '@/assets/status/paid.svg?react'
 import FulfilledIcon from '@/assets/status/fulfilled.svg?react'
 import CancelledIcon from '@/assets/status/cancelled.svg?react'
 import RejectedIcon from '@/assets/status/rejected.svg?react'
+import MotorcycleIcon from '@/assets/vehicles/motorcycle.svg?react'
+import SedanIcon from '@/assets/vehicles/sedan.svg?react'
+import MpvIcon from '@/assets/vehicles/mpv.svg?react'
+import TruckVehicleIcon from '@/assets/vehicles/truck.svg?react'
 
 import { cn } from '@/lib/utils'
 import {
@@ -113,6 +118,13 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -127,6 +139,7 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Progress } from '@/components/ui/progress'
 import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -2537,17 +2550,509 @@ function ExportCsvDialog({
   )
 }
 
+// The vehicle artwork sits at different scales within each 217×217 viewBox, so
+// the motorcycle/sedan/MPV get a taller box to read at a comparable size to the
+// truck.
+const VEHICLE_OPTIONS: {
+  value: string
+  label: string
+  icon: IconComponent
+  iconClassName: string
+}[] = [
+  { value: 'motorcycle', label: 'Motorcycle', icon: MotorcycleIcon, iconClassName: 'h-12' },
+  { value: 'sedan', label: 'Sedan', icon: SedanIcon, iconClassName: 'h-12' },
+  { value: 'mpv', label: 'MPV', icon: MpvIcon, iconClassName: 'h-12' },
+  { value: 'truck', label: 'Truck', icon: TruckVehicleIcon, iconClassName: 'h-9' },
+]
+
+// Base fare per vehicle used to compute the (mock) delivery total. Additional
+// drop-offs beyond the first add a flat per-stop fee.
+const VEHICLE_BASE_FARE: Record<string, number> = {
+  motorcycle: 49,
+  sedan: 120,
+  mpv: 180,
+  truck: 250,
+}
+const PER_STOP_FARE = 35
+
+// The merchant's pickup location, shown as the first stop in the route.
+const PICKUP_LOCATION = [
+  '113 Doña Soledad Ave, Parañaque, 1709',
+  'Metro Manila, Philippines',
+]
+
+// Fifteen-minute time slots for the schedule picker. For today, start at the
+// closest future quarter-hour; for a future date, cover the whole day. Always
+// stops at 11:45 PM.
+function buildTimeSlots(date: Date, now: Date) {
+  const isToday =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  let minMinutes = 0
+  if (isToday) {
+    const nowMinutes = now.getHours() * 60 + now.getMinutes()
+    // Closest future 15-minute interval (strictly after the current time).
+    minMinutes = Math.ceil((nowMinutes + 1) / 15) * 15
+  }
+  const slots: { value: string; label: string }[] = []
+  for (let m = minMinutes; m <= 23 * 60 + 45; m += 15) {
+    const hours = Math.floor(m / 60)
+    const minutes = m % 60
+    const slot = new Date(date)
+    slot.setHours(hours, minutes, 0, 0)
+    slots.push({
+      value: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`,
+      label: formatTime(slot),
+    })
+  }
+  return slots
+}
+
+// Split a drop-off address into the street lines and the trailing unit number
+// / delivery instruction, which is shown on its own row.
+function splitAddress(address?: string[]) {
+  const lines = address ?? []
+  const hasUnit = lines.length > 1
+  return {
+    street: hasUnit ? lines.slice(0, -1) : lines,
+    unit: hasUnit ? lines[lines.length - 1] : undefined,
+  }
+}
+
+// Book a Lalamove delivery for the selected orders. Mirrors the Export to CSV
+// dialog's chrome (centered title, split footer) with a scrollable body and a
+// pinned total.
+function DeliveryBookingDialog({
+  open,
+  onOpenChange,
+  orders,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  orders: Order[]
+}) {
+  // Two-step flow: 1) vehicle, schedule and driver notes; 2) route, options
+  // and price.
+  const [step, setStep] = React.useState<1 | 2>(1)
+  const [vehicle, setVehicle] = React.useState('motorcycle')
+  const [schedule, setSchedule] = React.useState<'now' | 'schedule'>('now')
+  const [dateOpen, setDateOpen] = React.useState(false)
+  const [date, setDate] = React.useState<Date | undefined>(undefined)
+  const [time, setTime] = React.useState('')
+  const [stops, setStops] = React.useState<Order[]>(orders)
+  // Which drop-off addresses are in edit mode, and their draft text. Edits are
+  // ephemeral (no save) — they only swap the address for a textarea.
+  const [editingAddressIds, setEditingAddressIds] = React.useState<Set<string>>(() => new Set())
+  const [addressDrafts, setAddressDrafts] = React.useState<Record<string, string>>({})
+  const [editingPickup, setEditingPickup] = React.useState(false)
+  const [pickupDraft, setPickupDraft] = React.useState('')
+  const [shortestRoute, setShortestRoute] = React.useState(true)
+  const [addNotes, setAddNotes] = React.useState(false)
+  const [notes, setNotes] = React.useState('')
+  // "Now" is snapshotted when the dialog opens so the time slots start at the
+  // right quarter-hour without ticking while the dialog is open.
+  const [now, setNow] = React.useState(() => new Date())
+
+  // Snapshot the current selection (and reset the form) whenever the dialog
+  // opens, so removing a stop here never mutates the table's selection.
+  React.useEffect(() => {
+    if (!open) return
+    const opened = new Date()
+    setStep(1)
+    setNow(opened)
+    setStops(orders)
+    setEditingAddressIds(new Set())
+    setAddressDrafts({})
+    setEditingPickup(false)
+    setPickupDraft(PICKUP_LOCATION.join('\n'))
+    setSchedule('now')
+    setDate(opened)
+    // Preselect the closest available slot so Schedule is ready to book.
+    setTime(buildTimeSlots(opened, opened)[0]?.value ?? '')
+    setDateOpen(false)
+  }, [open, orders])
+
+  const timeSlots = React.useMemo(
+    () => buildTimeSlots(date ?? now, now),
+    [date, now],
+  )
+
+  const total =
+    (VEHICLE_BASE_FARE[vehicle] ?? 0) + Math.max(0, stops.length - 1) * PER_STOP_FARE
+
+  const scheduleIncomplete = schedule === 'schedule' && (!date || !time)
+  const canBook = stops.length > 0 && !scheduleIncomplete
+
+  const dateLabel = date
+    ? isSameDay(date, now)
+      ? `Today, ${formatDate(date)}`
+      : formatDate(date)
+    : 'Select date'
+
+  function removeStop(id: string) {
+    setStops((prev) => prev.filter((order) => order.id !== id))
+  }
+
+  function toggleEditAddress(order: Order) {
+    const isEditing = editingAddressIds.has(order.id)
+    setEditingAddressIds((prev) => {
+      const next = new Set(prev)
+      if (isEditing) next.delete(order.id)
+      else next.add(order.id)
+      return next
+    })
+    // Seed the draft from the street lines the first time it's edited. The unit
+    // number is kept out of the textarea and shown separately below it.
+    if (!isEditing && !(order.id in addressDrafts)) {
+      setAddressDrafts((drafts) => ({
+        ...drafts,
+        [order.id]: splitAddress(order.address).street.join('\n'),
+      }))
+    }
+  }
+
+  function handleBook() {
+    onOpenChange(false)
+    toast.success(
+      stops.length > 1 ? `Delivery booked for ${stops.length} orders` : 'Delivery booked',
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="gap-0 p-0 [&_[data-slot=dialog-close]]:top-5 [&_[data-slot=dialog-close]]:right-5">
+        <DialogHeader className="px-6 pt-6 pb-4">
+          <DialogTitle asChild>
+            <TypographyH4 className="text-center font-semibold">
+              Deliver with Lalamove
+            </TypographyH4>
+          </DialogTitle>
+        </DialogHeader>
+        {/* Two step-progress bars: first fills on step 1, both on step 2. */}
+        <div className="flex items-center gap-2 px-6 pt-4 pb-6">
+          <Progress value={100} />
+          <Progress value={step === 2 ? 100 : 0} />
+        </div>
+
+        <div className="flex max-h-[60vh] flex-col gap-6 overflow-y-auto px-6 pb-6">
+          {step === 1 ? (
+            <>
+              {/* Vehicle type — grouped radios in one bordered container, one
+                  equal-width column per option. */}
+              <FieldSet>
+                <FieldLegend variant="label">Vehicle type</FieldLegend>
+                <RadioGroup
+                  value={vehicle}
+                  onValueChange={setVehicle}
+                  className="grid grid-cols-4 gap-0 divide-x overflow-hidden rounded-lg border"
+                >
+                  {VEHICLE_OPTIONS.map((option) => {
+                    const Icon = option.icon
+                    return (
+                      <FieldLabel
+                        key={option.value}
+                        htmlFor={`vehicle-${option.value}`}
+                        className="relative flex w-full flex-col items-center gap-1.5 rounded-none px-2 py-3 text-center font-normal transition-colors hover:bg-muted/50 has-[[data-checked]]:bg-primary/5"
+                      >
+                        {/* Fixed-height, centered box so every vehicle shares a
+                            baseline and the labels line up across cards. */}
+                        <span className="flex h-12 w-full items-center justify-center">
+                          <Icon className={cn('w-auto', option.iconClassName)} />
+                        </span>
+                        <span className="text-xs font-medium">{option.label}</span>
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`vehicle-${option.value}`}
+                          className="absolute top-2 right-2"
+                        />
+                      </FieldLabel>
+                    )
+                  })}
+                </RadioGroup>
+              </FieldSet>
+
+              {/* When to deliver — For now / Schedule. */}
+              <div className="flex flex-col gap-3">
+                <Tabs value={schedule} onValueChange={(value) => setSchedule(value as 'now' | 'schedule')}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="now">For now</TabsTrigger>
+                    <TabsTrigger value="schedule">Schedule</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                {schedule === 'schedule' ? (
+                  <Collapsible
+                    open={dateOpen}
+                    onOpenChange={setDateOpen}
+                    className="flex flex-col gap-3"
+                  >
+                    {/* Date and time sit side by side (equal width, 8px gap)
+                        from sm up; the calendar expands full width beneath. A
+                        2-column grid keeps both fields exactly the same width
+                        regardless of their content. */}
+                    <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-2">
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="h-10 w-full min-w-0 justify-start gap-2 font-normal"
+                        >
+                          <CalendarIcon className="size-4 text-muted-foreground" />
+                          <span className={date ? undefined : 'text-muted-foreground'}>
+                            {dateLabel}
+                          </span>
+                          <ChevronDown
+                            className={cn(
+                              'ml-auto size-4 text-muted-foreground transition-transform',
+                              dateOpen && 'rotate-180',
+                            )}
+                          />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <div className="min-w-0">
+                        <Select value={time} onValueChange={setTime}>
+                          <SelectTrigger className="h-10! w-full">
+                            <SelectValue placeholder="Select a time" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {timeSlots.length > 0 ? (
+                              timeSlots.map((slot) => (
+                                <SelectItem key={slot.value} value={slot.value}>
+                                  {slot.label}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                No times left today
+                              </div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <CollapsibleContent>
+                      <div className="flex justify-center rounded-md border p-2">
+                        <Calendar
+                          mode="single"
+                          selected={date}
+                          onSelect={(value) => {
+                            setDate(value)
+                            // Preselect the first available slot for the new day.
+                            setTime(buildTimeSlots(value ?? now, now)[0]?.value ?? '')
+                            setDateOpen(false)
+                          }}
+                          disabled={{ before: now }}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ) : null}
+              </div>
+
+              {/* Driver notes — the auto-growing textarea lives inside the card,
+                  revealed only when the toggle is on. */}
+              <div className="flex flex-col gap-3 rounded-md border p-3">
+                <Field orientation="horizontal">
+                  <FieldContent>
+                    <FieldTitle>Add notes to your driver</FieldTitle>
+                  </FieldContent>
+                  <Switch
+                    aria-label="Add notes to your driver"
+                    checked={addNotes}
+                    onCheckedChange={setAddNotes}
+                  />
+                </Field>
+                {addNotes ? (
+                  <div className="relative">
+                    <Textarea
+                      value={notes}
+                      onChange={(event) => setNotes(event.target.value.slice(0, 500))}
+                      placeholder="Add delivery instructions here"
+                      className="min-h-10 bg-background pr-14 text-sm"
+                    />
+                    <span className="absolute right-3 bottom-2 text-xs text-muted-foreground">
+                      {notes.length}/500
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Route — pickup location then each order's drop-off. */}
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                  {/* Pickup row — marker, title and edit action share one line. */}
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-4 shrink-0 items-center justify-center">
+                      <span className="size-3 rounded-full border-2 border-primary" />
+                    </span>
+                    <p className="min-w-0 flex-1 text-sm font-semibold">Your location</p>
+                    {!editingPickup ? (
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="shrink-0 text-muted-foreground"
+                        aria-label="Edit your location"
+                        onClick={() => setEditingPickup(true)}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-col gap-1 pl-7 text-sm text-muted-foreground">
+                    {editingPickup ? (
+                      <Textarea
+                        value={pickupDraft}
+                        onChange={(event) => setPickupDraft(event.target.value)}
+                        placeholder="Enter your pickup location"
+                        className="min-h-10 bg-background text-sm"
+                      />
+                    ) : (
+                      PICKUP_LOCATION.map((line) => <p key={line}>{line}</p>)
+                    )}
+                  </div>
+                </div>
+
+                {stops.map((order) => {
+                  const editing = editingAddressIds.has(order.id)
+                  const { street, unit } = splitAddress(order.address)
+                  return (
+                    <div key={order.id} className="flex flex-col gap-1">
+                      {/* ID row — pin, order id and the edit/remove actions all
+                          share one line. */}
+                      <div className="flex items-center gap-3">
+                        <MapPin className="size-4 shrink-0 text-muted-foreground" />
+                        <p className="min-w-0 flex-1 text-sm font-semibold">{order.id}</p>
+                        {/* The pencil is hidden while the textarea is open. */}
+                        {!editing ? (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="shrink-0 text-muted-foreground"
+                            aria-label={`Edit address for ${order.id}`}
+                            onClick={() => toggleEditAddress(order)}
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                        ) : null}
+                        {stops.length > 1 ? (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="shrink-0 text-muted-foreground"
+                            aria-label={`Remove ${order.id}`}
+                            onClick={() => removeStop(order.id)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        ) : null}
+                      </div>
+
+                      {/* Address, indented to line up under the order id. */}
+                      <div className="flex flex-col gap-1 pl-7 text-sm text-muted-foreground">
+                        {editing ? (
+                          <Textarea
+                            value={addressDrafts[order.id] ?? ''}
+                            onChange={(event) =>
+                              setAddressDrafts((drafts) => ({
+                                ...drafts,
+                                [order.id]: event.target.value,
+                              }))
+                            }
+                            placeholder="Enter a delivery address"
+                            className="min-h-10 bg-background text-sm"
+                          />
+                        ) : street.length > 0 ? (
+                          <div>
+                            {street.map((line) => (
+                              <p key={line}>{line}</p>
+                            ))}
+                          </div>
+                        ) : (
+                          <p>No delivery address on file</p>
+                        )}
+                        {/* Unit number / instructions always sit on their own
+                            row, and stay visible while editing. */}
+                        {unit ? <p>{unit}</p> : null}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <FieldLabel
+                htmlFor="delivery-shortest-route"
+                className="transition-colors hover:bg-muted/50"
+              >
+                <Field orientation="horizontal">
+                  <FieldContent>
+                    <FieldTitle>Get the shortest route</FieldTitle>
+                  </FieldContent>
+                  <Switch
+                    id="delivery-shortest-route"
+                    checked={shortestRoute}
+                    onCheckedChange={setShortestRoute}
+                  />
+                </Field>
+              </FieldLabel>
+            </>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-4 border-t px-6 pt-6 pb-6">
+          {step === 2 ? (
+            <p className="text-center text-lg font-semibold">Total ${total}</p>
+          ) : null}
+          <DialogFooter className="flex-row">
+            {step === 1 ? (
+              <>
+                <Button
+                  variant="outline"
+                  className="h-10 flex-1"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="h-10 flex-1"
+                  onClick={() => setStep(2)}
+                  disabled={scheduleIncomplete}
+                >
+                  Next
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" className="h-10 flex-1" onClick={() => setStep(1)}>
+                  Back
+                </Button>
+                <Button className="h-10 flex-1" onClick={handleBook} disabled={!canBook}>
+                  Book Delivery
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function OrdersActionsMenu({
   selectedCount,
+  selectedOrders,
   totalCount,
   triggerClassName,
 }: {
   selectedCount: number
+  selectedOrders: Order[]
   totalCount: number
   triggerClassName?: string
 }) {
   const requestConfirm = useConfirmAction()
   const [exportCsvOpen, setExportCsvOpen] = React.useState(false)
+  const [deliveryOpen, setDeliveryOpen] = React.useState(false)
   // With no selection, every order is exported.
   const exportCount = selectedCount > 0 ? selectedCount : totalCount
   return (
@@ -2594,6 +3099,8 @@ function OrdersActionsMenu({
                             })
                       : action.label === 'Export to CSV'
                         ? () => setExportCsvOpen(true)
+                      : action.label === 'Delivery'
+                        ? () => setDeliveryOpen(true)
                       : action.label === 'Copy'
                         ? () =>
                             toast.success(selectedCount > 1 ? 'Orders copied' : 'Order copied')
@@ -2617,6 +3124,11 @@ function OrdersActionsMenu({
       </DropdownMenuContent>
     </DropdownMenu>
     <ExportCsvDialog open={exportCsvOpen} onOpenChange={setExportCsvOpen} count={exportCount} />
+    <DeliveryBookingDialog
+      open={deliveryOpen}
+      onOpenChange={setDeliveryOpen}
+      orders={selectedOrders}
+    />
     </>
   )
 }
@@ -2631,6 +3143,12 @@ export function AdminOrdersAllPage() {
   const selectedCount = Object.keys(rowSelection).length
 
   const [orders, setOrders] = React.useState<Order[]>(ORDERS)
+  // Row selection is keyed by order id (see getRowId), so the selected orders
+  // are those whose id is present in the selection map.
+  const selectedOrders = React.useMemo(
+    () => orders.filter((order) => rowSelection[order.id]),
+    [orders, rowSelection],
+  )
   // Selecting a status closes the portaled dropdown, whose follow-up click can
   // land on the row underneath. Suppress row clicks briefly after a change so
   // the detail pane doesn't open.
@@ -2874,6 +3392,7 @@ export function AdminOrdersAllPage() {
 
           <OrdersActionsMenu
             selectedCount={selectedCount}
+            selectedOrders={selectedOrders}
             totalCount={filteredOrders.length}
             triggerClassName="flex-1"
           />
@@ -2983,7 +3502,11 @@ export function AdminOrdersAllPage() {
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          <OrdersActionsMenu selectedCount={selectedCount} totalCount={filteredOrders.length} />
+          <OrdersActionsMenu
+            selectedCount={selectedCount}
+            selectedOrders={selectedOrders}
+            totalCount={filteredOrders.length}
+          />
 
           <Button className="h-10 px-3" onClick={navigateToAddOrder}>
             <Plus className="size-4" />
