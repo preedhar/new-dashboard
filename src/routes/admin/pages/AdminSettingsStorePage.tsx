@@ -1,6 +1,5 @@
 import * as React from 'react'
 import {
-  ArrowLeft,
   Bell,
   Clock,
   Coins,
@@ -232,14 +231,6 @@ export function AdminSettingsStorePage() {
   // discarding via the alert dialog.
   const [pendingNav, setPendingNav] = React.useState<(() => void) | null>(null)
 
-  function handleBack() {
-    if (isDirty) {
-      setPendingNav(() => () => window.history.back())
-    } else {
-      window.history.back()
-    }
-  }
-
   // Intercept clicks on links that navigate elsewhere (e.g. the sidebar) so we
   // can prompt before leaving with unsaved changes.
   React.useEffect(() => {
@@ -279,19 +270,10 @@ export function AdminSettingsStorePage() {
   return (
     <>
       <form onSubmit={handleSubmit} className="w-full">
-        <header className="relative mb-8 flex items-center justify-center">
-          {/* Back button is only shown on mobile; on desktop the sidebar covers
-              navigation. */}
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-lg"
-            aria-label="Go back"
-            onClick={handleBack}
-            className="absolute left-0 md:hidden"
-          >
-            <ArrowLeft className="size-5" />
-          </Button>
+        {/* The store page is the Settings section hub: on mobile it's the
+            Settings tab's destination (with the section sub-menu above it) and
+            on desktop the sidebar covers navigation, so there's no back button. */}
+        <header className="mb-8 flex items-center justify-center">
           <h1 className="text-2xl font-semibold tracking-normal text-neutral-900">
             Store
           </h1>

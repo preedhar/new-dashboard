@@ -34,6 +34,10 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path === '/admin/orders/new' ||
     activeRoute.path === '/admin/settings/store' ||
     activeRoute.path === '/admin/settings/team'
+  // The store settings page doubles as the Settings section hub on mobile: it's
+  // the Settings tab's destination, so it keeps the bottom nav and its section
+  // sub-menu even though it renders a form.
+  const isSettingsHub = activeRoute.path === '/admin/settings/store'
   // The order and delivery detail pages provide their own back button and
   // render a full-bleed card, so the shared title/header and the section's
   // horizontal padding are suppressed for them.
@@ -110,7 +114,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
           <Page />
         </section>
       </SidebarInset>
-      {isOrderFormPage || isOrderDetailPage ? null : (
+      {(isOrderFormPage && !isSettingsHub) || isOrderDetailPage ? null : (
         <MobileBottomNav pathname={activeRoute.path} />
       )}
     </SidebarProvider>
