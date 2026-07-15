@@ -413,12 +413,6 @@ const DELIVERY_COLUMNS: ColumnDef<Delivery>[] = [
     ),
   },
   {
-    accessorKey: 'status',
-    header: 'Delivery status',
-    enableSorting: false,
-    cell: ({ row }) => <DeliveryStatusBadge status={row.original.status} />,
-  },
-  {
     accessorKey: 'deliverAt',
     sortingFn: 'datetime',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Delivery" />,
@@ -444,15 +438,10 @@ const DELIVERY_COLUMNS: ColumnDef<Delivery>[] = [
     ),
   },
   {
-    accessorKey: 'provider',
-    header: 'Provider',
+    accessorKey: 'status',
+    header: 'Delivery status',
     enableSorting: false,
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <LalamoveIcon className="size-5 shrink-0" />
-        {row.original.provider}
-      </div>
-    ),
+    cell: ({ row }) => <DeliveryStatusBadge status={row.original.status} />,
   },
 ]
 
