@@ -125,7 +125,6 @@ export const primaryAdminNav: AdminNavItem[] = [
     icon: Settings,
     items: [
       { title: 'Store', url: '/admin/settings/store', icon: Store },
-      { title: 'Store 2', url: '/admin/settings/store-2', icon: Store },
       { title: 'Website', url: '/admin/settings/website', icon: Globe },
       { title: 'Payments', url: '/admin/settings/payments', icon: CreditCard },
       { title: 'Team', url: '/admin/settings/team', icon: Users },
@@ -435,14 +434,14 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Store',
     title: 'Store',
     icon: Settings,
-    component: AdminSettingsStorePage,
+    component: AdminSettingsStore2Page,
   },
   {
     path: '/admin/settings/store-2',
-    label: 'Store 2',
-    title: 'Store 2',
+    label: 'Store',
+    title: 'Store',
     icon: Settings,
-    component: AdminSettingsStore2Page,
+    component: AdminSettingsStorePage,
   },
   {
     path: '/admin/settings/team',
