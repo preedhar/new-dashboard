@@ -23,17 +23,17 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { TypographyH3, TypographyH4 } from '@/components/ui/typography'
 import type { ColumnDef } from '@tanstack/react-table'
 
-type PayoutStatus = 'Upcoming' | 'In transit' | 'Sent' | 'Failed'
+type PayoutStatus = 'Upcoming' | 'In transit' | 'Paid' | 'Failed'
 
 // Status is read-only on this page — it comes from the payment processor, so it
 // renders as a badge rather than a dropdown. The colours mirror the Deliveries
 // table: Upcoming maps to the Pending pill (primary/amber), In transit maps to
-// the Approved pill (blue), Sent maps to Completed/Fulfilled (secondary/grey)
+// the Approved pill (blue), Paid maps to the Deliveries "Completed" green pill
 // and Failed shares the destructive (red) treatment.
 const STATUS_BADGE_CLASS: Record<PayoutStatus, string> = {
   Upcoming: 'border-transparent bg-primary/10 text-amber-700',
   'In transit': 'border-transparent bg-[#2040B0]/10 text-[#2040B0]',
-  Sent: 'border-transparent bg-secondary text-secondary-foreground',
+  Paid: 'border-transparent bg-green-400/10 text-green-900',
   Failed: 'border-transparent bg-destructive/10 text-destructive',
 }
 
@@ -149,22 +149,22 @@ function makePayout(
 
 const PAYOUTS: Payout[] = [
   makePayout(1, 'PY10471', 'Upcoming', new Date(2026, 6, 18), 'QR Ph', 2),
-  makePayout(2, 'PY10470', 'Sent', new Date(2026, 6, 17), 'QR Ph', 2),
-  makePayout(3, 'PY10469', 'Sent', new Date(2026, 6, 16), 'Card', 1),
-  makePayout(4, 'PY10468', 'Sent', new Date(2026, 6, 15), 'Card', 1),
-  makePayout(5, 'PY10467', 'Sent', new Date(2026, 6, 14), 'PayNow', 2),
-  makePayout(6, 'PY10466', 'Sent', new Date(2026, 6, 13), 'Card', 3),
-  makePayout(7, 'PY10465', 'Sent', new Date(2026, 6, 11), 'GCash', 1),
-  makePayout(8, 'PY10464', 'Sent', new Date(2026, 6, 10), 'Card', 1),
-  makePayout(9, 'PY10463', 'Sent', new Date(2026, 6, 9), 'QR Ph', 2),
-  makePayout(10, 'PY10462', 'Sent', new Date(2026, 6, 8), 'Card', 2),
-  makePayout(11, 'PY10461', 'Sent', new Date(2026, 6, 7), 'PayNow', 1),
-  makePayout(12, 'PY10460', 'Sent', new Date(2026, 6, 5), 'Card', 3),
-  makePayout(13, 'PY10459', 'Sent', new Date(2026, 6, 3), 'GCash', 1),
+  makePayout(2, 'PY10470', 'Paid', new Date(2026, 6, 17), 'QR Ph', 2),
+  makePayout(3, 'PY10469', 'Paid', new Date(2026, 6, 16), 'Card', 1),
+  makePayout(4, 'PY10468', 'Paid', new Date(2026, 6, 15), 'Card', 1),
+  makePayout(5, 'PY10467', 'Paid', new Date(2026, 6, 14), 'PayNow', 2),
+  makePayout(6, 'PY10466', 'Paid', new Date(2026, 6, 13), 'Card', 3),
+  makePayout(7, 'PY10465', 'Paid', new Date(2026, 6, 11), 'GCash', 1),
+  makePayout(8, 'PY10464', 'Paid', new Date(2026, 6, 10), 'Card', 1),
+  makePayout(9, 'PY10463', 'Paid', new Date(2026, 6, 9), 'QR Ph', 2),
+  makePayout(10, 'PY10462', 'Paid', new Date(2026, 6, 8), 'Card', 2),
+  makePayout(11, 'PY10461', 'Paid', new Date(2026, 6, 7), 'PayNow', 1),
+  makePayout(12, 'PY10460', 'Paid', new Date(2026, 6, 5), 'Card', 3),
+  makePayout(13, 'PY10459', 'Paid', new Date(2026, 6, 3), 'GCash', 1),
   // Older payouts fall in the previous year, so the table shows the year.
-  makePayout(14, 'PY10458', 'Sent', new Date(2025, 11, 18), 'Card', 2),
-  makePayout(15, 'PY10457', 'Sent', new Date(2025, 10, 6), 'QR Ph', 1),
-  makePayout(16, 'PY10456', 'Sent', new Date(2025, 8, 25), 'Card', 2),
+  makePayout(14, 'PY10458', 'Paid', new Date(2025, 11, 18), 'Card', 2),
+  makePayout(15, 'PY10457', 'Paid', new Date(2025, 10, 6), 'QR Ph', 1),
+  makePayout(16, 'PY10456', 'Paid', new Date(2025, 8, 25), 'Card', 2),
 ]
 
 function formatDate(date: Date) {
@@ -194,10 +194,22 @@ function orderCountLabel(count: number) {
 // dates.
 const PENDING_PAYOUTS = PAYOUTS.filter((payout) => PENDING_STATUSES.includes(payout.status))
 const RUNNING_BALANCE = round2(PENDING_PAYOUTS.reduce((sum, payout) => sum + payout.net, 0))
-const NEXT_PAYOUT_DATE = PENDING_PAYOUTS.reduce<Date | null>(
-  (earliest, payout) => (!earliest || payout.payoutDate < earliest ? payout.payoutDate : earliest),
+// The soonest pending payout — this drives the "Next payout" date.
+const NEXT_PAYOUT = PENDING_PAYOUTS.reduce<Payout | null>(
+  (earliest, payout) => (!earliest || payout.payoutDate < earliest.payoutDate ? payout : earliest),
   null,
 )
+// The next payout only disburses the orders that have already cleared — the
+// freshest sale is still settling and stays in the running balance — so the
+// amount is a subset of, and lower than, the total balance owed.
+const NEXT_PAYOUT_AMOUNT = NEXT_PAYOUT
+  ? round2(
+      [...NEXT_PAYOUT.orders]
+        .sort((a, b) => a.date.getTime() - b.date.getTime())
+        .slice(0, -1)
+        .reduce((sum, order) => sum + (order.amount - order.fees), 0),
+    )
+  : 0
 
 // Client-side navigation to the full-page payout detail view, used on mobile.
 // The payout id rides in the query string since the router matches pathname only.
@@ -519,8 +531,17 @@ export function AdminOrdersEarningsPage() {
         <Card className="justify-center py-4 shadow-none md:justify-start md:py-6">
           <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 md:grid md:items-start md:gap-1.5 md:px-6">
             <CardDescription>Next payout</CardDescription>
-            <CardTitle className="text-sm font-semibold tabular-nums md:text-3xl">
-              {NEXT_PAYOUT_DATE ? formatDate(NEXT_PAYOUT_DATE) : '—'}
+            <CardTitle className="flex flex-col items-end gap-0.5 text-sm font-semibold tabular-nums md:flex-row md:items-baseline md:gap-2 md:text-3xl">
+              {NEXT_PAYOUT ? (
+                <>
+                  <span>{formatMoney(NEXT_PAYOUT_AMOUNT)}</span>
+                  <span className="text-xs font-normal text-muted-foreground md:text-base">
+                    {formatDate(NEXT_PAYOUT.payoutDate)}
+                  </span>
+                </>
+              ) : (
+                '—'
+              )}
             </CardTitle>
           </CardHeader>
         </Card>
