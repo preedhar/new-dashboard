@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/input-group'
 import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { TypographyH3, TypographyH4 } from '@/components/ui/typography'
 import type { ColumnDef } from '@tanstack/react-table'
 
@@ -51,13 +52,13 @@ type DeliveryStatus =
 // Status is read-only on this page — it comes from the delivery provider, so
 // it renders as a badge rather than the orders page's status dropdown.
 // Assigning driver mirrors the Pending pill (primary/amber), Ongoing/Picked up
-// mirror the Approved pill (blue), Completed mirrors Fulfilled (secondary/grey)
+// mirror the Approved pill (blue), Completed uses a dark green treatment
 // and the terminal failures share the destructive (red) treatment.
 const STATUS_BADGE_CLASS: Record<DeliveryStatus, string> = {
   'Assigning driver': 'border-transparent bg-primary/10 text-amber-700',
   Ongoing: 'border-transparent bg-[#2040B0]/10 text-[#2040B0]',
   'Picked up': 'border-transparent bg-[#2040B0]/10 text-[#2040B0]',
-  Completed: 'border-transparent bg-secondary text-secondary-foreground',
+  Completed: 'border-transparent bg-green-400/10 text-green-900',
   Canceled: 'border-transparent bg-destructive/10 text-destructive',
   Rejected: 'border-transparent bg-destructive/10 text-destructive',
   Expired: 'border-transparent bg-destructive/10 text-destructive',
@@ -69,6 +70,19 @@ const ACTIVE_STATUSES: DeliveryStatus[] = ['Assigning driver', 'Ongoing', 'Picke
 
 function DeliveryStatusBadge({ status, className }: { status: DeliveryStatus; className?: string }) {
   return <Badge className={cn('text-sm', STATUS_BADGE_CLASS[status], className)}>{status}</Badge>
+}
+
+// Provider glyph shown before the delivery id — every delivery is booked through
+// Lalamove, so the tooltip names the provider.
+function ProviderIcon({ className }: { className?: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <LalamoveIcon className={cn('size-4 shrink-0', className)} />
+      </TooltipTrigger>
+      <TooltipContent>Lalamove</TooltipContent>
+    </Tooltip>
+  )
 }
 
 type DeliveryStop = { orderId: string; address: string }
@@ -401,7 +415,10 @@ const DELIVERY_COLUMNS: ColumnDef<Delivery>[] = [
     header: 'Delivery ID',
     enableSorting: false,
     cell: ({ row }) => (
-      <p className="font-semibold text-foreground">{row.original.id}</p>
+      <div className="flex items-center gap-2">
+        <ProviderIcon />
+        <p className="font-semibold text-foreground">{row.original.id}</p>
+      </div>
     ),
   },
   {
@@ -568,7 +585,10 @@ export function AdminOrdersDeliveriesPage() {
               {delivery.stops.length} {delivery.stops.length === 1 ? 'order' : 'orders'}
             </p>
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-normal text-foreground">{delivery.id}</p>
+              <div className="flex items-center gap-2">
+                <ProviderIcon />
+                <p className="text-sm font-normal text-foreground">{delivery.id}</p>
+              </div>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium text-foreground">{formatPrice(delivery.price)}</p>
                 <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
