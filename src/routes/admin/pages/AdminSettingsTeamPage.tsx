@@ -219,7 +219,7 @@ function AddMemberDialog({
                   className="flex w-full items-center justify-between gap-3 px-4 py-3 font-normal transition-colors hover:bg-muted/50"
                 >
                   <span className="flex flex-col gap-1">
-                    <span>Admin</span>
+                    <span className="font-medium">Admin</span>
                     <span className="text-sm text-muted-foreground">
                       Full access to everything
                     </span>
@@ -231,7 +231,7 @@ function AddMemberDialog({
                   className="flex w-full items-center justify-between gap-3 px-4 py-3 font-normal transition-colors hover:bg-muted/50"
                 >
                   <span className="flex flex-col gap-1">
-                    <span>Member</span>
+                    <span className="font-medium">Member</span>
                     <span className="text-sm text-muted-foreground">
                       Limited access to non-sensitive pages
                     </span>

@@ -84,8 +84,8 @@ type StoreForm = {
   browserNotifications: boolean
 }
 
-// Baseline state that represents the store's currently-saved settings. The form
-// is considered dirty whenever it diverges from this.
+// Baseline state that represents the store's currently-saved settings. The
+// working `form` diverges from `saved` per-field until each edit is committed.
 const INITIAL_FORM: StoreForm = {
   storeName: '[DEMO] Coffee Brewers',
   addressEnabled: false,
@@ -97,6 +97,40 @@ const INITIAL_FORM: StoreForm = {
   twentyFourHour: true,
   contactInfo: 'coffeebrewers@gmail.com',
   browserNotifications: false,
+}
+
+// The global <Toaster/> paints every toast with the success (green) palette via
+// `--normal-bg`. The in-progress "Saving changes…" toast must NOT read as green,
+// so it overrides those vars with the neutral popover palette; the follow-up
+// "Changes saved" toast restores the green success palette explicitly (updating
+// a toast by id keeps its prior inline style otherwise).
+const SAVING_TOAST_STYLE = {
+  '--normal-bg': 'var(--popover)',
+  '--normal-text': 'var(--popover-foreground)',
+  '--normal-border': 'var(--border)',
+} as React.CSSProperties
+
+const SAVED_TOAST_STYLE = {
+  '--normal-bg': 'var(--success)',
+  '--normal-text': 'var(--success-foreground)',
+  '--normal-border': 'var(--success-border)',
+} as React.CSSProperties
+
+// A single shared id keeps the save feedback to one toast that transitions
+// in-place from "Saving changes…" to "Changes saved" a second later.
+const SAVE_TOAST_ID = 'store2-save'
+
+function runSaveFeedback() {
+  toast.loading('Saving changes...', {
+    id: SAVE_TOAST_ID,
+    style: SAVING_TOAST_STYLE,
+  })
+  window.setTimeout(() => {
+    toast.success('Changes saved', {
+      id: SAVE_TOAST_ID,
+      style: SAVED_TOAST_STYLE,
+    })
+  }, 1000)
 }
 
 // A titled section: heading (and optional description) sit outside the card,
@@ -153,13 +187,13 @@ function SettingRow({
     <div className={inline ? 'min-w-0 flex-1' : 'sm:flex-1'}>
       <Label
         htmlFor={id}
-        className="flex items-center gap-3 text-sm font-medium"
+        className="flex items-center gap-3 text-sm font-medium sm:gap-6"
       >
         <Icon className="size-4 shrink-0 text-muted-foreground" />
         {label}
       </Label>
       {description ? (
-        <p className="mt-1.5 text-sm text-muted-foreground sm:pl-7">
+        <p className="mt-1.5 text-sm text-muted-foreground sm:pl-10">
           {description}
         </p>
       ) : null}
@@ -209,23 +243,78 @@ function ToggleControl({
   )
 }
 
-export function AdminSettingsStorePage() {
-  const [form, setForm] = React.useState<StoreForm>(INITIAL_FORM)
+// The primary Save button for a text field, shown on its own row beneath the
+// field once its value diverges from what's saved. Keeping it out of the field's
+// control column lets the label stay vertically centered against its input.
+// Selects and switches save on change, so they never use it.
+function SaveRow({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="flex justify-end pb-4">
+      <Button type="button" size="lg" onClick={onClick}>
+        Save
+      </Button>
+    </div>
+  )
+}
 
+export function AdminSettingsStorePage() {
+  // `form` holds the working values; `saved` holds what's persisted. Text fields
+  // diverge until their Save button commits them; selects and switches commit
+  // immediately, so they stay in sync.
+  const [form, setForm] = React.useState<StoreForm>(INITIAL_FORM)
+  const [saved, setSaved] = React.useState<StoreForm>(INITIAL_FORM)
+
+  // Text-field edit: update the working form only.
   function update<K extends keyof StoreForm>(key: K, value: StoreForm[K]) {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
-  const isDirty = React.useMemo(
-    () => JSON.stringify(form) !== JSON.stringify(INITIAL_FORM),
-    [form],
-  )
-
-  function handleSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    toast.success('Store settings saved')
-    setForm(INITIAL_FORM)
+  // Select/switch change: persist immediately and run the save feedback.
+  function updateAndSave<K extends keyof StoreForm>(key: K, value: StoreForm[K]) {
+    setForm((current) => ({ ...current, [key]: value }))
+    setSaved((current) => ({ ...current, [key]: value }))
+    runSaveFeedback()
   }
+
+  // Commit a text field from the working form into saved state, then run the
+  // save feedback.
+  function saveStoreName() {
+    setSaved((current) => ({ ...current, storeName: form.storeName }))
+    runSaveFeedback()
+  }
+
+  // The two address inputs are treated as one field, committed together.
+  function saveAddress() {
+    setSaved((current) => ({
+      ...current,
+      addressStreet: form.addressStreet,
+      addressUnit: form.addressUnit,
+    }))
+    runSaveFeedback()
+  }
+
+  function saveContact() {
+    setSaved((current) => ({ ...current, contactInfo: form.contactInfo }))
+    runSaveFeedback()
+  }
+
+  // Revealing the address inputs isn't itself a saved change — mirror it into
+  // saved so it doesn't count as dirty or emit a toast.
+  function revealAddress() {
+    setForm((current) => ({ ...current, addressEnabled: true }))
+    setSaved((current) => ({ ...current, addressEnabled: true }))
+  }
+
+  const storeNameDirty = form.storeName !== saved.storeName
+  const addressDirty =
+    form.addressStreet !== saved.addressStreet ||
+    form.addressUnit !== saved.addressUnit
+  const contactDirty = form.contactInfo !== saved.contactInfo
+
+  const isDirty = React.useMemo(
+    () => JSON.stringify(form) !== JSON.stringify(saved),
+    [form, saved],
+  )
 
   // When dirty, navigating away is held in `pendingNav` until the user confirms
   // discarding via the alert dialog.
@@ -269,7 +358,7 @@ export function AdminSettingsStorePage() {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="w-full">
+      <form onSubmit={(event) => event.preventDefault()} className="w-full">
         {/* The store page is the Settings section hub: on mobile it's the
             Settings tab's destination (with the section sub-menu above it) and
             on desktop the sidebar covers navigation, so there's no back button. */}
@@ -281,15 +370,18 @@ export function AdminSettingsStorePage() {
 
         <div className="mx-auto flex w-full max-w-[640px] flex-col gap-8">
           <Section title="Store details">
-            <SettingRow id="store-name" label="Store name" icon={Store}>
-              <Input
-                id="store-name"
-                value={form.storeName}
-                onChange={(event) => update('storeName', event.target.value)}
-                placeholder="My store"
-                className="h-10"
-              />
-            </SettingRow>
+            <div>
+              <SettingRow id="store-name" label="Store name" icon={Store}>
+                <Input
+                  id="store-name"
+                  value={form.storeName}
+                  onChange={(event) => update('storeName', event.target.value)}
+                  placeholder="My store"
+                  className="h-10"
+                />
+              </SettingRow>
+              {storeNameDirty ? <SaveRow onClick={saveStoreName} /> : null}
+            </div>
 
             {/* Store address + its "Display to customers" toggle share one
                 divider group, so no divider sits between them. */}
@@ -328,12 +420,18 @@ export function AdminSettingsStorePage() {
                     size="icon-lg"
                     aria-label="Add store address"
                     className="text-muted-foreground"
-                    onClick={() => update('addressEnabled', true)}
+                    onClick={revealAddress}
                   >
                     <Plus className="size-4" />
                   </Button>
                 )}
               </SettingRow>
+
+              {/* The two address inputs are treated as one field, so they share
+                  a single Save button on its own row. */}
+              {form.addressEnabled && addressDirty ? (
+                <SaveRow onClick={saveAddress} />
+              ) : null}
 
               {form.addressEnabled ? (
                 <SettingRow label="Display to customers" icon={Eye} inline>
@@ -341,7 +439,7 @@ export function AdminSettingsStorePage() {
                     label="Display to customers"
                     checked={form.displayAddress}
                     onCheckedChange={(checked) =>
-                      update('displayAddress', checked)
+                      updateAndSave('displayAddress', checked)
                     }
                   />
                 </SettingRow>
@@ -351,7 +449,7 @@ export function AdminSettingsStorePage() {
             <SettingRow id="timezone" label="Timezone" icon={Globe}>
               <Select
                 value={form.timezone}
-                onValueChange={(value) => update('timezone', value)}
+                onValueChange={(value) => updateAndSave('timezone', value)}
               >
                 <SelectTrigger
                   id="timezone"
@@ -378,14 +476,16 @@ export function AdminSettingsStorePage() {
               <ToggleControl
                 label="24-hour time"
                 checked={form.twentyFourHour}
-                onCheckedChange={(checked) => update('twentyFourHour', checked)}
+                onCheckedChange={(checked) =>
+                  updateAndSave('twentyFourHour', checked)
+                }
               />
             </SettingRow>
 
             <SettingRow id="currency" label="Currency" icon={Coins}>
               <Select
                 value={form.currency}
-                onValueChange={(value) => update('currency', value)}
+                onValueChange={(value) => updateAndSave('currency', value)}
               >
                 <SelectTrigger
                   id="currency"
@@ -405,20 +505,23 @@ export function AdminSettingsStorePage() {
           </Section>
 
           <Section title="Contact">
-            <SettingRow
-              id="contact-info"
-              label="Contact info"
-              icon={Phone}
-              description="Shared on receipts"
-            >
-              <Input
+            <div>
+              <SettingRow
                 id="contact-info"
-                value={form.contactInfo}
-                onChange={(event) => update('contactInfo', event.target.value)}
-                placeholder="Phone, Email, etc."
-                className="h-10"
-              />
-            </SettingRow>
+                label="Contact info"
+                icon={Phone}
+                description="Shared on receipts"
+              >
+                <Input
+                  id="contact-info"
+                  value={form.contactInfo}
+                  onChange={(event) => update('contactInfo', event.target.value)}
+                  placeholder="Phone, Email, etc."
+                  className="h-10"
+                />
+              </SettingRow>
+              {contactDirty ? <SaveRow onClick={saveContact} /> : null}
+            </div>
 
             <SettingRow
               label="Browser notifications"
@@ -430,33 +533,12 @@ export function AdminSettingsStorePage() {
                 label="Browser notifications"
                 checked={form.browserNotifications}
                 onCheckedChange={(checked) =>
-                  update('browserNotifications', checked)
+                  updateAndSave('browserNotifications', checked)
                 }
               />
             </SettingRow>
           </Section>
         </div>
-
-        {isDirty ? (
-          <div className="sticky bottom-4 z-30 mx-auto mt-8 flex w-full max-w-[640px] items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary px-4 py-3 animate-in fade-in-0 slide-in-from-bottom-4 duration-300">
-            <span className="text-sm font-medium text-muted-foreground">
-              Unsaved changes
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-10"
-                onClick={() => setForm(INITIAL_FORM)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" variant="outline" className="h-10">
-                Save
-              </Button>
-            </div>
-          </div>
-        ) : null}
       </form>
 
       <AlertDialog
