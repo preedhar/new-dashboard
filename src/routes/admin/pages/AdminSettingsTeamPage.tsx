@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ArrowLeft, MoreHorizontal, Plus } from 'lucide-react'
+import { ArrowLeft, MoreHorizontal, Plus, Trash2, User } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -133,16 +133,18 @@ function MemberRow({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-40">
             <DropdownMenuItem
-              variant="destructive"
-              onSelect={() => onRemove(member.id)}
-            >
-              Remove
-            </DropdownMenuItem>
-            <DropdownMenuItem
               className="whitespace-nowrap"
               onSelect={() => onRoleChange(member.id, nextRole)}
             >
+              <User className="size-4" />
               Change to {nextRole}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() => onRemove(member.id)}
+            >
+              <Trash2 className="size-4" />
+              Remove
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

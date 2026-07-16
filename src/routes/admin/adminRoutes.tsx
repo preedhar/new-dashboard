@@ -43,6 +43,7 @@ import {
 import { AdminOrdersAnalyticsPage } from './pages/AdminOrdersAnalyticsPage'
 import { AdminAppsPage } from './pages/AdminAppsPage'
 import { AdminSettingsStorePage } from './pages/AdminSettingsStorePage'
+import { AdminSettingsStore2Page } from './pages/AdminSettingsStore2Page'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
 import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
@@ -124,6 +125,7 @@ export const primaryAdminNav: AdminNavItem[] = [
     icon: Settings,
     items: [
       { title: 'Store', url: '/admin/settings/store', icon: Store },
+      { title: 'Store 2', url: '/admin/settings/store-2', icon: Store },
       { title: 'Website', url: '/admin/settings/website', icon: Globe },
       { title: 'Payments', url: '/admin/settings/payments', icon: CreditCard },
       { title: 'Team', url: '/admin/settings/team', icon: Users },
@@ -434,6 +436,13 @@ export const adminRoutes: AdminRoute[] = [
     title: 'Store',
     icon: Settings,
     component: AdminSettingsStorePage,
+  },
+  {
+    path: '/admin/settings/store-2',
+    label: 'Store 2',
+    title: 'Store 2',
+    icon: Settings,
+    component: AdminSettingsStore2Page,
   },
   {
     path: '/admin/settings/team',
