@@ -73,7 +73,7 @@ export function UserMenuContent({
           {languages.map((language) => (
             <DropdownMenuItem
               key={language.code}
-              className="h-11 gap-3"
+              className="gap-3"
               onSelect={() => setSelectedLanguageCode(language.code)}
             >
               <span className="flex w-5 justify-center">
@@ -81,7 +81,7 @@ export function UserMenuContent({
                   <CheckIcon className="size-4 text-muted-foreground" />
                 ) : null}
               </span>
-              <span className="text-xl leading-none">{language.flag}</span>
+              <span className="text-base leading-none">{language.flag}</span>
               <span className="truncate">{language.label}</span>
             </DropdownMenuItem>
           ))}

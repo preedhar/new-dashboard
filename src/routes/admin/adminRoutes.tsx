@@ -42,8 +42,8 @@ import {
 } from './pages/AdminOrdersEarningsPage'
 import { AdminOrdersAnalyticsPage } from './pages/AdminOrdersAnalyticsPage'
 import { AdminAppsPage } from './pages/AdminAppsPage'
+import { AdminFulfillmentPage } from './pages/AdminFulfillmentPage'
 import { AdminSettingsStorePage } from './pages/AdminSettingsStorePage'
-import { AdminSettingsStore2Page } from './pages/AdminSettingsStore2Page'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
 import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
@@ -434,13 +434,6 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Store',
     title: 'Store',
     icon: Settings,
-    component: AdminSettingsStore2Page,
-  },
-  {
-    path: '/admin/settings/store-2',
-    label: 'Store',
-    title: 'Store',
-    icon: Settings,
     component: AdminSettingsStorePage,
   },
   {
@@ -482,10 +475,7 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Fulfillment',
     title: 'Fulfillment',
     icon: Globe,
-    component: createAdminPlaceholder(
-      'Fulfillment',
-      'A future workspace for online store fulfillment rules, routing, and status.',
-    ),
+    component: AdminFulfillmentPage,
   },
   {
     path: '/admin/apps/online-store/inventory-calendar',

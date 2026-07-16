@@ -26,15 +26,15 @@ export function AdminPage({ pathname }: AdminPageProps) {
   }
 
   const Page = activeRoute.component
-  // The order create/edit form and the store/team settings pages provide their
-  // own header (back button + title) and a wider top padding, so the shared
-  // chrome is suppressed for them.
+  // The order create/edit form, the store/team settings pages, and the online
+  // store fulfillment page provide their own header (back button + title) and a
+  // wider top padding, so the shared chrome is suppressed for them.
   const isOrderFormPage =
     activeRoute.path === '/admin/orders/edit' ||
     activeRoute.path === '/admin/orders/new' ||
     activeRoute.path === '/admin/settings/store' ||
-    activeRoute.path === '/admin/settings/store-2' ||
-    activeRoute.path === '/admin/settings/team'
+    activeRoute.path === '/admin/settings/team' ||
+    activeRoute.path === '/admin/apps/online-store/fulfillment'
   // The store settings page doubles as the Settings section hub on mobile: it's
   // the Settings tab's destination, so it keeps the bottom nav and its section
   // sub-menu even though it renders a form.

@@ -272,7 +272,7 @@ function FormRow({
     <div className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
       <Label
         htmlFor={id}
-        className="flex items-center gap-3 text-sm font-medium sm:flex-1"
+        className="flex items-center gap-3 text-sm font-medium sm:flex-1 sm:gap-6"
       >
         <Icon className="size-4 shrink-0 text-muted-foreground" />
         {label}
@@ -305,7 +305,7 @@ function OptionalField({
   if (!enabled) {
     return (
       <div className="flex items-center justify-between gap-6">
-        <Label className="flex items-center gap-3 text-sm font-medium">
+        <Label className="flex items-center gap-3 text-sm font-medium sm:gap-6">
           <Icon className="size-4 shrink-0 text-muted-foreground" />
           {label}
         </Label>
@@ -328,7 +328,7 @@ function OptionalField({
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
       <Label
         htmlFor={fieldKey}
-        className="flex items-center gap-3 text-sm font-medium sm:flex-1"
+        className="flex items-center gap-3 text-sm font-medium sm:flex-1 sm:gap-6"
       >
         <Icon className="size-4 shrink-0 text-muted-foreground" />
         {label}
