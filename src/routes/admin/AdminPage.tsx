@@ -33,6 +33,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path === '/admin/orders/edit' ||
     activeRoute.path === '/admin/orders/new' ||
     activeRoute.path === '/admin/settings/store' ||
+    activeRoute.path === '/admin/settings/store-2' ||
     activeRoute.path === '/admin/settings/team'
   // The store settings page doubles as the Settings section hub on mobile: it's
   // the Settings tab's destination, so it keeps the bottom nav and its section
