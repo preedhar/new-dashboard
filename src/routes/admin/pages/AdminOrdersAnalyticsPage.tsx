@@ -453,6 +453,27 @@ function EmailReportsDialog({
   schedule: string
   onScheduleChange: (value: string) => void
 }) {
+  // Snapshot the values when the dialog opens so Save can stay disabled until
+  // one of the fields actually changes.
+  const [initial, setInitial] = React.useState({
+    daily,
+    additionalRecipients,
+    recipients,
+    schedule,
+  })
+  React.useEffect(() => {
+    if (open) {
+      setInitial({ daily, additionalRecipients, recipients, schedule })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  const isDirty =
+    daily !== initial.daily ||
+    additionalRecipients !== initial.additionalRecipients ||
+    recipients !== initial.recipients ||
+    schedule !== initial.schedule
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="[&_[data-slot=dialog-close]]:size-10">
@@ -536,6 +557,7 @@ function EmailReportsDialog({
           </Button>
           <Button
             className="h-10 flex-1"
+            disabled={!isDirty}
             onClick={() => {
               onOpenChange(false)
               toast.success('Email report settings saved')

@@ -5,6 +5,7 @@ import {
   CalendarRange,
   CircleDollarSign,
   ClipboardList,
+  Clock,
   CreditCard,
   Gift,
   Globe,
@@ -42,7 +43,10 @@ import {
 } from './pages/AdminOrdersEarningsPage'
 import { AdminOrdersAnalyticsPage } from './pages/AdminOrdersAnalyticsPage'
 import { AdminAppsPage } from './pages/AdminAppsPage'
-import { AdminFulfillmentPage } from './pages/AdminFulfillmentPage'
+import {
+  AdminFulfillmentPage,
+  AdminTimeSlotsPage,
+} from './pages/AdminFulfillmentPage'
 import { AdminSettingsStorePage } from './pages/AdminSettingsStorePage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
@@ -476,6 +480,13 @@ export const adminRoutes: AdminRoute[] = [
     title: 'Fulfillment',
     icon: Globe,
     component: AdminFulfillmentPage,
+  },
+  {
+    path: '/admin/apps/online-store/fulfillment/time-slots',
+    label: 'Time slots',
+    title: 'Time slots',
+    icon: Clock,
+    component: AdminTimeSlotsPage,
   },
   {
     path: '/admin/apps/online-store/inventory-calendar',
