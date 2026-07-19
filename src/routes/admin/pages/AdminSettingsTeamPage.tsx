@@ -168,6 +168,8 @@ function AddMemberDialog({
   const [email, setEmail] = React.useState('')
   const [role, setRole] = React.useState<AssignableRole>('Member')
 
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+
   function handleOpenChange(next: boolean) {
     onOpenChange(next)
     // Reset the form once the dialog has closed.
@@ -250,7 +252,7 @@ function AddMemberDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" className="h-10 flex-1">
+            <Button type="submit" className="h-10 flex-1" disabled={!isEmailValid}>
               Add member
             </Button>
           </DialogFooter>

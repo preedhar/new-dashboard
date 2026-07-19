@@ -319,6 +319,19 @@ function ReviewSettingsDialog({
   autoPublish: boolean
   onAutoPublishChange: (value: boolean) => void
 }) {
+  // Snapshot the values when the dialog opens so Save can stay disabled until
+  // one of the switches actually changes.
+  const [initial, setInitial] = React.useState({ collectReviews, autoPublish })
+  React.useEffect(() => {
+    if (open) {
+      setInitial({ collectReviews, autoPublish })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  const isDirty =
+    collectReviews !== initial.collectReviews || autoPublish !== initial.autoPublish
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="[&_[data-slot=dialog-close]]:size-10">
@@ -369,6 +382,7 @@ function ReviewSettingsDialog({
           </Button>
           <Button
             className="h-10 flex-1"
+            disabled={!isDirty}
             onClick={() => {
               onOpenChange(false)
               toast.success('Review settings saved')
