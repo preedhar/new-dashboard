@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import { DayPicker, getDefaultClassNames } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
@@ -26,7 +26,22 @@ function Calendar({
           defaultClassNames.month_caption,
           "flex h-9 items-center justify-center",
         ),
-        caption_label: cn(defaultClassNames.caption_label, "text-sm font-medium"),
+        caption_label: cn(
+          defaultClassNames.caption_label,
+          "flex items-center gap-1 text-sm font-medium",
+        ),
+        // Dropdown caption layout (captionLayout="dropdown"): the native selects
+        // sit invisibly over their value labels, which show the month/year plus
+        // a chevron.
+        dropdowns: cn(defaultClassNames.dropdowns, "flex items-center gap-1.5"),
+        dropdown_root: cn(
+          defaultClassNames.dropdown_root,
+          "relative inline-flex items-center rounded-md px-1.5 py-1 hover:bg-accent",
+        ),
+        dropdown: cn(
+          defaultClassNames.dropdown,
+          "absolute inset-0 h-full w-full cursor-pointer opacity-0",
+        ),
         nav: cn(defaultClassNames.nav, "absolute inset-x-0 top-0 flex items-center justify-between"),
         button_previous: cn(
           buttonVariants({ variant: "outline" }),
@@ -69,6 +84,14 @@ function Calendar({
       }}
       components={{
         Chevron: ({ className: chevronClassName, orientation, ...chevronProps }) => {
+          if (orientation === "down") {
+            return (
+              <ChevronDown
+                className={cn("size-3.5 text-muted-foreground", chevronClassName)}
+                {...chevronProps}
+              />
+            )
+          }
           const Icon = orientation === "left" ? ChevronLeft : ChevronRight
           return <Icon className={cn("size-4", chevronClassName)} {...chevronProps} />
         },
