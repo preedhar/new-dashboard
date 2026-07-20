@@ -1,11 +1,11 @@
 import * as React from 'react'
 import {
   ArrowLeft,
-  BanknoteArrowDown,
   Check,
   ChevronRight,
   Coins,
   CreditCard,
+  HandCoins,
   Info,
   Landmark,
   MoreHorizontal,
@@ -116,7 +116,7 @@ function runSaveFeedback() {
   }, 1000)
 }
 
-const PAYMENTS_PATH = '/admin/settings/payments'
+const PAYMENTS_PATH = '/admin/settings/payments-sg-new'
 const MANUAL_PATH = '/admin/settings/payments/manual'
 
 // Client-side navigation matching the app's router (pushState + popstate).
@@ -346,6 +346,46 @@ function SwitchNavRow({
       </div>
       {description ? (
         <p className="pointer-events-none relative mt-1.5 text-sm text-muted-foreground md:pl-10">
+          {description}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+// A payment method row that trails an outline call-to-action button (e.g.
+// "Finish setup" / "Connect") instead of an inline enable switch and chevron.
+function MethodSetupRow({
+  label,
+  icon: Icon,
+  description,
+  cta,
+  onClick,
+}: {
+  label: string
+  icon: IconComponent
+  description?: string
+  cta: string
+  onClick: () => void
+}) {
+  return (
+    <div className="py-4">
+      <div className="flex items-center justify-between gap-4">
+        <span className="flex items-center gap-4 text-sm font-medium md:gap-6">
+          <Icon className="size-4 shrink-0 text-muted-foreground" />
+          {label}
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 px-3 shrink-0"
+          onClick={onClick}
+        >
+          {cta}
+        </Button>
+      </div>
+      {description ? (
+        <p className="mt-1.5 text-sm text-muted-foreground md:pl-10">
           {description}
         </p>
       ) : null}
@@ -949,29 +989,34 @@ type PaymentMethodSettings = {
 }
 
 // The three automatically-verified methods, shown as rows in a single card.
+// Each trails an outline call-to-action button that opens its setup dialog.
 const PAYMENT_METHODS: {
   key: PaymentMethodKey
   label: string
   icon: IconComponent
   description: string
+  cta: string
 }[] = [
   {
     key: 'card',
     label: 'Credit / Debit card',
     icon: CreditCard,
     description: 'Increase sales by accepting card payments',
+    cta: 'Finish setup',
   },
   {
     key: 'payNow',
     label: 'PayNow',
     icon: PayNowIcon,
     description: 'Accept payments via PayNow',
+    cta: 'Finish setup',
   },
   {
     key: 'payPal',
     label: 'PayPal',
     icon: PayPalIcon,
     description: 'Receive payments to your PayPal account',
+    cta: 'Connect',
   },
 ]
 
@@ -1093,7 +1138,7 @@ type AutomatedPayments = {
   customerPaysFees: boolean
 }
 
-export function AdminSettingsPaymentsPage() {
+export function AdminSettingsPaymentsSgNewPage() {
   const [automated, setAutomated] = React.useState<AutomatedPayments>({
     customerPaysFees: false,
   })
@@ -1131,14 +1176,6 @@ export function AdminSettingsPaymentsPage() {
 
   function toggle<K extends keyof AutomatedPayments>(key: K, value: boolean) {
     setAutomated((current) => ({ ...current, [key]: value }))
-    runSaveFeedback()
-  }
-
-  function togglePaymentMethod(key: PaymentMethodKey, checked: boolean) {
-    setMethods((current) => ({
-      ...current,
-      [key]: { ...current[key], enabled: checked },
-    }))
     runSaveFeedback()
   }
 
@@ -1229,40 +1266,47 @@ export function AdminSettingsPaymentsPage() {
                 </a>
               </>
             }
-            action={
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-9 text-muted-foreground"
-                    aria-label="Payment methods options"
-                  >
-                    <MoreHorizontal className="size-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-40">
-                  <DropdownMenuItem>
-                    <BanknoteArrowDown className="size-4" />
-                    Payout details
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            }
           >
+            <Card className="items-center gap-4 bg-muted/50 py-8 text-center shadow-none">
+              <div className="rounded-xl border border-border bg-background p-3 shadow-[0_10px_24px_0_rgba(0,0,0,0.10)]">
+                <HandCoins
+                  className="size-6 text-muted-foreground"
+                  strokeWidth={1.5}
+                />
+              </div>
+              <div className="space-y-1 px-6">
+                <TypographyLarge>
+                  Set up your account to receive payments
+                </TypographyLarge>
+                <p className="text-sm leading-[150%] text-muted-foreground">
+                  Shoppers are 60% more likely to buy when you accept automated
+                  payments.
+                  <br />
+                  We use Stripe to process payments.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3 px-6">
+                <Button type="button" className="h-10 px-3">
+                  Finish setup
+                </Button>
+                <Button type="button" variant="outline" className="h-10 px-3">
+                  Restart
+                </Button>
+              </div>
+            </Card>
+
             <SettingsCard>
               {PAYMENT_METHODS.map((method) => (
-                <SwitchNavRow
+                <MethodSetupRow
                   key={method.key}
                   label={method.label}
                   icon={method.icon}
                   description={method.description}
-                  checked={methods[method.key].enabled}
-                  onCheckedChange={(checked) =>
-                    togglePaymentMethod(method.key, checked)
-                  }
-                  onOpen={() => setMethodDialog(method.key)}
+                  cta={method.cta}
+                  onClick={() => {
+                    if (method.cta !== 'Finish setup' && method.key !== 'payPal')
+                      setMethodDialog(method.key)
+                  }}
                 />
               ))}
             </SettingsCard>
