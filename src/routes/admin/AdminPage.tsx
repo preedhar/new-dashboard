@@ -1,5 +1,6 @@
 import { AppSidebar } from './components/app-sidebar'
 import { MobileBottomNav } from './components/mobile-bottom-nav'
+import { MobileAppsMenu } from './components/mobile-apps-menu'
 import { MobileHeader } from './components/mobile-header'
 import { MobileSectionMenu } from './components/mobile-section-menu'
 import {
@@ -35,7 +36,9 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path === '/admin/settings/store' ||
     activeRoute.path === '/admin/settings/team' ||
     activeRoute.path === '/admin/apps/online-store/fulfillment' ||
-    activeRoute.path === '/admin/apps/online-store/fulfillment/time-slots'
+    activeRoute.path === '/admin/apps/online-store/fulfillment/time-slots' ||
+    activeRoute.path === '/admin/settings/payments' ||
+    activeRoute.path === '/admin/settings/payments/manual'
   // The store settings page doubles as the Settings section hub on mobile: it's
   // the Settings tab's destination, so it keeps the bottom nav and its section
   // sub-menu even though it renders a form. The team settings page lives under
@@ -115,6 +118,11 @@ export function AdminPage({ pathname }: AdminPageProps) {
           ) : null}
 
           <MobileSectionMenu pathname={activeRoute.path} />
+
+          {/* The Store settings page is the mobile Settings hub, so beneath the
+              section menu it also surfaces the Online Store app's pages and an
+              "All Apps" shortcut (mobile only). */}
+          {activeRoute.path === '/admin/settings/store' ? <MobileAppsMenu /> : null}
 
           <Page />
         </section>
