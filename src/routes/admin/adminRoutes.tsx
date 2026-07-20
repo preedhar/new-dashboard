@@ -56,6 +56,7 @@ import { AdminSettingsPaymentsPhPage } from './pages/AdminPaymentsPhPage'
 import { AdminSettingsPaymentsPhNewPage } from './pages/AdminPaymentsPhNewPage'
 import { AdminSettingsPaymentsPhProgressPage } from './pages/AdminPaymentsPhProgressPage'
 import { AdminSettingsPaymentsPhFailedPage } from './pages/AdminPaymentsPhFailedPage'
+import { AdminSettingsPaymentsPhSetupPage } from './pages/AdminPaymentsPhSetupPage'
 import { AdminSettingsStorePage } from './pages/AdminSettingsStorePage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
@@ -439,6 +440,13 @@ export const adminRoutes: AdminRoute[] = [
     title: 'Manual payments',
     icon: Settings,
     component: AdminManualPaymentsPage,
+  },
+  {
+    path: '/admin/settings/payments/setup',
+    label: 'Payments',
+    title: 'Set up payments',
+    icon: Settings,
+    component: AdminSettingsPaymentsPhSetupPage,
   },
   {
     path: '/admin/settings/payments-sg-new',

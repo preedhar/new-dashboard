@@ -120,6 +120,7 @@ function runSaveFeedback() {
 
 const PAYMENTS_PATH = '/admin/settings/payments-ph-failed'
 const MANUAL_PATH = '/admin/settings/payments/manual'
+const SETUP_PATH = '/admin/settings/payments/setup'
 
 // Client-side navigation matching the app's router (pushState + popstate).
 function navigateTo(path: string) {
@@ -1533,7 +1534,11 @@ export function AdminSettingsPaymentsPhFailedPage() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-3 px-6">
-                <Button type="button" className="h-10 px-3">
+                <Button
+                  type="button"
+                  className="h-10 px-3"
+                  onClick={() => navigateTo(SETUP_PATH)}
+                >
                   Finish setup
                 </Button>
               </div>
@@ -1565,11 +1570,11 @@ export function AdminSettingsPaymentsPhFailedPage() {
                     description={method.description}
                     cta={method.cta}
                     onClick={() => {
-                      if (
-                        method.cta !== 'Finish setup' &&
-                        method.key !== 'payPal'
-                      )
+                      if (method.cta === 'Finish setup') {
+                        navigateTo(SETUP_PATH)
+                      } else if (method.key !== 'payPal') {
                         setMethodDialog(method.key)
+                      }
                     }}
                   />
                 ),

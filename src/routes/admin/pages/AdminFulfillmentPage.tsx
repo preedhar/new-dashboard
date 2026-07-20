@@ -950,7 +950,7 @@ function TimeSlotsCard({
                   <FieldLabel
                     key={length}
                     htmlFor={`length-${length}`}
-                    className="flex w-full items-center justify-between gap-1 rounded-none px-3 py-3 text-sm font-medium transition-colors hover:bg-muted/50 has-[[data-checked]]:bg-primary/5"
+                    className="flex w-full items-center justify-between gap-1 rounded-none px-3 py-3 text-sm font-normal transition-colors hover:bg-muted/50 has-[[data-checked]]:bg-primary/5"
                   >
                     {length} min
                     <RadioGroupItem value={length} id={`length-${length}`} />
