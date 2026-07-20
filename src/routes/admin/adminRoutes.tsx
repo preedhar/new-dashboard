@@ -58,6 +58,7 @@ import { AdminSettingsPaymentsPhProgressPage } from './pages/AdminPaymentsPhProg
 import { AdminSettingsPaymentsPhFailedPage } from './pages/AdminPaymentsPhFailedPage'
 import { AdminSettingsPaymentsPhSetupPage } from './pages/AdminPaymentsPhSetupPage'
 import { AdminSettingsStorePage } from './pages/AdminSettingsStorePage'
+import { AdminCheckoutsPage } from './pages/AdminCheckoutsPage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
 import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
@@ -563,9 +564,16 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Checkouts',
     title: 'Checkouts',
     icon: ReceiptText,
+    component: AdminCheckoutsPage,
+  },
+  {
+    path: '/admin/apps/online-store/order-form',
+    label: 'Order form',
+    title: 'Order form',
+    icon: ClipboardList,
     component: createAdminPlaceholder(
-      'Checkouts',
-      'A future workspace for configuring checkout settings, fields, and conversion flows.',
+      'Order form',
+      'A future workspace for customizing the questions in your order form.',
     ),
   },
   {

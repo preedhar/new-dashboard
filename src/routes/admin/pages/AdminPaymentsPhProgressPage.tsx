@@ -606,7 +606,7 @@ function MethodRow({
               type="button"
               variant="ghost"
               size="icon"
-              className="size-9 shrink-0 text-muted-foreground"
+              className="size-10 shrink-0 text-muted-foreground"
               aria-label={`Manage ${name}`}
             >
               <MoreHorizontal className="size-5" />
@@ -634,20 +634,27 @@ function MethodRow({
 // ---------------------------------------------------------------------------
 
 type TipOption = { id: string; value: string }
-type TipsSettings = { options: TipOption[] }
+type TipsSettings = { enabled: boolean; options: TipOption[] }
 
 const MAX_TIP_OPTIONS = 3
 
 function defaultTips(): TipsSettings {
-  return { options: [] }
+  return { enabled: false, options: [] }
 }
 
-// Row description: the entered tip options once set, otherwise the default blurb.
+// Whether tips have at least one saved option.
+function tipsConfigured(tips: TipsSettings) {
+  return tips.options.some((option) => option.value.trim() !== '')
+}
+
+// Row description: the entered tip options when on, otherwise the default blurb.
 function tipsSummary(tips: TipsSettings) {
+  if (!tips.enabled || !tipsConfigured(tips)) {
+    return 'Let customers select a tip during checkout'
+  }
   const values = tips.options
     .map((option) => option.value.trim())
     .filter((value) => value !== '')
-  if (values.length === 0) return 'Let customers select a tip during checkout'
   return values.map((value) => `${value}%`).join(', ')
 }
 
@@ -675,13 +682,14 @@ function TipsDialog({
   const [draft, setDraft] = React.useState<TipsSettings>(() =>
     settings.options.length > 0
       ? settings
-      : { options: [{ id: nextId('tip'), value: '' }] },
+      : { ...settings, options: [{ id: nextId('tip'), value: '' }] },
   )
 
   function addOption() {
     setDraft((current) => {
       if (current.options.length >= MAX_TIP_OPTIONS) return current
       return {
+        ...current,
         options: [...current.options, { id: nextId('tip'), value: '' }],
       }
     })
@@ -689,6 +697,7 @@ function TipsDialog({
 
   function updateOption(id: string, value: string) {
     setDraft((current) => ({
+      ...current,
       options: current.options.map((option) =>
         option.id === id ? { ...option, value: sanitizeNumber(value) } : option,
       ),
@@ -697,6 +706,7 @@ function TipsDialog({
 
   function removeOption(id: string) {
     setDraft((current) => ({
+      ...current,
       options: current.options.filter((option) => option.id !== id),
     }))
   }
@@ -706,13 +716,13 @@ function TipsDialog({
   const trimmedOptions = draft.options
     .map((option) => ({ ...option, value: option.value.trim() }))
     .filter((option) => option.value !== '')
-  const payload: TipsSettings = { options: trimmedOptions }
+  const payload: TipsSettings = { enabled: draft.enabled, options: trimmedOptions }
   const canSave = JSON.stringify(payload) !== JSON.stringify(settings)
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">Tips</TypographyH4>
           </DialogTitle>
@@ -907,7 +917,7 @@ function ChargesDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">Charges</TypographyH4>
           </DialogTitle>
@@ -1052,7 +1062,7 @@ function TaxDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">Tax</TypographyH4>
           </DialogTitle>
@@ -1269,7 +1279,7 @@ function PaymentMethodDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">{title}</TypographyH4>
           </DialogTitle>
@@ -1425,7 +1435,8 @@ export function AdminSettingsPaymentsPhProgressPage() {
   }
 
   function saveTips(settings: TipsSettings) {
-    setTips(settings)
+    // Saving the dialog also enables the card.
+    setTips({ ...settings, enabled: true })
     setTipsOpen(false)
     toast.success('Changes saved')
   }
@@ -1442,6 +1453,17 @@ export function AdminSettingsPaymentsPhProgressPage() {
     setTax({ ...settings, enabled: true })
     setTaxOpen(false)
     toast.success('Changes saved')
+  }
+
+  function toggleTips(checked: boolean) {
+    // Enabling with no saved details opens the dialog first; the switch turns
+    // on only once the dialog is saved.
+    if (checked && !tipsConfigured(tips)) {
+      setTipsOpen(true)
+      return
+    }
+    setTips((current) => ({ ...current, enabled: checked }))
+    runSaveFeedback()
   }
 
   function toggleCharges(checked: boolean) {
@@ -1508,7 +1530,7 @@ export function AdminSettingsPaymentsPhProgressPage() {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="size-9 text-muted-foreground"
+                    className="size-10 text-muted-foreground"
                     aria-label="Payment methods options"
                   >
                     <MoreHorizontal className="size-5" />
@@ -1631,11 +1653,13 @@ export function AdminSettingsPaymentsPhProgressPage() {
               />
             </SettingsCard>
             <SettingsCard>
-              <NavSettingRow
+              <SwitchNavRow
                 label="Tips"
                 icon={Coins}
                 description={tipsSummary(tips)}
-                onClick={() => setTipsOpen(true)}
+                checked={tips.enabled}
+                onCheckedChange={toggleTips}
+                onOpen={() => setTipsOpen(true)}
               />
             </SettingsCard>
             <SettingsCard>
@@ -1892,7 +1916,7 @@ function DefaultMethodDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">{config.name}</TypographyH4>
           </DialogTitle>
@@ -2013,7 +2037,7 @@ function CustomMethodDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">
               {isEditing ? 'Edit payment method' : 'Add payment method'}

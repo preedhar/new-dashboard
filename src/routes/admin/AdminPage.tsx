@@ -28,8 +28,8 @@ export function AdminPage({ pathname }: AdminPageProps) {
 
   const Page = activeRoute.component
   // The order create/edit form, the store/team settings pages, and the online
-  // store fulfillment page provide their own header (back button + title) and a
-  // wider top padding, so the shared chrome is suppressed for them.
+  // store fulfillment/checkouts pages provide their own header (back button +
+  // title) and a wider top padding, so the shared chrome is suppressed for them.
   const isOrderFormPage =
     activeRoute.path === '/admin/orders/edit' ||
     activeRoute.path === '/admin/orders/new' ||
@@ -37,6 +37,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path === '/admin/settings/team' ||
     activeRoute.path === '/admin/apps/online-store/fulfillment' ||
     activeRoute.path === '/admin/apps/online-store/fulfillment/time-slots' ||
+    activeRoute.path === '/admin/apps/online-store/checkouts' ||
     activeRoute.path === '/admin/settings/payments' ||
     activeRoute.path === '/admin/settings/payments/manual' ||
     activeRoute.path === '/admin/settings/payments/setup' ||

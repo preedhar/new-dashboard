@@ -432,7 +432,7 @@ function MethodRow({
             type="button"
             variant="ghost"
             size="icon"
-            className="size-9 shrink-0 text-muted-foreground"
+            className="size-10 shrink-0 text-muted-foreground"
             aria-label={`Manage ${name}`}
           >
             <MoreHorizontal className="size-5" />
@@ -642,7 +642,7 @@ function MethodDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">
               {isEditing ? `Edit ${noun} method` : `Add ${noun} method`}
@@ -1205,7 +1205,7 @@ function HoursDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">{noun} hours</TypographyH4>
           </DialogTitle>
@@ -1337,7 +1337,7 @@ function EmailReminderDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0">
+        <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">Email reminder</TypographyH4>
           </DialogTitle>
