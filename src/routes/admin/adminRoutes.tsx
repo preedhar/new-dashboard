@@ -51,6 +51,11 @@ import {
   AdminSettingsPaymentsPage,
   AdminManualPaymentsPage,
 } from './pages/AdminPaymentsPage'
+import { AdminSettingsPaymentsSgNewPage } from './pages/AdminPaymentsSgNewPage'
+import { AdminSettingsPaymentsPhPage } from './pages/AdminPaymentsPhPage'
+import { AdminSettingsPaymentsPhNewPage } from './pages/AdminPaymentsPhNewPage'
+import { AdminSettingsPaymentsPhProgressPage } from './pages/AdminPaymentsPhProgressPage'
+import { AdminSettingsPaymentsPhFailedPage } from './pages/AdminPaymentsPhFailedPage'
 import { AdminSettingsStorePage } from './pages/AdminSettingsStorePage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
@@ -434,6 +439,41 @@ export const adminRoutes: AdminRoute[] = [
     title: 'Manual payments',
     icon: Settings,
     component: AdminManualPaymentsPage,
+  },
+  {
+    path: '/admin/settings/payments-sg-new',
+    label: 'Payments',
+    title: 'Payments',
+    icon: Settings,
+    component: AdminSettingsPaymentsSgNewPage,
+  },
+  {
+    path: '/admin/settings/payments-ph',
+    label: 'Payments',
+    title: 'Payments',
+    icon: Settings,
+    component: AdminSettingsPaymentsPhPage,
+  },
+  {
+    path: '/admin/settings/payments-ph-new',
+    label: 'Payments',
+    title: 'Payments',
+    icon: Settings,
+    component: AdminSettingsPaymentsPhNewPage,
+  },
+  {
+    path: '/admin/settings/payments-ph-progress',
+    label: 'Payments',
+    title: 'Payments',
+    icon: Settings,
+    component: AdminSettingsPaymentsPhProgressPage,
+  },
+  {
+    path: '/admin/settings/payments-ph-failed',
+    label: 'Payments',
+    title: 'Payments',
+    icon: Settings,
+    component: AdminSettingsPaymentsPhFailedPage,
   },
   {
     path: '/admin/settings/website',

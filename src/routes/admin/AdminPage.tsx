@@ -38,7 +38,12 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path === '/admin/apps/online-store/fulfillment' ||
     activeRoute.path === '/admin/apps/online-store/fulfillment/time-slots' ||
     activeRoute.path === '/admin/settings/payments' ||
-    activeRoute.path === '/admin/settings/payments/manual'
+    activeRoute.path === '/admin/settings/payments/manual' ||
+    activeRoute.path === '/admin/settings/payments-sg-new' ||
+    activeRoute.path === '/admin/settings/payments-ph' ||
+    activeRoute.path === '/admin/settings/payments-ph-new' ||
+    activeRoute.path === '/admin/settings/payments-ph-progress' ||
+    activeRoute.path === '/admin/settings/payments-ph-failed'
   // The store settings page doubles as the Settings section hub on mobile: it's
   // the Settings tab's destination, so it keeps the bottom nav and its section
   // sub-menu even though it renders a form. The team settings page lives under

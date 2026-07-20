@@ -456,7 +456,7 @@ function MethodRow({
 // The "Add method" action shown to the right of a section title.
 function AddMethodButton({ onClick }: { onClick: () => void }) {
   return (
-    <Button type="button" variant="outline" className="h-10" onClick={onClick}>
+    <Button type="button" variant="outline" className="h-10 px-3" onClick={onClick}>
       <Plus className="size-4" />
       Add method
     </Button>
@@ -774,7 +774,7 @@ function MethodDialog({
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-10 gap-2"
+                      className="h-10 px-3 gap-2"
                       onClick={addDiscountedFee}
                     >
                       <Plus className="size-4" />
@@ -814,12 +814,12 @@ function MethodDialog({
         <DialogFooter className="shrink-0 flex-row">
           <Button
             variant="outline"
-            className="h-10 flex-1"
+            className="h-10 px-3 flex-1"
             onClick={() => onOpenChange(false)}
           >
             Cancel
           </Button>
-          <Button className="h-10 flex-1" onClick={handleSave} disabled={!canSave}>
+          <Button className="h-10 px-3 flex-1" onClick={handleSave} disabled={!canSave}>
             Save
           </Button>
         </DialogFooter>
@@ -1290,13 +1290,13 @@ function HoursDialog({
         <DialogFooter className="shrink-0 flex-row">
           <Button
             variant="outline"
-            className="h-10 flex-1"
+            className="h-10 px-3 flex-1"
             onClick={() => onOpenChange(false)}
           >
             Cancel
           </Button>
           <Button
-            className="h-10 flex-1"
+            className="h-10 px-3 flex-1"
             onClick={() => onSave(draft)}
             disabled={!canSave}
           >
@@ -1411,7 +1411,7 @@ function EmailReminderDialog({
 
               <Button
                 variant="outline"
-                className="h-10 w-full"
+                className="h-10 px-3 w-full"
                 onClick={sendTest}
               >
                 Send test email
@@ -1423,13 +1423,13 @@ function EmailReminderDialog({
         <DialogFooter className="shrink-0 flex-row">
           <Button
             variant="outline"
-            className="h-10 flex-1"
+            className="h-10 px-3 flex-1"
             onClick={() => onOpenChange(false)}
           >
             Cancel
           </Button>
           <Button
-            className="h-10 flex-1"
+            className="h-10 px-3 flex-1"
             onClick={() => onSave(draft)}
             disabled={!hasChanges}
           >
