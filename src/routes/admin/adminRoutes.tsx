@@ -47,6 +47,10 @@ import {
   AdminFulfillmentPage,
   AdminTimeSlotsPage,
 } from './pages/AdminFulfillmentPage'
+import {
+  AdminSettingsPaymentsPage,
+  AdminManualPaymentsPage,
+} from './pages/AdminPaymentsPage'
 import { AdminSettingsStorePage } from './pages/AdminSettingsStorePage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
@@ -143,10 +147,14 @@ export const appsAdminNav: AdminNavItem[] = [
     url: '/admin/apps/online-store',
     icon: Globe,
     items: [
-      { title: 'Fulfillment', url: '/admin/apps/online-store/fulfillment' },
-      { title: 'Inventory Calendar', url: '/admin/apps/online-store/inventory-calendar' },
-      { title: 'Checkouts', url: '/admin/apps/online-store/checkouts' },
-      { title: 'Website', url: '/admin/apps/online-store/website' },
+      { title: 'Fulfillment', url: '/admin/apps/online-store/fulfillment', icon: Truck },
+      {
+        title: 'Calendar',
+        url: '/admin/apps/online-store/inventory-calendar',
+        icon: CalendarDays,
+      },
+      { title: 'Checkouts', url: '/admin/apps/online-store/checkouts', icon: ReceiptText },
+      { title: 'Website', url: '/admin/apps/online-store/website', icon: Globe },
     ],
   },
   {
@@ -418,10 +426,14 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Payments',
     title: 'Payments',
     icon: Settings,
-    component: createAdminPlaceholder(
-      'Payments',
-      'A future workspace for payment methods, payouts, taxes, and checkout rules.',
-    ),
+    component: AdminSettingsPaymentsPage,
+  },
+  {
+    path: '/admin/settings/payments/manual',
+    label: 'Manual payments',
+    title: 'Manual payments',
+    icon: Settings,
+    component: AdminManualPaymentsPage,
   },
   {
     path: '/admin/settings/website',
@@ -535,11 +547,14 @@ export function getAdminRoute(pathname: string) {
   return adminRoutes.find((route) => route.path === normalizedPath)
 }
 
-// Maps each parent section route (e.g. /admin/orders) to its first subpage
-// (e.g. /admin/orders/all). Derived from the nav config so it stays in sync:
-// each nav item's `url` already points at its first subpage, so the parent is
-// that url with its last segment removed.
-const adminParentRedirects: Record<string, string> = primaryAdminNav.reduce(
+// Maps each parent section route (e.g. /admin/orders, /admin/apps/online-store)
+// to its first subpage (e.g. /admin/orders/all,
+// /admin/apps/online-store/fulfillment). Derived from the nav config so it stays
+// in sync: the parent is the first subpage's url with its last segment removed.
+const adminParentRedirects: Record<string, string> = [
+  ...primaryAdminNav,
+  ...appsAdminNav,
+].reduce(
   (redirects, item) => {
     if (item.items && item.items.length > 0) {
       const firstSubpage = item.items[0].url
