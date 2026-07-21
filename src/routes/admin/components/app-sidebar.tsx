@@ -34,7 +34,8 @@ export function AppSidebar({ pathname, ...props }: AppSidebarProps) {
       const Icon = item.icon
       const subItems = item.items?.map((subItem) => ({
         ...subItem,
-        isActive: subItem.url === pathname,
+        // Redirect links borrow another item's page, so they never light up.
+        isActive: !subItem.redirect && subItem.url === pathname,
       }))
 
       return {

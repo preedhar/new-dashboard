@@ -80,7 +80,7 @@ const onlineStoreSettingsItems = [
   { title: "Fulfillment", href: "/admin/apps/online-store/fulfillment" },
   { title: "Inventory Calendar", href: "/admin/apps/online-store/inventory-calendar" },
   { title: "Checkouts", href: "/admin/apps/online-store/checkouts" },
-  { title: "Website", href: "/admin/apps/online-store/website" },
+  { title: "Website", href: "/admin/settings/website" },
 ]
 
 export function AdminAppsPage() {

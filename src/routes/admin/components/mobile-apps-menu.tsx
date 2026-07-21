@@ -13,7 +13,7 @@ export function MobileAppsMenu() {
   // On mobile the Website page is dropped; the "All Apps" tile stands in for it.
   // Website still lives in the desktop sidebar.
   const pages = (onlineStore?.items ?? []).filter(
-    (page) => page.url !== "/admin/apps/online-store/website",
+    (page) => page.url !== "/admin/settings/website",
   )
 
   // "All Apps" shares the row as a final tile, styled like the app pages.
