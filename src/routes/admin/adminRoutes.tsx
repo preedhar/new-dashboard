@@ -58,6 +58,9 @@ import { AdminSettingsPaymentsPhProgressPage } from './pages/AdminPaymentsPhProg
 import { AdminSettingsPaymentsPhFailedPage } from './pages/AdminPaymentsPhFailedPage'
 import { AdminSettingsPaymentsPhSetupPage } from './pages/AdminPaymentsPhSetupPage'
 import { AdminSettingsStorePage } from './pages/AdminSettingsStorePage'
+import { AdminSettingsWebsitePage } from './pages/AdminSettingsWebsitePage'
+import { AdminSettingsWebsiteAppearancePage } from './pages/AdminSettingsWebsiteAppearancePage'
+import { AdminSettingsWebsiteCustomDomainPage } from './pages/AdminSettingsWebsiteCustomDomainPage'
 import { AdminCheckoutsPage } from './pages/AdminCheckoutsPage'
 import { AdminOrderFormPage } from './pages/AdminOrderFormPage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
@@ -80,6 +83,10 @@ export type AdminNavItem = {
     title: string
     url: string
     icon?: LucideIcon
+    // A redirect link points at a page owned by another nav item, so it never
+    // shows an active state of its own (e.g. Online Store → Website, which
+    // routes to the Website settings page under Settings).
+    redirect?: boolean
   }[]
 }
 
@@ -162,7 +169,7 @@ export const appsAdminNav: AdminNavItem[] = [
         icon: CalendarDays,
       },
       { title: 'Checkouts', url: '/admin/apps/online-store/checkouts', icon: ReceiptText },
-      { title: 'Website', url: '/admin/apps/online-store/website', icon: Globe },
+      { title: 'Website', url: '/admin/settings/website', icon: Globe, redirect: true },
     ],
   },
   {
@@ -490,10 +497,21 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Website',
     title: 'Website',
     icon: Settings,
-    component: createAdminPlaceholder(
-      'Website',
-      'A future workspace for storefront pages, domains, theme settings, and SEO.',
-    ),
+    component: AdminSettingsWebsitePage,
+  },
+  {
+    path: '/admin/settings/website/appearance',
+    label: 'Appearance',
+    title: 'Appearance',
+    icon: Settings,
+    component: AdminSettingsWebsiteAppearancePage,
+  },
+  {
+    path: '/admin/settings/website/custom-domain',
+    label: 'Custom domain',
+    title: 'Custom domain',
+    icon: Settings,
+    component: AdminSettingsWebsiteCustomDomainPage,
   },
   {
     path: '/admin/settings/store',
@@ -573,16 +591,6 @@ export const adminRoutes: AdminRoute[] = [
     title: 'Order form',
     icon: ClipboardList,
     component: AdminOrderFormPage,
-  },
-  {
-    path: '/admin/apps/online-store/website',
-    label: 'Website',
-    title: 'Website',
-    icon: Globe,
-    component: createAdminPlaceholder(
-      'Website',
-      'A future workspace for online store pages, theme settings, domains, and SEO.',
-    ),
   },
   {
     path: '/admin/apps/pos',
