@@ -63,7 +63,7 @@ import { cn } from '@/lib/utils'
 
 type IconComponent = React.ComponentType<{ className?: string }>
 
-const ORDER_FORM_PATH = '/admin/apps/online-store/order-form'
+const ORDER_FORM_PATH = '/admin/apps/online-store/checkouts/order-form'
 
 // Client-side navigation matching the app's router (pushState + popstate).
 function navigateTo(path: string) {
