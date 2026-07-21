@@ -491,7 +491,10 @@ function TipsDialog({
     .map((option) => ({ ...option, value: option.value.trim() }))
     .filter((option) => option.value !== '')
   const payload: TipsSettings = { enabled: draft.enabled, options: trimmedOptions }
-  const canSave = JSON.stringify(payload) !== JSON.stringify(settings)
+  // Require at least one option; an empty tips list has nothing to save.
+  const canSave =
+    trimmedOptions.length > 0 &&
+    JSON.stringify(payload) !== JSON.stringify(settings)
 
   return (
     <Dialog open onOpenChange={onOpenChange}>

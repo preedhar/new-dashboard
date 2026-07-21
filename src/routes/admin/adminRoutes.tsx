@@ -59,6 +59,7 @@ import { AdminSettingsPaymentsPhFailedPage } from './pages/AdminPaymentsPhFailed
 import { AdminSettingsPaymentsPhSetupPage } from './pages/AdminPaymentsPhSetupPage'
 import { AdminSettingsStorePage } from './pages/AdminSettingsStorePage'
 import { AdminCheckoutsPage } from './pages/AdminCheckoutsPage'
+import { AdminOrderFormPage } from './pages/AdminOrderFormPage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
 import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
@@ -571,10 +572,7 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Order form',
     title: 'Order form',
     icon: ClipboardList,
-    component: createAdminPlaceholder(
-      'Order form',
-      'A future workspace for customizing the questions in your order form.',
-    ),
+    component: AdminOrderFormPage,
   },
   {
     path: '/admin/apps/online-store/website',

@@ -1,5 +1,6 @@
 import * as React from 'react'
 import {
+  ArrowLeft,
   ChevronRight,
   ClipboardList,
   FileText,
@@ -820,17 +821,32 @@ export function AdminCheckoutsPage() {
   return (
     <>
       <form onSubmit={(event) => event.preventDefault()} className="w-full">
-        {/* The checkouts page is a settings hub: on mobile it's the section
-            tab's destination and on desktop the sidebar covers navigation, so
-            there's no back button. */}
-        <header className="mb-8 flex items-center justify-center">
+        <header className="relative mb-8 flex items-center justify-center">
+          {/* Back button is only shown on mobile; on desktop the sidebar covers
+              navigation. */}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-lg"
+            aria-label="Go back"
+            onClick={() => window.history.back()}
+            className="absolute left-0 md:hidden"
+          >
+            <ArrowLeft className="size-5" />
+          </Button>
           <h1 className="text-2xl font-semibold tracking-normal text-neutral-900">
             Checkouts
           </h1>
         </header>
 
         <div className="mx-auto flex w-full max-w-[640px] flex-col gap-8">
-          <Section>
+          {/* Two titled groups: "Preferences" holds the gift/instructions
+              card and the order-form nav card (24px apart), and "Abandoned
+              checkouts" holds the recovery card. */}
+          <div className="space-y-3">
+            <TypographyLarge>Preferences</TypographyLarge>
+            <div className="flex flex-col gap-6">
+              <Section>
             {/* Gift orders + its dependent Gift message toggle share one divider
                 group, so no divider sits between them. */}
             <div>
@@ -947,14 +963,18 @@ export function AdminCheckoutsPage() {
             </div>
           </Section>
 
-          <NavCard
-            label="Order form"
-            icon={ClipboardList}
-            description="Customize the questions in your order form"
-            onClick={() => navigateTo(ORDER_FORM_PATH)}
-          />
+              <NavCard
+                label="Order form"
+                icon={ClipboardList}
+                description="Customize the questions in your order form"
+                onClick={() => navigateTo(ORDER_FORM_PATH)}
+              />
+            </div>
+          </div>
 
-          <Section>
+          <div className="space-y-3">
+            <TypographyLarge>Abandoned checkouts</TypographyLarge>
+            <Section>
             {/* Recover abandoned checkouts + its dependent "Offer a discount"
                 toggle share one divider group, so no divider sits between them.
                 When on, the description swaps to a recovered-revenue stat. */}
@@ -1047,7 +1067,8 @@ export function AdminCheckoutsPage() {
                 </div>
               ) : null}
             </div>
-          </Section>
+            </Section>
+          </div>
         </div>
       </form>
 
