@@ -568,7 +568,7 @@ export const adminRoutes: AdminRoute[] = [
     component: AdminCheckoutsPage,
   },
   {
-    path: '/admin/apps/online-store/order-form',
+    path: '/admin/apps/online-store/checkouts/order-form',
     label: 'Order form',
     title: 'Order form',
     icon: ClipboardList,
