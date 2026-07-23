@@ -58,6 +58,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -515,8 +516,8 @@ function LinkDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0 text-center">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader className="text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">
               {isEditing ? 'Edit link' : 'Add link'}
@@ -524,7 +525,7 @@ function LinkDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label htmlFor="link-type" className="text-sm font-medium">
               Link type
@@ -588,9 +589,9 @@ function LinkDialog({
               />
             )}
           </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 flex-1 px-3"
@@ -706,8 +707,8 @@ function FaqDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0 text-center">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader className="text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">
               {isEditing ? 'Edit FAQ' : 'Add FAQ'}
@@ -715,7 +716,7 @@ function FaqDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label htmlFor="faq-question" className="text-sm font-medium">
               Question
@@ -743,9 +744,9 @@ function FaqDialog({
               className="min-h-10 w-full"
             />
           </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 flex-1 px-3"
@@ -978,14 +979,14 @@ function AboutUsDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0 text-center">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader className="text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">About us</TypographyH4>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label htmlFor="about-button-text" className="text-sm font-medium">
               Button text
@@ -1016,9 +1017,9 @@ function AboutUsDialog({
               className="min-h-24 w-full"
             />
           </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 flex-1 px-3"
@@ -1889,7 +1890,7 @@ export function AdminSettingsWebsiteAppearancePage() {
                 <TypographyLarge>Links</TypographyLarge>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   className="h-10 shrink-0 px-3"
                   onClick={() => setLinkDialog({ link: null })}
                 >
@@ -1924,7 +1925,7 @@ export function AdminSettingsWebsiteAppearancePage() {
                 <TypographyLarge>FAQs</TypographyLarge>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   className="h-10 shrink-0 px-3"
                   onClick={() => setFaqDialog({ faq: null })}
                 >

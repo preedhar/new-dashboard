@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -303,11 +304,19 @@ function DiscountRow({
       onClick={onClick}
       className="flex h-10 w-full items-center justify-between gap-4 rounded-md text-left text-sm transition-colors hover:bg-muted/50"
     >
-      <span>
+      <span className="min-w-0 truncate">
         {title} <span className="text-muted-foreground/40">•</span>{' '}
         <span className="text-muted-foreground">{meta}</span>
       </span>
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+      <span className="flex shrink-0 items-center gap-2">
+        <Badge
+          variant="secondary"
+          className="border-transparent bg-green-400/10 text-green-900"
+        >
+          Suggested
+        </Badge>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+      </span>
     </button>
   )
 }
@@ -367,8 +376,8 @@ function DiscountDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader>
           <DialogTitle asChild>
             <TypographyH4 className="text-center font-semibold">
               {isEditing ? 'Edit discount' : 'Add discount'}
@@ -376,7 +385,7 @@ function DiscountDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">Discount</Label>
@@ -501,9 +510,9 @@ function DiscountDialog({
               />
             ) : null}
           </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 flex-1 px-3"
@@ -1009,7 +1018,7 @@ export function AdminCheckoutsPage() {
                       <p className="mt-1.5 text-sm text-muted-foreground sm:pl-10">
                         {addedDiscount
                           ? formatDiscount(addedDiscount)
-                          : 'Encourage them to checkout with a unique discount code'}
+                          : 'Recover more checkouts with unique discount codes'}
                       </p>
                     </div>
                     {addedDiscount ? (
@@ -1046,13 +1055,7 @@ export function AdminCheckoutsPage() {
 
                   {!addedDiscount ? (
                     <div className="mt-3 sm:pl-10">
-                      <Badge
-                        variant="secondary"
-                        className="border-transparent bg-green-400/10 text-green-900"
-                      >
-                        Suggested
-                      </Badge>
-                      <div className="mt-2 flex flex-col divide-y divide-border/50">
+                      <div className="flex flex-col divide-y divide-border/50">
                         {SUGGESTED_DISCOUNTS.map((discount) => (
                           <DiscountRow
                             key={discount.title}

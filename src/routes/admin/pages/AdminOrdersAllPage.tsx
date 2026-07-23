@@ -79,7 +79,7 @@ import {
 } from '@/components/ui/collapsible'
 import {
   Dialog,
-  DialogClose,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -1049,27 +1049,14 @@ function FiltersDialog({
           ) : null}
         </Button>
       </DialogTrigger>
-      <DialogContent
-        showCloseButton={false}
-        className="flex h-[100dvh] w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none p-0 sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:w-full sm:max-w-md sm:rounded-xl"
-      >
-        <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-6 py-6">
-          <DialogHeader className="relative mb-3">
+      <DialogContent className="h-[100dvh] max-h-none w-screen max-w-none rounded-none sm:h-auto sm:max-h-[calc(100svh-2rem)] sm:w-full sm:max-w-md sm:rounded-xl [&_[data-slot=dialog-close]]:size-10">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <DialogHeader>
             <DialogTitle asChild>
               <TypographyH4 className="text-center font-semibold">Filters</TypographyH4>
             </DialogTitle>
-            <DialogClose asChild>
-              <Button
-                variant="ghost"
-                className="absolute inset-y-0 right-0 my-auto size-10"
-                size="icon-sm"
-              >
-                <X />
-                <span className="sr-only">Close</span>
-              </Button>
-            </DialogClose>
           </DialogHeader>
-          <div className="grid gap-3">
+          <DialogBody className="grid gap-3">
             <SelectFilter
               label="Channel"
               options={CHANNEL_OPTIONS}
@@ -1108,8 +1095,8 @@ function FiltersDialog({
               className="w-full justify-start"
               contentClassName="w-(--radix-dropdown-menu-trigger-width)"
             />
-          </div>
-          <DialogFooter className="mt-auto flex-row gap-2 pt-6">
+          </DialogBody>
+          <DialogFooter className="flex-row gap-2">
             <Button
               variant="outline"
               className="h-10 flex-1"
@@ -1167,7 +1154,8 @@ function RefundDialog({
             </TypographyH4>
           </DialogTitle>
         </DialogHeader>
-        <FieldGroup className="gap-6">
+        <DialogBody>
+          <FieldGroup className="gap-6">
           <div className="relative">
             <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-2xl text-muted-foreground">
               $
@@ -1196,23 +1184,22 @@ function RefundDialog({
           </div>
           <FieldLabel
             htmlFor="refund-cancel-order"
-            className="transition-colors hover:bg-muted/50"
+            className="w-full flex-col items-start gap-1 font-normal"
           >
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldTitle>Cancel order</FieldTitle>
-                <FieldDescription>
-                  Inventory will be restocked and order will be excluded from order summary
-                </FieldDescription>
-              </FieldContent>
+            <div className="flex w-full items-center justify-between gap-3">
+              <FieldTitle>Cancel order</FieldTitle>
               <Switch
                 id="refund-cancel-order"
                 checked={cancelOrder}
                 onCheckedChange={setCancelOrder}
               />
-            </Field>
+            </div>
+            <FieldDescription>
+              Inventory will be restocked and order will be excluded from order summary
+            </FieldDescription>
           </FieldLabel>
-        </FieldGroup>
+          </FieldGroup>
+        </DialogBody>
         <DialogFooter className="flex-row">
           <Button variant="outline" className="h-10 flex-1" onClick={() => onOpenChange(false)}>
             Cancel
@@ -2439,7 +2426,7 @@ function ExportCsvDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="[&_[data-slot=dialog-close]]:size-10">
         {exporting ? (
-          <div className="flex flex-col items-center gap-4 py-6 text-center">
+          <DialogBody className="flex flex-col items-center gap-4 py-6 text-center">
             <Loader2 className="size-8 animate-spin text-primary" />
             <div className="flex flex-col gap-2">
               <DialogTitle asChild>
@@ -2450,7 +2437,7 @@ function ExportCsvDialog({
                 download.
               </p>
             </div>
-          </div>
+          </DialogBody>
         ) : (
           <>
         <DialogHeader>
@@ -2458,6 +2445,7 @@ function ExportCsvDialog({
             <TypographyH4 className="text-center font-semibold">Export orders ({count})</TypographyH4>
           </DialogTitle>
         </DialogHeader>
+        <DialogBody>
         <FieldGroup className="gap-6">
           <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-foreground">
             <div className="flex items-center gap-2">
@@ -2476,33 +2464,25 @@ function ExportCsvDialog({
           </div>
           <FieldLabel
             htmlFor="export-bundle-separately"
-            className="transition-colors hover:bg-muted/50"
+            className="w-full items-center justify-between gap-3 font-normal"
           >
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldTitle>Show bundle products separately</FieldTitle>
-              </FieldContent>
-              <Switch
-                id="export-bundle-separately"
-                checked={bundleSeparately}
-                onCheckedChange={setBundleSeparately}
-              />
-            </Field>
+            <FieldTitle>Show bundle products separately</FieldTitle>
+            <Switch
+              id="export-bundle-separately"
+              checked={bundleSeparately}
+              onCheckedChange={setBundleSeparately}
+            />
           </FieldLabel>
           <FieldLabel
             htmlFor="export-include-status"
-            className="transition-colors hover:bg-muted/50"
+            className="w-full items-center justify-between gap-3 font-normal"
           >
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldTitle>Include order status</FieldTitle>
-              </FieldContent>
-              <Switch
-                id="export-include-status"
-                checked={includeStatus}
-                onCheckedChange={setIncludeStatus}
-              />
-            </Field>
+            <FieldTitle>Include order status</FieldTitle>
+            <Switch
+              id="export-include-status"
+              checked={includeStatus}
+              onCheckedChange={setIncludeStatus}
+            />
           </FieldLabel>
           <FieldSet>
             <FieldLegend variant="label">Show products</FieldLegend>
@@ -2535,6 +2515,7 @@ function ExportCsvDialog({
             </RadioGroup>
           </FieldSet>
         </FieldGroup>
+        </DialogBody>
         <DialogFooter className="flex-row">
           <Button variant="outline" className="h-10 flex-1" onClick={() => onOpenChange(false)}>
             Cancel
@@ -2563,6 +2544,13 @@ const VEHICLE_OPTIONS: {
   { value: 'sedan', label: 'Sedan', icon: SedanIcon, iconClassName: 'h-12' },
   { value: 'mpv', label: 'MPV', icon: MpvIcon, iconClassName: 'h-12' },
   { value: 'truck', label: 'Truck', icon: TruckVehicleIcon, iconClassName: 'h-9' },
+]
+
+// When to deliver — a segmented radio choice mirroring the "Answer type"
+// selector in the order form's custom questions dialog.
+const SCHEDULE_OPTIONS: { value: 'now' | 'schedule'; label: string }[] = [
+  { value: 'now', label: 'For now' },
+  { value: 'schedule', label: 'Schedule' },
 ]
 
 // Base fare per vehicle used to compute the (mock) delivery total. Additional
@@ -2721,8 +2709,8 @@ function DeliveryBookingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 p-0 [&_[data-slot=dialog-close]]:top-5 [&_[data-slot=dialog-close]]:right-5">
-        <DialogHeader className="px-6 pt-6 pb-4">
+      <DialogContent className="[&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader>
           <DialogTitle asChild>
             <TypographyH4 className="text-center font-semibold">
               Deliver with Lalamove
@@ -2730,12 +2718,12 @@ function DeliveryBookingDialog({
           </DialogTitle>
         </DialogHeader>
         {/* Two step-progress bars: first fills on step 1, both on step 2. */}
-        <div className="flex items-center gap-2 px-6 pt-4 pb-6">
+        <div className="flex shrink-0 items-center gap-2 px-6 pt-4">
           <Progress value={100} />
           <Progress value={step === 2 ? 100 : 0} />
         </div>
 
-        <div className="flex max-h-[60vh] flex-col gap-6 overflow-y-auto px-6 pb-6">
+        <DialogBody className="flex flex-col gap-6">
           {step === 1 ? (
             <>
               {/* Vehicle type — grouped radios in one bordered container, one
@@ -2774,12 +2762,30 @@ function DeliveryBookingDialog({
 
               {/* When to deliver — For now / Schedule. */}
               <div className="flex flex-col gap-3">
-                <Tabs value={schedule} onValueChange={(value) => setSchedule(value as 'now' | 'schedule')}>
-                  <TabsList className="w-full">
-                    <TabsTrigger value="now">For now</TabsTrigger>
-                    <TabsTrigger value="schedule">Schedule</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <FieldSet>
+                  <FieldLegend variant="label">Time</FieldLegend>
+                  <RadioGroup
+                    value={schedule}
+                    onValueChange={(value) =>
+                      setSchedule(value as 'now' | 'schedule')
+                    }
+                    className="grid w-full grid-cols-2 gap-0 divide-x overflow-hidden rounded-lg border"
+                  >
+                    {SCHEDULE_OPTIONS.map((option) => (
+                      <FieldLabel
+                        key={option.value}
+                        htmlFor={`schedule-${option.value}`}
+                        className="flex w-full items-center justify-between gap-1 rounded-none px-3 py-3 text-sm font-normal transition-colors hover:bg-muted/50 has-[[data-checked]]:bg-primary/5"
+                      >
+                        {option.label}
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`schedule-${option.value}`}
+                        />
+                      </FieldLabel>
+                    ))}
+                  </RadioGroup>
+                </FieldSet>
 
                 {schedule === 'schedule' ? (
                   <Collapsible
@@ -2849,19 +2855,21 @@ function DeliveryBookingDialog({
                 ) : null}
               </div>
 
-              {/* Driver notes — the auto-growing textarea lives inside the card,
-                  revealed only when the toggle is on. */}
-              <div className="flex flex-col gap-3 rounded-md border p-3">
-                <Field orientation="horizontal">
-                  <FieldContent>
-                    <FieldTitle>Add notes to your driver</FieldTitle>
-                  </FieldContent>
+              {/* Driver notes — the auto-growing textarea is revealed only when
+                  the toggle is on. */}
+              <div className="flex flex-col gap-3">
+                <FieldLabel
+                  htmlFor="add-driver-notes"
+                  className="w-full items-center justify-between gap-3 font-normal"
+                >
+                  <FieldTitle>Add notes to your driver</FieldTitle>
                   <Switch
+                    id="add-driver-notes"
                     aria-label="Add notes to your driver"
                     checked={addNotes}
                     onCheckedChange={setAddNotes}
                   />
-                </Field>
+                </FieldLabel>
                 {addNotes ? (
                   <div className="relative">
                     <Textarea
@@ -2983,28 +2991,24 @@ function DeliveryBookingDialog({
 
               <FieldLabel
                 htmlFor="delivery-shortest-route"
-                className="transition-colors hover:bg-muted/50"
+                className="w-full items-center justify-between gap-3 font-normal"
               >
-                <Field orientation="horizontal">
-                  <FieldContent>
-                    <FieldTitle>Get the shortest route</FieldTitle>
-                  </FieldContent>
-                  <Switch
-                    id="delivery-shortest-route"
-                    checked={shortestRoute}
-                    onCheckedChange={setShortestRoute}
-                  />
-                </Field>
+                <FieldTitle>Get the shortest route</FieldTitle>
+                <Switch
+                  id="delivery-shortest-route"
+                  checked={shortestRoute}
+                  onCheckedChange={setShortestRoute}
+                />
               </FieldLabel>
             </>
           )}
-        </div>
+        </DialogBody>
 
-        <div className="flex flex-col gap-4 border-t px-6 pt-6 pb-6">
+        <DialogFooter className="flex-col gap-4 sm:flex-col">
           {step === 2 ? (
             <p className="text-center text-lg font-semibold">Total ${total}</p>
           ) : null}
-          <DialogFooter className="flex-row">
+          <div className="flex gap-2">
             {step === 1 ? (
               <>
                 <Button
@@ -3032,8 +3036,8 @@ function DeliveryBookingDialog({
                 </Button>
               </>
             )}
-          </DialogFooter>
-        </div>
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
