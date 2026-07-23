@@ -61,6 +61,7 @@ import { AdminSettingsStorePage } from './pages/AdminSettingsStorePage'
 import { AdminSettingsWebsitePage } from './pages/AdminSettingsWebsitePage'
 import { AdminSettingsWebsiteAppearancePage } from './pages/AdminSettingsWebsiteAppearancePage'
 import { AdminSettingsWebsiteCustomDomainPage } from './pages/AdminSettingsWebsiteCustomDomainPage'
+import { AdminCalendarPage } from './pages/AdminCalendarPage'
 import { AdminCheckoutsPage } from './pages/AdminCheckoutsPage'
 import { AdminOrderFormPage } from './pages/AdminOrderFormPage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
@@ -573,10 +574,7 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Inventory Calendar',
     title: 'Inventory Calendar',
     icon: CalendarDays,
-    component: createAdminPlaceholder(
-      'Inventory Calendar',
-      'A future workspace for planning inventory availability across upcoming dates.',
-    ),
+    component: AdminCalendarPage,
   },
   {
     path: '/admin/apps/online-store/checkouts',

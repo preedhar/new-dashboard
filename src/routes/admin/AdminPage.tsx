@@ -40,6 +40,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path === '/admin/settings/team' ||
     activeRoute.path === '/admin/apps/online-store/fulfillment' ||
     activeRoute.path === '/admin/apps/online-store/fulfillment/time-slots' ||
+    activeRoute.path === '/admin/apps/online-store/inventory-calendar' ||
     activeRoute.path === '/admin/apps/online-store/checkouts' ||
     activeRoute.path === '/admin/apps/online-store/checkouts/order-form' ||
     activeRoute.path === '/admin/settings/payments' ||
