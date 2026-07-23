@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -188,7 +189,10 @@ function AddMemberDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="[&_[data-slot=dialog-close]]:size-10">
-        <form onSubmit={handleSubmit} className="grid gap-6">
+        <form
+          onSubmit={handleSubmit}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        >
           <DialogHeader>
             <DialogTitle asChild>
               <TypographyH4 className="text-center font-semibold">
@@ -196,6 +200,7 @@ function AddMemberDialog({
               </TypographyH4>
             </DialogTitle>
           </DialogHeader>
+          <DialogBody>
           <FieldGroup className="gap-6">
             <Field>
               <FieldLabel htmlFor="member-email">Email address</FieldLabel>
@@ -243,6 +248,7 @@ function AddMemberDialog({
               </RadioGroup>
             </FieldSet>
           </FieldGroup>
+          </DialogBody>
           <DialogFooter className="flex-row">
             <Button
               type="button"
@@ -349,6 +355,7 @@ export function AdminSettingsTeamPage() {
 
             <Button
               type="button"
+              variant="secondary"
               className="h-11 w-full"
               onClick={() => setAddOpen(true)}
             >

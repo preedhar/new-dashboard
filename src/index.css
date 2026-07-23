@@ -126,6 +126,28 @@
     --sidebar-ring: oklch(0.556 0 0);
 }
 
+/*
+ * Always-visible scrollbar for scrollable dialog bodies. Unlike the platform
+ * overlay scrollbar (which auto-hides on macOS), this keeps the scrollbar
+ * visible whenever the content actually overflows.
+ */
+@utility dialog-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -351,14 +352,14 @@ function PrivateModeDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0 text-center">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader className="text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">Private mode</TypographyH4>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label htmlFor="private-password" className="text-sm font-medium">
               Password
@@ -384,9 +385,9 @@ function PrivateModeDialog({
               </p>
             ) : null}
           </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 flex-1 px-3"
@@ -471,7 +472,7 @@ function TrackingField({
           {label}
         </Label>
         <Switch
-          aria-label={label}
+          id={id}
           checked={enabled}
           onCheckedChange={onEnabledChange}
         />
@@ -479,7 +480,7 @@ function TrackingField({
       <p className="text-sm text-muted-foreground">{description}</p>
       {enabled ? (
         <Input
-          id={id}
+          aria-label={label}
           value={value}
           onChange={(event) => onValueChange(event.target.value)}
           placeholder={placeholder}
@@ -515,8 +516,8 @@ function TrackingDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0 text-center">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader className="text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">
               Track visitor activity
@@ -524,7 +525,7 @@ function TrackingDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-8 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-8">
           <TrackingField
             id="facebook-pixel"
             label="Meta Pixel"
@@ -555,9 +556,9 @@ function TrackingDialog({
             value={draft.gtmId}
             onValueChange={(value) => update('gtmId', value)}
           />
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 flex-1 px-3"
@@ -591,9 +592,9 @@ function SaveRow({ onClick }: { onClick: () => void }) {
   )
 }
 
-// A tappable suggested-domain row: the domain (with a "Suggested" badge beside
-// it) on the left, a trailing chevron on the right. Mirrors the "Offer a
-// discount" suggestion rows on the Checkouts page.
+// A tappable suggested-domain row: the domain on the left, a "Suggested" badge
+// and trailing chevron aligned to the right. Mirrors the "Offer a discount"
+// suggestion rows on the Checkouts page.
 function DomainRow({
   domain,
   onClick,
@@ -607,16 +608,16 @@ function DomainRow({
       onClick={onClick}
       className="flex h-10 w-full items-center justify-between gap-4 rounded-md text-left text-sm transition-colors hover:bg-muted/50"
     >
-      <span className="flex min-w-0 items-center gap-2">
-        <span className="truncate">{domain}</span>
+      <span className="min-w-0 truncate">{domain}</span>
+      <span className="flex shrink-0 items-center gap-2">
         <Badge
           variant="secondary"
           className="border-transparent bg-green-400/10 text-green-900"
         >
           Suggested
         </Badge>
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
       </span>
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
     </button>
   )
 }
@@ -806,7 +807,7 @@ export function AdminSettingsWebsitePage() {
                 </div>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   size="lg"
                   className="shrink-0 px-3"
                   onClick={() => navigateTo('/admin/settings/website/custom-domain')}

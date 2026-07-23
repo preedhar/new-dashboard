@@ -2,7 +2,6 @@ import * as React from 'react'
 import {
   ArrowLeft,
   BanknoteArrowDown,
-  Check,
   ChevronRight,
   Coins,
   CreditCard,
@@ -34,6 +33,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -61,7 +61,6 @@ import {
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
   Tooltip,
   TooltipContent,
@@ -652,14 +651,14 @@ function TipsDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
         <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">Tips</TypographyH4>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-3">
             <Label className="text-sm font-medium">Options</Label>
             {draft.options.map((option, index) => (
@@ -703,7 +702,7 @@ function TipsDialog({
               </Button>
             ) : null}
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter className="shrink-0 flex-row">
           <Button
@@ -742,8 +741,8 @@ const CHARGE_CHANNELS: { value: ChargeChannel; label: string; icon: string }[] =
 // Every channel selected — the default for a newly configured item.
 const ALL_CHANNELS: ChargeChannel[] = ['online-store', 'pos', 'qr']
 
-// The Channels multi-select, shared by every dialog that scopes to sales
-// channels. Unselected options read as muted; selected ones show a check.
+// The Channels selector, shared by every dialog that scopes to sales
+// channels. Lists each channel with its icon and a switch to toggle it.
 function ChannelsField({
   value,
   onValueChange,
@@ -751,34 +750,32 @@ function ChannelsField({
   value: ChargeChannel[]
   onValueChange: (value: ChargeChannel[]) => void
 }) {
+  const toggleChannel = (channel: ChargeChannel, on: boolean) => {
+    onValueChange(
+      on ? [...value, channel] : value.filter((c) => c !== channel),
+    )
+  }
   return (
     <div className="space-y-1.5">
       <Label className="text-sm font-medium">Channels</Label>
-      <ToggleGroup
-        type="multiple"
-        variant="outline"
-        size="lg"
-        value={value}
-        onValueChange={(next) => onValueChange(next as ChargeChannel[])}
-        className="w-full"
-      >
+      <div className="divide-y rounded-md border">
         {CHARGE_CHANNELS.map((channel) => (
-          <ToggleGroupItem
+          <div
             key={channel.value}
-            value={channel.value}
-            aria-label={channel.label}
-            className="group/channel gap-2 px-2 font-normal data-[state=on]:bg-background data-[state=on]:hover:bg-muted/40 data-[state=off]:border-border/50 data-[state=off]:bg-muted data-[state=off]:text-muted-foreground data-[state=off]:hover:bg-muted/50 data-[state=off]:hover:text-foreground"
+            className="flex items-center justify-between px-3 py-2.5"
           >
-            <img
-              src={channel.icon}
-              alt=""
-              className="size-5 shrink-0 grayscale group-data-[state=on]/channel:hidden"
+            <div className="flex items-center gap-2">
+              <img src={channel.icon} alt="" className="size-5 shrink-0" />
+              <span className="text-sm">{channel.label}</span>
+            </div>
+            <Switch
+              checked={value.includes(channel.value)}
+              onCheckedChange={(on) => toggleChannel(channel.value, on)}
+              aria-label={channel.label}
             />
-            <Check className="hidden size-5 shrink-0 text-primary group-data-[state=on]/channel:block" />
-            <span className="truncate">{channel.label}</span>
-          </ToggleGroupItem>
+          </div>
         ))}
-      </ToggleGroup>
+      </div>
     </div>
   )
 }
@@ -847,14 +844,14 @@ function ChargesDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
         <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">Charges</TypographyH4>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label htmlFor="charge-name" className="text-sm font-medium">
               Charge name
@@ -893,7 +890,7 @@ function ChargesDialog({
             value={draft.channels}
             onValueChange={(value) => update('channels', value)}
           />
-        </div>
+        </DialogBody>
 
         <DialogFooter className="shrink-0 flex-row">
           <Button
@@ -992,14 +989,14 @@ function TaxDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
         <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">Tax</TypographyH4>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label htmlFor="tax-name" className="text-sm font-medium">
               Tax name
@@ -1079,7 +1076,7 @@ function TaxDialog({
               />
             </Field>
           </FieldLabel>
-        </div>
+        </DialogBody>
 
         <DialogFooter className="shrink-0 flex-row">
           <Button
@@ -1201,14 +1198,14 @@ function PaymentMethodDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
         <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">{title}</TypographyH4>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           {showMinimumSpend ? (
             <div className="space-y-3">
               <Field orientation="horizontal">
@@ -1249,7 +1246,7 @@ function PaymentMethodDialog({
             value={draft.channels}
             onValueChange={(value) => update('channels', value)}
           />
-        </div>
+        </DialogBody>
 
         <DialogFooter className="shrink-0 flex-row">
           <Button
@@ -1796,14 +1793,14 @@ function DefaultMethodDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
         <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">{config.name}</TypographyH4>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           {config.fields.map((field) => (
             <div key={field.key} className="space-y-1.5">
               <Label
@@ -1838,7 +1835,7 @@ function DefaultMethodDialog({
               setDraft((current) => ({ ...current, channels }))
             }
           />
-        </div>
+        </DialogBody>
 
         <DialogFooter className="shrink-0 flex-row">
           <Button
@@ -1917,7 +1914,7 @@ function CustomMethodDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
         <DialogHeader className="shrink-0 text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">
@@ -1926,7 +1923,7 @@ function CustomMethodDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label htmlFor="custom-method-name" className="text-sm font-medium">
               Method name
@@ -1954,7 +1951,7 @@ function CustomMethodDialog({
           </div>
 
           <ChannelsField value={channels} onValueChange={setChannels} />
-        </div>
+        </DialogBody>
 
         <DialogFooter className="shrink-0 flex-row">
           <Button

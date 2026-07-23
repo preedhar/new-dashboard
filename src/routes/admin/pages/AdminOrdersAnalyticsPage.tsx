@@ -2,10 +2,8 @@ import * as React from 'react'
 import {
   ArrowLeft,
   Calendar as CalendarIcon,
-  Clock,
   HelpCircle,
   Mail,
-  Users,
 } from 'lucide-react'
 import type { DateRange } from 'react-day-picker'
 import { toast } from 'sonner'
@@ -33,13 +31,13 @@ import {
 } from '@/components/ui/card'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  Field,
   FieldContent,
   FieldDescription,
   FieldGroup,
@@ -482,38 +480,38 @@ function EmailReportsDialog({
             <TypographyH4 className="text-center font-semibold">Email reports</TypographyH4>
           </DialogTitle>
         </DialogHeader>
+        <DialogBody>
         <FieldGroup className="gap-6">
-          <FieldLabel htmlFor="daily-report" className="transition-colors hover:bg-muted/50">
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldTitle>
-                  <Mail className="size-4" />
-                  Receive daily email reports
-                </FieldTitle>
-                <FieldDescription>Admins will receive the email</FieldDescription>
-              </FieldContent>
+          <FieldLabel
+            htmlFor="daily-report"
+            className="w-full flex-col items-start gap-1 font-normal"
+          >
+            <div className="flex w-full items-center justify-between gap-3">
+              <FieldTitle>Receive daily email reports</FieldTitle>
               <Switch id="daily-report" checked={daily} onCheckedChange={onDailyChange} />
-            </Field>
+            </div>
+            <FieldDescription>Admins will receive the email</FieldDescription>
           </FieldLabel>
 
           {daily ? (
             <>
               {/* Additional recipients — the textarea shows only when toggled on */}
-              <div className="flex flex-col gap-3 rounded-md border p-3">
-                <Field orientation="horizontal">
-                  <FieldContent>
-                    <FieldTitle>
-                      <Users className="size-4" />
-                      Additional recipients
-                    </FieldTitle>
-                    <FieldDescription>Separate multiple emails by commas</FieldDescription>
-                  </FieldContent>
-                  <Switch
-                    aria-label="Additional recipients"
-                    checked={additionalRecipients}
-                    onCheckedChange={onAdditionalRecipientsChange}
-                  />
-                </Field>
+              <div className="flex flex-col gap-3">
+                <FieldLabel
+                  htmlFor="additional-recipients"
+                  className="w-full flex-col items-start gap-1 font-normal"
+                >
+                  <div className="flex w-full items-center justify-between gap-3">
+                    <FieldTitle>Additional recipients</FieldTitle>
+                    <Switch
+                      id="additional-recipients"
+                      aria-label="Additional recipients"
+                      checked={additionalRecipients}
+                      onCheckedChange={onAdditionalRecipientsChange}
+                    />
+                  </div>
+                  <FieldDescription>Separate multiple emails by commas</FieldDescription>
+                </FieldLabel>
                 {additionalRecipients ? (
                   <Textarea
                     value={recipients}
@@ -524,33 +522,29 @@ function EmailReportsDialog({
                 ) : null}
               </div>
 
-              {/* Schedule */}
-              <div className="rounded-md border p-3">
-                <Field orientation="horizontal">
-                  <FieldContent>
-                    <FieldTitle>
-                      <Clock className="size-4" />
-                      Schedule
-                    </FieldTitle>
-                    <FieldDescription>Includes past 24hr sales</FieldDescription>
-                  </FieldContent>
-                  <Select value={schedule} onValueChange={onScheduleChange}>
-                    <SelectTrigger className="h-10! w-[110px] shrink-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-72">
-                      {SCHEDULE_OPTIONS.map((time) => (
-                        <SelectItem key={time} value={time}>
-                          {time}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
+              {/* Schedule — the time select sits on its own row below */}
+              <div className="flex flex-col gap-3">
+                <FieldContent>
+                  <FieldTitle>Schedule</FieldTitle>
+                  <FieldDescription>Includes past 24hr sales</FieldDescription>
+                </FieldContent>
+                <Select value={schedule} onValueChange={onScheduleChange}>
+                  <SelectTrigger className="h-10! w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {SCHEDULE_OPTIONS.map((time) => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </>
           ) : null}
         </FieldGroup>
+        </DialogBody>
         <DialogFooter className="flex-row">
           <Button variant="outline" className="h-10 flex-1" onClick={() => onOpenChange(false)}>
             Cancel

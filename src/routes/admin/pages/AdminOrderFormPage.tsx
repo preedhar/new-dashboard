@@ -37,6 +37,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -499,14 +500,14 @@ function EditQuestionDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0 text-center">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader className="text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">Edit question</TypographyH4>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label htmlFor="question-title" className="text-sm font-medium">
               Title
@@ -523,7 +524,7 @@ function EditQuestionDialog({
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-4">
               <Label
-                htmlFor="question-description"
+                htmlFor="question-description-enabled"
                 className="text-sm font-medium"
               >
                 Description
@@ -545,9 +546,9 @@ function EditQuestionDialog({
               />
             ) : null}
           </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 px-3 flex-1"
@@ -603,14 +604,14 @@ function EditButtonsDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0 text-center">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader className="text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">Edit buttons</TypographyH4>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label
               htmlFor="automated-payments-button"
@@ -642,9 +643,9 @@ function EditButtonsDialog({
               className="h-10"
             />
           </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 px-3 flex-1"
@@ -785,8 +786,8 @@ function CustomQuestionDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0 text-center">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader className="text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">
               {isEditing ? 'Edit question' : 'Add question'}
@@ -794,7 +795,7 @@ function CustomQuestionDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label htmlFor="custom-title" className="text-sm font-medium">
               Title
@@ -810,7 +811,10 @@ function CustomQuestionDialog({
 
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-4">
-              <Label htmlFor="custom-description" className="text-sm font-medium">
+              <Label
+                htmlFor="custom-description-enabled"
+                className="text-sm font-medium"
+              >
                 Description
               </Label>
               <Switch
@@ -1053,9 +1057,9 @@ function CustomQuestionDialog({
               onCheckedChange={(checked) => update('answerRequired', checked)}
             />
           </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 px-3 flex-1"
@@ -1206,7 +1210,7 @@ export function AdminOrderFormPage() {
             action={
               <Button
                 type="button"
-                variant="outline"
+                variant="secondary"
                 className="h-10 px-3"
                 onClick={() => setCustomDialog({ mode: 'add' })}
               >

@@ -32,6 +32,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -44,12 +45,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
-  Field,
-  FieldContent,
   FieldLabel,
   FieldLegend,
   FieldSet,
-  FieldTitle,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -392,6 +390,68 @@ function NavSettingRow({
   )
 }
 
+// A settings row with an enable switch and a chevron. When off, only the switch
+// is interactive (the chevron is dimmed); toggling it enables the feature. When
+// on, clicking anywhere on the row opens the dialog, while the switch (which
+// sits above the click overlay) still toggles the feature off. Mirrors the
+// payments settings page.
+function SwitchNavRow({
+  label,
+  icon: Icon,
+  description,
+  checked,
+  onCheckedChange,
+  onOpen,
+}: {
+  label: string
+  icon: IconComponent
+  description?: string
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+  onOpen: () => void
+}) {
+  return (
+    <div className="relative py-4">
+      {checked ? (
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label={`Open ${label}`}
+          className="absolute inset-y-0 -left-4 -right-4 rounded-lg transition-colors hover:bg-muted/50 sm:-left-6 sm:-right-6"
+        />
+      ) : null}
+      <div className="pointer-events-none relative flex items-start justify-between gap-4">
+        <span className="flex items-center gap-4 text-sm font-medium md:gap-6">
+          <Icon className="size-4 shrink-0 text-muted-foreground" />
+          {label}
+        </span>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="pointer-events-auto">
+            <Switch
+              aria-label={label}
+              checked={checked}
+              onCheckedChange={onCheckedChange}
+              className="translate-y-[2px]"
+            />
+          </span>
+          <ChevronRight
+            className={
+              checked
+                ? 'size-4 text-muted-foreground'
+                : 'size-4 text-muted-foreground/40'
+            }
+          />
+        </div>
+      </div>
+      {description ? (
+        <p className="pointer-events-none relative mt-1.5 text-sm text-muted-foreground md:pl-10">
+          {description}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
 // Human-readable summary of a method's pricing, shown under its name.
 function feeSummary(feeType: DeliveryFeeType | PickupFeeType, price: string) {
   if (feeType === 'calculated') return 'Calculated at checkout'
@@ -456,7 +516,7 @@ function MethodRow({
 // The "Add method" action shown to the right of a section title.
 function AddMethodButton({ onClick }: { onClick: () => void }) {
   return (
-    <Button type="button" variant="outline" className="h-10 px-3" onClick={onClick}>
+    <Button type="button" variant="secondary" className="h-10 px-3" onClick={onClick}>
       <Plus className="size-4" />
       Add method
     </Button>
@@ -641,8 +701,8 @@ function MethodDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0 text-center">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader className="text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">
               {isEditing ? `Edit ${noun} method` : `Add ${noun} method`}
@@ -650,7 +710,7 @@ function MethodDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label htmlFor="method-name" className="text-sm font-medium">
               Method name
@@ -809,9 +869,9 @@ function MethodDialog({
               />
             ) : null}
           </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 px-3 flex-1"
@@ -1204,14 +1264,14 @@ function HoursDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0 text-center">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader className="text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">{noun} hours</TypographyH4>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-4">
           {draft.map((entry) => (
             <div key={entry.day} className="space-y-2">
               <div className="flex items-center justify-between gap-4">
@@ -1285,9 +1345,9 @@ function HoursDialog({
               ))}
             </div>
           ))}
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 px-3 flex-1"
@@ -1336,91 +1396,69 @@ function EmailReminderDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0 text-center">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader className="text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">Email reminder</TypographyH4>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
-          <FieldLabel
-            htmlFor="send-email-reminder"
-            className="transition-colors hover:bg-muted/50"
-          >
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldTitle>Send email at 8 AM</FieldTitle>
-              </FieldContent>
-              <Switch
-                id="send-email-reminder"
-                checked={draft.enabled}
-                onCheckedChange={(checked) => update('enabled', checked)}
+        <DialogBody className="flex flex-col gap-6">
+          <div className="space-y-1.5">
+            <Label htmlFor="days-before" className="text-sm font-medium">
+              Schedule
+            </Label>
+            <InputGroup className="h-10">
+              <InputGroupInput
+                id="days-before"
+                inputMode="numeric"
+                placeholder="0"
+                value={draft.daysBefore}
+                onChange={(event) => update('daysBefore', event.target.value)}
+                className="pl-3"
               />
-            </Field>
-          </FieldLabel>
+              <InputGroupAddon align="inline-end" className="pr-3">
+                days before fulfillment
+              </InputGroupAddon>
+            </InputGroup>
+          </div>
 
-          {draft.enabled ? (
-            <>
-              <div className="space-y-1.5">
-                <Label htmlFor="days-before" className="text-sm font-medium">
-                  Schedule
-                </Label>
-                <InputGroup className="h-10">
-                  <InputGroupInput
-                    id="days-before"
-                    inputMode="numeric"
-                    placeholder="0"
-                    value={draft.daysBefore}
-                    onChange={(event) =>
-                      update('daysBefore', event.target.value)
-                    }
-                    className="pl-3"
-                  />
-                  <InputGroupAddon align="inline-end" className="pr-3">
-                    days before fulfillment
-                  </InputGroupAddon>
-                </InputGroup>
-              </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="reminder-subject" className="text-sm font-medium">
+              Subject
+            </Label>
+            <Textarea
+              id="reminder-subject"
+              value={draft.subject}
+              onChange={(event) => update('subject', event.target.value)}
+              placeholder="Your order is coming up"
+              className="min-h-10"
+            />
+          </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="reminder-subject" className="text-sm font-medium">
-                  Subject
-                </Label>
-                <Textarea
-                  id="reminder-subject"
-                  value={draft.subject}
-                  onChange={(event) => update('subject', event.target.value)}
-                  placeholder="Your order is coming up"
-                  className="min-h-10"
-                />
-              </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="reminder-message" className="text-sm font-medium">
+              Message
+            </Label>
+            <Textarea
+              id="reminder-message"
+              value={draft.message}
+              onChange={(event) => update('message', event.target.value)}
+              placeholder="Shared with customers in the reminder email"
+              className="min-h-10"
+            />
+          </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="reminder-message" className="text-sm font-medium">
-                  Message
-                </Label>
-                <Textarea
-                  id="reminder-message"
-                  value={draft.message}
-                  onChange={(event) => update('message', event.target.value)}
-                  placeholder="Shared with customers in the reminder email"
-                  className="min-h-10"
-                />
-              </div>
+          <Button
+            variant="outline"
+            className="h-10 px-3 w-full"
+            onClick={sendTest}
+          >
+            Send test email
+          </Button>
+        </DialogBody>
 
-              <Button
-                variant="outline"
-                className="h-10 px-3 w-full"
-                onClick={sendTest}
-              >
-                Send test email
-              </Button>
-            </>
-          ) : null}
-        </div>
-
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 px-3 flex-1"
@@ -1612,8 +1650,14 @@ export function AdminFulfillmentPage() {
   }
 
   function saveEmailReminder(settings: EmailReminderSettings) {
-    setEmailReminder(settings)
+    // Saving the dialog also keeps the reminder enabled.
+    setEmailReminder({ ...settings, enabled: true })
     setEmailReminderOpen(false)
+    toast.success('Changes saved')
+  }
+
+  function toggleEmailReminder(checked: boolean) {
+    setEmailReminder((current) => ({ ...current, enabled: checked }))
     toast.success('Changes saved')
   }
 
@@ -1793,11 +1837,13 @@ export function AdminFulfillmentPage() {
                   </Card>
                   <Card className="gap-0 py-0 shadow-none">
                     <div className="px-4 sm:px-6">
-                      <NavSettingRow
+                      <SwitchNavRow
                         label="Email reminder"
                         icon={Mail}
-                        description="Remind customers about their order"
-                        onClick={() => setEmailReminderOpen(true)}
+                        description="Remind customers about their order at 8 AM"
+                        checked={emailReminder.enabled}
+                        onCheckedChange={toggleEmailReminder}
+                        onOpen={() => setEmailReminderOpen(true)}
                       />
                     </div>
                   </Card>

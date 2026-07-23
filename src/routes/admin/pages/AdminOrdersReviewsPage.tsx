@@ -1,19 +1,18 @@
 import * as React from 'react'
-import { ArrowLeft, Eye, Mail, Settings } from 'lucide-react'
+import { ArrowLeft, Settings } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  Field,
-  FieldContent,
   FieldDescription,
   FieldGroup,
   FieldLabel,
@@ -340,42 +339,40 @@ function ReviewSettingsDialog({
             <TypographyH4 className="text-center font-semibold">Review settings</TypographyH4>
           </DialogTitle>
         </DialogHeader>
-        <FieldGroup className="gap-6">
-          <FieldLabel htmlFor="collect-reviews" className="transition-colors hover:bg-muted/50">
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldTitle>
-                  <Mail className="size-4" />
-                  Request reviews
-                </FieldTitle>
-                <FieldDescription>
-                  Email will be sent 24 hours after fulfillment
-                </FieldDescription>
-              </FieldContent>
+        <DialogBody>
+          <FieldGroup className="gap-6">
+          <FieldLabel
+            htmlFor="collect-reviews"
+            className="w-full flex-col items-start gap-1 font-normal"
+          >
+            <div className="flex w-full items-center justify-between gap-3">
+              <FieldTitle>Request reviews</FieldTitle>
               <Switch
                 id="collect-reviews"
                 checked={collectReviews}
                 onCheckedChange={onCollectReviewsChange}
               />
-            </Field>
+            </div>
+            <FieldDescription>
+              Email will be sent 24 hours after fulfillment
+            </FieldDescription>
           </FieldLabel>
-          <FieldLabel htmlFor="auto-publish" className="transition-colors hover:bg-muted/50">
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldTitle>
-                  <Eye className="size-4" />
-                  Auto-publish new reviews
-                </FieldTitle>
-                <FieldDescription>You can always hide them later</FieldDescription>
-              </FieldContent>
+          <FieldLabel
+            htmlFor="auto-publish"
+            className="w-full flex-col items-start gap-1 font-normal"
+          >
+            <div className="flex w-full items-center justify-between gap-3">
+              <FieldTitle>Auto-publish new reviews</FieldTitle>
               <Switch
                 id="auto-publish"
                 checked={autoPublish}
                 onCheckedChange={onAutoPublishChange}
               />
-            </Field>
+            </div>
+            <FieldDescription>You can always hide them later</FieldDescription>
           </FieldLabel>
-        </FieldGroup>
+          </FieldGroup>
+        </DialogBody>
         <DialogFooter className="flex-row">
           <Button variant="outline" className="h-10 flex-1" onClick={() => onOpenChange(false)}>
             Cancel

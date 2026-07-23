@@ -29,6 +29,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Card } from '@/components/ui/card'
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -335,14 +336,14 @@ function AvailableDatesDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0 text-center">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader className="text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">Available dates</TypographyH4>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">Start date</Label>
             <DateField
@@ -377,9 +378,9 @@ function AvailableDatesDialog({
               />
             ) : null}
           </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 flex-1 px-3"
@@ -458,8 +459,8 @@ function CutoffDialog({
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-hidden sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
-        <DialogHeader className="shrink-0 text-center">
+      <DialogContent className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10">
+        <DialogHeader className="text-center">
           <DialogTitle asChild>
             <TypographyH4 className="font-semibold">
               Cutoff date &amp; time
@@ -467,7 +468,7 @@ function CutoffDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="-mx-6 flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-6">
+        <DialogBody className="flex flex-col gap-6">
           <div className="space-y-1.5">
             <Label htmlFor="min-advance-days" className="text-sm font-medium">
               Minimum advance days
@@ -542,9 +543,9 @@ function CutoffDialog({
               </FieldLabel>
             </RadioGroup>
           </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="shrink-0 flex-row">
+        <DialogFooter className="flex-row">
           <Button
             variant="outline"
             className="h-10 flex-1 px-3"
@@ -876,7 +877,7 @@ export function AdminCalendarPage() {
                 {!monthSelected ? (
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="secondary"
                     size="sm"
                     onClick={() => toggleMonth(true)}
                   >
@@ -886,7 +887,7 @@ export function AdminCalendarPage() {
                 {selectedDates.length > 0 ? (
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="secondary"
                     size="sm"
                     onClick={() => setSelectedDates([])}
                   >
