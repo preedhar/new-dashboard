@@ -27,9 +27,10 @@ export function AdminPage({ pathname }: AdminPageProps) {
   }
 
   const Page = activeRoute.component
-  // The order create/edit form, the store/team settings pages, and the online
-  // store fulfillment/checkouts pages provide their own header (back button +
-  // title) and a wider top padding, so the shared chrome is suppressed for them.
+  // The order create/edit form, the store/team settings pages, the products
+  // page, and the online store fulfillment/checkouts pages provide their own
+  // header (back button + title) and a wider top padding, so the shared chrome
+  // is suppressed for them.
   const isOrderFormPage =
     activeRoute.path === '/admin/orders/edit' ||
     activeRoute.path === '/admin/orders/new' ||
@@ -40,7 +41,8 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path === '/admin/settings/team' ||
     activeRoute.path === '/admin/apps/online-store/fulfillment' ||
     activeRoute.path === '/admin/apps/online-store/fulfillment/time-slots' ||
-    activeRoute.path === '/admin/apps/online-store/inventory-calendar' ||
+    activeRoute.path === '/admin/apps/online-store/calendar' ||
+    activeRoute.path === '/admin/products' ||
     activeRoute.path === '/admin/apps/online-store/checkouts' ||
     activeRoute.path === '/admin/apps/online-store/checkouts/order-form' ||
     activeRoute.path === '/admin/settings/payments' ||
@@ -54,10 +56,13 @@ export function AdminPage({ pathname }: AdminPageProps) {
   // The store settings page doubles as the Settings section hub on mobile: it's
   // the Settings tab's destination, so it keeps the bottom nav and its section
   // sub-menu even though it renders a form. The team settings page lives under
-  // the same Settings section, so it keeps the primary bottom nav too.
+  // the same Settings section, so it keeps the primary bottom nav too. The
+  // products page provides its own header (so it's in the list above) but is a
+  // primary section, so it also keeps the bottom nav.
   const keepsBottomNav =
     activeRoute.path === '/admin/settings/store' ||
-    activeRoute.path === '/admin/settings/team'
+    activeRoute.path === '/admin/settings/team' ||
+    activeRoute.path === '/admin/products'
   // The order and delivery detail pages provide their own back button and
   // render a full-bleed card, so the shared title/header and the section's
   // horizontal padding are suppressed for them.

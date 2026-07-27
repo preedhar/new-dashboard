@@ -18,7 +18,7 @@ type MobileNavItem = {
 
 const items: MobileNavItem[] = [
   { title: "Orders", url: "/admin/orders/all", icon: ReceiptText, matchPrefix: "/admin/orders" },
-  { title: "Products", url: "/admin/products/all", icon: Package, matchPrefix: "/admin/products" },
+  { title: "Products", url: "/admin/products", icon: Package, matchPrefix: "/admin/products" },
   { title: "Bookings", url: "/admin/bookings/all", icon: CalendarDays, matchPrefix: "/admin/bookings" },
   {
     title: "Marketing",

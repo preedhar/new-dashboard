@@ -844,7 +844,7 @@ export function AdminCalendarPage() {
           </h1>
         </header>
 
-        <div className="mx-auto flex w-full max-w-[1086px] flex-col justify-center gap-8 xl:flex-row xl:items-start xl:justify-between">
+        <div className="flex w-full flex-col gap-8 xl:flex-row xl:items-start">
           {/* Left column: a month-by-month calendar for hand-picking one or more
               available dates. 350px on desktop, full-width when stacked below xl. */}
           <div className="flex w-full flex-col gap-3 xl:sticky xl:top-8 xl:w-[350px] xl:shrink-0 xl:self-start">
@@ -900,7 +900,7 @@ export function AdminCalendarPage() {
 
           {/* Right column: the availability card, or — once dates are picked —
               a card scoped to the current selection. */}
-          <div className="flex w-full flex-col gap-3 xl:max-w-[640px] xl:flex-1">
+          <div className="flex w-full flex-col gap-3 xl:flex-1">
             {hasSelection ? (
               <>
                 <TypographyLarge>{selectionTitle}</TypographyLarge>

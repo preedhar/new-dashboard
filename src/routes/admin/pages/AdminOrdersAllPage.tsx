@@ -735,6 +735,7 @@ export function SelectFilter({
   onChange,
   className,
   contentClassName,
+  disabled = false,
 }: {
   label: string
   options: Array<string | FilterOption>
@@ -742,6 +743,7 @@ export function SelectFilter({
   onChange: (value: string | null) => void
   className?: string
   contentClassName?: string
+  disabled?: boolean
 }) {
   const normalized = options.map((option) =>
     typeof option === 'string' ? { label: option } : option,
@@ -756,6 +758,7 @@ export function SelectFilter({
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
+          disabled={disabled}
           className={cn(FILTER_BUTTON_CLASS, active && FILTER_BUTTON_ACTIVE_CLASS, className)}
         >
           {selectedOption?.iconSrc ? (

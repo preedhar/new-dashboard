@@ -1253,8 +1253,6 @@ function ImageUploadField({
   onSelectFile: (file: File) => void
   onRemove: () => void
 }) {
-  const inputRef = React.useRef<HTMLInputElement>(null)
-  const noun = label.toLowerCase()
   return (
     // Image buttons left-align on mobile; they return to the right on desktop.
     <SettingRow
@@ -1264,6 +1262,36 @@ function ImageUploadField({
       description={description}
       controlClassName="justify-start sm:justify-end"
     >
+      <ImageUploadControl
+        id={id}
+        noun={label.toLowerCase()}
+        image={image}
+        onSelectFile={onSelectFile}
+        onRemove={onRemove}
+      />
+    </SettingRow>
+  )
+}
+
+// The control on its own, so it can also sit under a plain label (the category
+// dialog on the Products page uses it that way). `noun` names the thing being
+// uploaded in the buttons' accessible labels.
+export function ImageUploadControl({
+  id,
+  noun,
+  image,
+  onSelectFile,
+  onRemove,
+}: {
+  id?: string
+  noun: string
+  image: ImageFile | null
+  onSelectFile: (file: File) => void
+  onRemove: () => void
+}) {
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  return (
+    <>
       <input
         ref={inputRef}
         id={id}
@@ -1315,7 +1343,7 @@ function ImageUploadField({
           <Upload className="size-5" />
         </Button>
       )}
-    </SettingRow>
+    </>
   )
 }
 

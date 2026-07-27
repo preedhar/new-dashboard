@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  Boxes,
   CalendarDays,
   CalendarRange,
   CircleDollarSign,
@@ -22,7 +21,6 @@ import {
   Star,
   Store,
   Tag,
-  Tags,
   Truck,
   Users,
   type LucideIcon,
@@ -62,6 +60,7 @@ import { AdminSettingsWebsitePage } from './pages/AdminSettingsWebsitePage'
 import { AdminSettingsWebsiteAppearancePage } from './pages/AdminSettingsWebsiteAppearancePage'
 import { AdminSettingsWebsiteCustomDomainPage } from './pages/AdminSettingsWebsiteCustomDomainPage'
 import { AdminCalendarPage } from './pages/AdminCalendarPage'
+import { AdminProductsPage } from './pages/AdminProductsPage'
 import { AdminCheckoutsPage } from './pages/AdminCheckoutsPage'
 import { AdminOrderFormPage } from './pages/AdminOrderFormPage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
@@ -113,13 +112,8 @@ export const primaryAdminNav: AdminNavItem[] = [
   },
   {
     title: 'Products',
-    url: '/admin/products/all',
+    url: '/admin/products',
     icon: Package,
-    items: [
-      { title: 'All Products', url: '/admin/products/all', icon: Package },
-      { title: 'Categories', url: '/admin/products/categories', icon: Tags },
-      { title: 'Bundles', url: '/admin/products/bundles', icon: Boxes },
-    ],
   },
   {
     title: 'Bookings',
@@ -166,7 +160,7 @@ export const appsAdminNav: AdminNavItem[] = [
       { title: 'Fulfillment', url: '/admin/apps/online-store/fulfillment', icon: Truck },
       {
         title: 'Calendar',
-        url: '/admin/apps/online-store/inventory-calendar',
+        url: '/admin/apps/online-store/calendar',
         icon: CalendarDays,
       },
       { title: 'Checkouts', url: '/admin/apps/online-store/checkouts', icon: ReceiptText },
@@ -285,20 +279,7 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Products',
     title: 'Products',
     icon: Package,
-    component: createAdminPlaceholder(
-      'Products',
-      'A future workspace for managing the catalog, inventory, pricing, and product availability.',
-    ),
-  },
-  {
-    path: '/admin/products/all',
-    label: 'All Products',
-    title: 'All Products',
-    icon: Package,
-    component: createAdminPlaceholder(
-      'All Products',
-      'A future workspace for browsing, filtering, and managing every product.',
-    ),
+    component: AdminProductsPage,
   },
   {
     path: '/admin/products/categories',
@@ -570,9 +551,9 @@ export const adminRoutes: AdminRoute[] = [
     component: AdminTimeSlotsPage,
   },
   {
-    path: '/admin/apps/online-store/inventory-calendar',
-    label: 'Inventory Calendar',
-    title: 'Inventory Calendar',
+    path: '/admin/apps/online-store/calendar',
+    label: 'Calendar',
+    title: 'Calendar',
     icon: CalendarDays,
     component: AdminCalendarPage,
   },
