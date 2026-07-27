@@ -78,7 +78,7 @@ const otherApps: AppListing[] = [
 
 const onlineStoreSettingsItems = [
   { title: "Fulfillment", href: "/admin/apps/online-store/fulfillment" },
-  { title: "Inventory Calendar", href: "/admin/apps/online-store/inventory-calendar" },
+  { title: "Calendar", href: "/admin/apps/online-store/calendar" },
   { title: "Checkouts", href: "/admin/apps/online-store/checkouts" },
   { title: "Website", href: "/admin/settings/website" },
 ]
