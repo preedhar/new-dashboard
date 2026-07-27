@@ -15,6 +15,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ChangePasswordDialog, ProfileDialog } from "./profile-dialogs"
 
 const languages = [
   { code: "EN", label: "English", flag: "🇺🇸" },
@@ -40,58 +41,76 @@ export function UserMenuContent({
   ...props
 }: UserMenuContentProps) {
   const [selectedLanguageCode, setSelectedLanguageCode] = React.useState("EN")
+  const [profileOpen, setProfileOpen] = React.useState(false)
+  const [changePasswordOpen, setChangePasswordOpen] = React.useState(false)
   const selectedLanguage =
     languages.find((language) => language.code === selectedLanguageCode) ?? languages[0]
 
   return (
-    <DropdownMenuContent
-      className={className}
-      side={side}
-      align={align}
-      sideOffset={sideOffset}
-      {...props}
-    >
-      <DropdownMenuItem>
-        <CircleUserIcon />
-        Profile
-      </DropdownMenuItem>
-      <DropdownMenuItem>
-        <Smile />
-        Get Help
-      </DropdownMenuItem>
-      <DropdownMenuSub>
-        <DropdownMenuSubTrigger>
-          <LanguagesIcon />
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <span>Language</span>
-            <span className="ml-auto text-base leading-none" aria-hidden="true">
-              {selectedLanguage.flag}
-            </span>
-          </div>
-        </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent className="w-64 rounded-lg p-1">
-          {languages.map((language) => (
-            <DropdownMenuItem
-              key={language.code}
-              className="gap-3"
-              onSelect={() => setSelectedLanguageCode(language.code)}
-            >
-              <span className="flex w-5 justify-center">
-                {language.code === selectedLanguage.code ? (
-                  <CheckIcon className="size-4 text-muted-foreground" />
-                ) : null}
+    // The dialogs sit outside the menu content so they survive the menu
+    // closing on select.
+    <>
+      <DropdownMenuContent
+        className={className}
+        side={side}
+        align={align}
+        sideOffset={sideOffset}
+        {...props}
+      >
+        <DropdownMenuItem onSelect={() => setProfileOpen(true)}>
+          <CircleUserIcon />
+          Profile
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <Smile />
+          Get Help
+        </DropdownMenuItem>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <LanguagesIcon />
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <span>Language</span>
+              <span className="ml-auto text-base leading-none" aria-hidden="true">
+                {selectedLanguage.flag}
               </span>
-              <span className="text-base leading-none">{language.flag}</span>
-              <span className="truncate">{language.label}</span>
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuSubContent>
-      </DropdownMenuSub>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem>
-        <LogOutIcon />
-        Log Out
-      </DropdownMenuItem>
-    </DropdownMenuContent>
+            </div>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent className="w-64 rounded-lg p-1">
+            {languages.map((language) => (
+              <DropdownMenuItem
+                key={language.code}
+                className="gap-3"
+                onSelect={() => setSelectedLanguageCode(language.code)}
+              >
+                <span className="flex w-5 justify-center">
+                  {language.code === selectedLanguage.code ? (
+                    <CheckIcon className="size-4 text-muted-foreground" />
+                  ) : null}
+                </span>
+                <span className="text-base leading-none">{language.flag}</span>
+                <span className="truncate">{language.label}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem>
+          <LogOutIcon />
+          Log Out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+      <ProfileDialog
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        onChangePassword={() => {
+          setProfileOpen(false)
+          setChangePasswordOpen(true)
+        }}
+      />
+      <ChangePasswordDialog
+        open={changePasswordOpen}
+        onOpenChange={setChangePasswordOpen}
+      />
+    </>
   )
 }
