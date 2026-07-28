@@ -83,6 +83,11 @@ const DEFAULT_CATEGORY_ID = 'everything-else'
 // The merchant's free Cococart subdomain, the base for every storefront link.
 const STORE_DOMAIN = 'haus.cococart.co'
 
+// The buttons closing out a mobile toolbar row divide it into equal shares —
+// `min-w-0` so a wider label can't claim more than its own, which is what keeps
+// the row even whether it holds two buttons or three.
+const MOBILE_TOOLBAR_BUTTON = 'min-w-0 flex-1'
+
 // Id source for the categories and products the merchant creates during the
 // session. A module-level counter would restart whenever this module is
 // re-evaluated (a dev hot reload keeps component state but resets module
@@ -102,6 +107,11 @@ function slugify(value: string) {
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
+}
+
+// The storefront address a category's slug resolves to.
+function categoryLink(url: string) {
+  return `https://${STORE_DOMAIN}/#${url}`
 }
 
 function formatPrice(value: number) {
@@ -340,7 +350,7 @@ function CategoryDialog({
   const [urlEdited, setUrlEdited] = React.useState(mode === 'edit')
 
   const canSave = isDefault || name.trim() !== ''
-  const fullLink = `https://${STORE_DOMAIN}/#${url}`
+  const fullLink = categoryLink(url)
   const contentRef = React.useRef<HTMLDivElement>(null)
 
   return (
@@ -544,24 +554,23 @@ function SortByAvailabilityDialog({
 }
 
 // ---------------------------------------------------------------------------
-// Toolbar "Actions" menu: the availability sort plus the bulk actions that
-// operate on the checked products.
+// Toolbar "Actions" menu: the bulk actions that operate on whatever rows are
+// checked, plus whatever list-wide options the toolbar wants above them (the
+// products toolbar parks its availability sort there).
 // ---------------------------------------------------------------------------
 
-function ProductActionsMenu({
+function BulkActionsMenu({
   selectedCount,
-  sortByAvailability,
   disabled,
   triggerClassName,
-  onSortByAvailability,
+  leading,
   onDuplicate,
   onDelete,
 }: {
   selectedCount: number
-  sortByAvailability: boolean
   disabled: boolean
   triggerClassName?: string
-  onSortByAvailability: () => void
+  leading?: React.ReactNode
   onDuplicate: () => void
   onDelete: () => void
 }) {
@@ -584,11 +593,12 @@ function ProductActionsMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuItem onSelect={onSortByAvailability}>
-          <ArrowDownUp className="size-4" />
-          Sort by availability: {sortByAvailability ? 'On' : 'Off'}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
+        {leading ? (
+          <>
+            {leading}
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
         {/* Bulk actions need something checked to act on. */}
         <DropdownMenuItem disabled={selectedCount === 0} onSelect={onDuplicate}>
           <Copy className="size-4" />
@@ -620,12 +630,17 @@ function CategoryRow({
   mobile,
   reorderable,
   listReorderable,
+  selectMode,
+  selectable,
+  checked,
   disabled,
   dragging,
   className,
   rowRef,
   onSelect,
+  onCheckedChange,
   onEdit,
+  onCopyLink,
   onDuplicate,
   onDelete,
   dragProps,
@@ -645,6 +660,12 @@ function CategoryRow({
   // Whether any row in the list shows a drag handle. When true, every row
   // reserves the handle's width so their images stay aligned.
   listReorderable: boolean
+  // Mobile only: "Select" swaps the chevron and the manage menu for a checkbox
+  // and turns the row into its own toggle.
+  selectMode: boolean
+  // The catch-all can't be duplicated or deleted, so it sits out of selection.
+  selectable: boolean
+  checked: boolean
   // While this row is the one being dragged, its in-list instance is hidden
   // (leaving empty space) since the browser already shows it as a floating
   // drag image.
@@ -652,7 +673,9 @@ function CategoryRow({
   className?: string
   rowRef?: (node: HTMLDivElement | null) => void
   onSelect: () => void
+  onCheckedChange: (checked: boolean) => void
   onEdit: () => void
+  onCopyLink: () => void
   onDuplicate: () => void
   onDelete: () => void
   dragProps?: React.HTMLAttributes<HTMLDivElement> & { draggable?: boolean }
@@ -676,10 +699,14 @@ function CategoryRow({
           <Pencil className="size-4" />
           Edit
         </DropdownMenuItem>
-        {/* The catch-all category can't be duplicated or deleted — only its
-            image is editable. */}
+        {/* The catch-all category has no link of its own and can't be
+            duplicated or deleted — only its image is editable. */}
         {!isDefault ? (
           <>
+            <DropdownMenuItem onSelect={onCopyLink}>
+              <Link2 className="size-4" />
+              Copy link
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={onDuplicate}>
               <Copy className="size-4" />
               Duplicate
@@ -704,18 +731,24 @@ function CategoryRow({
     // Handles showing means the list is being reordered, so rows stop acting
     // as links and hand their trailing slot over to the drag handle.
     const inReorder = listReorderable
+    // Reorder wins if both were somehow on; the row can only be one thing.
+    const inSelect = selectMode && !inReorder
+    // In select mode the whole row is the checkbox's target, the way the
+    // product rows behave — except for the catch-all, which can't be picked.
+    const activate = inSelect ? () => onCheckedChange(!checked) : onSelect
+    const interactive = !inReorder && (!inSelect || selectable)
     return (
       <div
         ref={rowRef}
         {...dragProps}
-        role={inReorder ? undefined : 'button'}
-        tabIndex={inReorder ? undefined : 0}
-        onClick={inReorder ? undefined : onSelect}
+        role={interactive ? 'button' : undefined}
+        tabIndex={interactive ? 0 : undefined}
+        onClick={interactive ? activate : undefined}
         onKeyDown={(event) => {
-          if (inReorder) return
+          if (!interactive) return
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault()
-            onSelect()
+            activate()
           }
         }}
         className={cn(
@@ -737,7 +770,7 @@ function CategoryRow({
           {/* The chevron and the manage menu keep the same 40px box, so
               swapping in the drag handle doesn't move the row. */}
           <span className="flex size-10 shrink-0 items-center justify-center">
-            {inReorder ? null : (
+            {inReorder || inSelect ? null : (
               <ChevronRight className="size-4 text-muted-foreground" />
             )}
           </span>
@@ -749,6 +782,19 @@ function CategoryRow({
               {/* The catch-all can't move, so its slot just holds the space. */}
               {reorderable ? (
                 <GripVertical className="size-4 text-muted-foreground" />
+              ) : null}
+            </span>
+          ) : inSelect ? (
+            <span className="flex size-10 shrink-0 items-center justify-center">
+              {/* The row itself handles the toggle, so the box is just the
+                  readout — and stays empty for the catch-all. */}
+              {selectable ? (
+                <Checkbox
+                  checked={checked}
+                  aria-hidden
+                  tabIndex={-1}
+                  className="pointer-events-none"
+                />
               ) : null}
             </span>
           ) : (
@@ -1077,8 +1123,26 @@ export function AdminProductsPage() {
   const [searchOpen, setSearchOpen] = React.useState(false)
   const [selectMode, setSelectMode] = React.useState(false)
   // Categories drag freely on desktop; on the mobile category screen the rows
-  // are links, so dragging waits for its own Reorder button.
+  // are links, so dragging waits for its own Reorder button. Picking them works
+  // the same way, behind its own Select button.
   const [categoryReorderMode, setCategoryReorderMode] = React.useState(false)
+  const [categorySelectMode, setCategorySelectMode] = React.useState(false)
+  const [selectedCategoryIds, setSelectedCategoryIds] = React.useState<string[]>(
+    [],
+  )
+
+  // Toolbar filters. They narrow only what's shown; reordering is disabled while
+  // a filter is active so the visible list still maps 1:1 to the category order.
+  const [productSearch, setProductSearch] = React.useState('')
+  // Stored as a channel label (matching SelectFilter's string values); null
+  // means no channel filter.
+  const [channelFilter, setChannelFilter] = React.useState<string | null>(null)
+  const searchQuery = productSearch.trim().toLowerCase()
+  // Search reaches across the whole catalog rather than the open category, so
+  // while a query is typed the results replace whichever list was on screen —
+  // including, on desktop, the category column itself.
+  const isSearching = searchQuery !== ''
+  const isFiltering = isSearching || channelFilter !== null
 
   // The catch-all's label depends on whether any real category exists.
   const hasCategories = categories.length > 0
@@ -1089,21 +1153,38 @@ export function AdminProductsPage() {
   // Handles are on screen whenever the list can be dragged: always on desktop,
   // and on mobile only while its Reorder button is on.
   const categoriesDraggable =
-    categoriesReorderable && !reorderMode && (!isMobile || categoryReorderMode)
+    categoriesReorderable &&
+    !reorderMode &&
+    !isSearching &&
+    (!isMobile || categoryReorderMode)
 
   // With nothing to choose between, the category screen would be an empty
   // detour — the products stand in as the mobile landing page.
   const mobileShowsProducts = !hasCategories || mobileView === 'products'
-  const showCategories = !isMobile || !mobileShowsProducts
-  const showProducts = !isMobile || mobileShowsProducts
+  // Search results are products wherever they're raised, so they take over the
+  // category screen too.
+  const showsProductList = isSearching || !isMobile || mobileShowsProducts
+  const showCategories = !isSearching && (!isMobile || !mobileShowsProducts)
+  const showProducts = showsProductList
 
   // Checkboxes are always on hand with a mouse; on a phone they wait for
   // "Select".
   const productsSelectable = !isMobile || selectMode
+  const categoriesSelectable = isMobile && categorySelectMode && !isSearching
 
   function backToCategories() {
     setMobileView('categories')
     setReorderMode(false)
+    setSelectMode(false)
+    setSelectedProductIds([])
+    closeSearch()
+  }
+
+  // Dismissing search puts a different list back on screen, so anything picked
+  // out of the results goes with it.
+  function closeSearch() {
+    setProductSearch('')
+    setSearchOpen(false)
     setSelectMode(false)
     setSelectedProductIds([])
   }
@@ -1133,21 +1214,16 @@ export function AdminProductsPage() {
     [products, selectedIsDefault, selectedCategoryId],
   )
 
-  // Toolbar filters. They narrow only what's shown; reordering is disabled while
-  // a filter is active so the visible list still maps 1:1 to the category order.
-  const [productSearch, setProductSearch] = React.useState('')
-  // Stored as a channel label (matching SelectFilter's string values); null
-  // means no channel filter.
-  const [channelFilter, setChannelFilter] = React.useState<string | null>(null)
   const filterChannel = CHANNELS.find(
     (channel) => channel.label === channelFilter,
   )?.value
-  const isFiltering = productSearch.trim() !== '' || channelFilter !== null
   const displayedProducts = React.useMemo(() => {
-    const query = productSearch.trim().toLowerCase()
-    const matches = viewProducts.filter(
+    // A search is a question about the catalog, not about the open category, so
+    // it's answered from every product on the store.
+    const source = isSearching ? products : viewProducts
+    const matches = source.filter(
       (product) =>
-        (query === '' || product.name.toLowerCase().includes(query)) &&
+        (!isSearching || product.name.toLowerCase().includes(searchQuery)) &&
         (!filterChannel || product.channels.includes(filterChannel)),
     )
     // A stable sort, so within each availability group the manual order holds.
@@ -1156,7 +1232,14 @@ export function AdminProductsPage() {
           (a, b) => Number(isAvailable(b)) - Number(isAvailable(a)),
         )
       : matches
-  }, [viewProducts, productSearch, filterChannel, sortByAvailability])
+  }, [
+    products,
+    viewProducts,
+    isSearching,
+    searchQuery,
+    filterChannel,
+    sortByAvailability,
+  ])
   // Reordering needs at least two rows and an unfiltered list, so the visible
   // order still maps 1:1 to the stored one.
   const canReorder = viewProducts.length > 1 && !isFiltering
@@ -1186,8 +1269,27 @@ export function AdminProductsPage() {
   const [categoryDialog, setCategoryDialog] = React.useState<
     { mode: 'add' } | { mode: 'edit'; category: Category } | null
   >(null)
-  const [pendingCategoryDelete, setPendingCategoryDelete] =
-    React.useState<Category | null>(null)
+  // Holds whatever is waiting on the delete confirmation — one category from a
+  // row's menu, or the checked ones from the Actions menu.
+  const [pendingCategoryDelete, setPendingCategoryDelete] = React.useState<
+    Category[] | null
+  >(null)
+
+  // The catch-all never joins a selection, and `categories` only holds the real
+  // ones, so filtering by it drops it on its own.
+  const selectedCategories = React.useMemo(
+    () =>
+      categories.filter((category) => selectedCategoryIds.includes(category.id)),
+    [categories, selectedCategoryIds],
+  )
+
+  function toggleCategorySelected(id: string, selected: boolean) {
+    setSelectedCategoryIds((current) =>
+      selected
+        ? [...current, id]
+        : current.filter((categoryId) => categoryId !== id),
+    )
+  }
 
   function saveCategory(values: {
     name: string
@@ -1216,53 +1318,76 @@ export function AdminProductsPage() {
     setCategoryDialog(null)
   }
 
-  function duplicateCategory(category: Category) {
-    const copy: Category = {
-      id: nextId('category'),
-      name: `${category.name} copy`,
-      url: `${category.url}-copy`,
-      image: category.image,
-    }
-    setCategories((current) => {
-      const index = current.findIndex((item) => item.id === category.id)
-      const next = [...current]
-      next.splice(index + 1, 0, copy)
-      return next
-    })
-    // Copy every product filed under the original into the new category,
-    // preserving the rest of each product's memberships.
-    setProducts((current) => {
-      const copies = current
-        .filter((product) => product.categoryIds.includes(category.id))
-        .map((product) => ({
-          ...product,
-          id: nextId('product'),
-          categoryIds: product.categoryIds.map((id) =>
-            id === category.id ? copy.id : id,
-          ),
-        }))
-      return [...current, ...copies]
-    })
-    toast.success('Category duplicated')
+  function copyCategoryLink(category: Category) {
+    void navigator.clipboard?.writeText(categoryLink(category.url))
+    toast.success('Link copied')
   }
 
-  function deleteCategory(category: Category) {
-    setCategories((current) =>
-      current.filter((item) => item.id !== category.id),
+  // Duplicating drops each copy directly after its original. Takes a list so a
+  // row's menu and the bulk action share one path.
+  function duplicateCategories(targets: Category[]) {
+    if (targets.length === 0) return
+    const copies = new Map<string, Category>(
+      targets.map((category) => [
+        category.id,
+        {
+          id: nextId('category'),
+          name: `${category.name} copy`,
+          url: `${category.url}-copy`,
+          image: category.image,
+        },
+      ]),
     )
-    // Strip the deleted category from every product; those left without a
+    setCategories((current) =>
+      current.flatMap((item) => {
+        const copy = copies.get(item.id)
+        return copy ? [item, copy] : [item]
+      }),
+    )
+    // Copy every product filed under an original into its new category,
+    // preserving the rest of each product's memberships.
+    setProducts((current) => [
+      ...current,
+      ...current.flatMap((product) =>
+        product.categoryIds
+          .filter((id) => copies.has(id))
+          .map((id) => ({
+            ...product,
+            id: nextId('product'),
+            categoryIds: product.categoryIds.map((categoryId) =>
+              categoryId === id ? copies.get(id)!.id : categoryId,
+            ),
+          })),
+      ),
+    ])
+    toast.success(
+      targets.length === 1
+        ? 'Category duplicated'
+        : `${targets.length} categories duplicated`,
+    )
+  }
+
+  function deleteCategories(targets: Category[]) {
+    const ids = new Set(targets.map((category) => category.id))
+    setCategories((current) => current.filter((item) => !ids.has(item.id)))
+    // Strip the deleted categories from every product; those left without a
     // category fall back to the catch-all.
     setProducts((current) =>
       current.map((product) => ({
         ...product,
-        categoryIds: product.categoryIds.filter((id) => id !== category.id),
+        categoryIds: product.categoryIds.filter((id) => !ids.has(id)),
       })),
     )
-    if (selectedCategoryId === category.id) {
+    if (ids.has(selectedCategoryId)) {
       setSelectedCategoryId(DEFAULT_CATEGORY_ID)
     }
+    setSelectedCategoryIds((current) => current.filter((id) => !ids.has(id)))
     setPendingCategoryDelete(null)
-    toast.success('Category deleted')
+    toast.success(
+      targets.length === 1
+        ? 'Category deleted'
+        : `${targets.length} categories deleted`,
+    )
   }
 
   // Reorder the real categories by moving the dragged one to the hovered slot.
@@ -1473,10 +1598,7 @@ export function AdminProductsPage() {
           variant="ghost"
           size="icon-sm"
           aria-label="Dismiss search"
-          onClick={() => {
-            setProductSearch('')
-            setSearchOpen(false)
-          }}
+          onClick={closeSearch}
         >
           <X className="size-4 text-muted-foreground" />
         </Button>
@@ -1509,6 +1631,41 @@ export function AdminProductsPage() {
     />
   )
 
+  // "Select" acts on whichever list the screen is showing — the products, or
+  // the categories on the picker screen. Leaving the mode discards its picks.
+  const selectActive = showsProductList ? selectMode : categorySelectMode
+  function selectToggle(
+    variant: 'ghost' | 'outline',
+    className?: string,
+  ) {
+    return (
+      <Button
+        type="button"
+        variant={variant}
+        className={cn('h-10 px-3', className)}
+        disabled={showsProductList ? reorderMode : categoryReorderMode}
+        onClick={() => {
+          if (showsProductList) {
+            setSelectedProductIds([])
+            setSelectMode(!selectMode)
+          } else {
+            setSelectedCategoryIds([])
+            setCategorySelectMode(!categorySelectMode)
+          }
+        }}
+      >
+        {selectActive ? (
+          'Cancel'
+        ) : (
+          <>
+            <SquareDashed className="size-4 text-muted-foreground" />
+            Select
+          </>
+        )}
+      </Button>
+    )
+  }
+
   // Mobile's first toolbar row: a search shortcut and a select toggle at
   // opposite ends, with the search field taking over the row once opened.
   const mobileSearchRow = searchOpen ? (
@@ -1519,36 +1676,13 @@ export function AdminProductsPage() {
         type="button"
         variant="ghost"
         className="h-10 px-3"
-        disabled={reorderMode}
+        disabled={reorderMode || categoryReorderMode}
         onClick={() => setSearchOpen(true)}
       >
         <Search className="size-4 text-muted-foreground" />
         Search
       </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        className="h-10 px-3"
-        disabled={reorderMode}
-        onClick={() => {
-          if (selectMode) {
-            // Leaving select mode discards the current selection.
-            setSelectedProductIds([])
-            setSelectMode(false)
-          } else {
-            setSelectMode(true)
-          }
-        }}
-      >
-        {selectMode ? (
-          'Cancel'
-        ) : (
-          <>
-            <SquareDashed className="size-4 text-muted-foreground" />
-            Select
-          </>
-        )}
-      </Button>
+      {selectToggle('ghost')}
     </div>
   )
 
@@ -1556,7 +1690,7 @@ export function AdminProductsPage() {
     <Button
       type="button"
       variant="outline"
-      className={cn('h-10 px-3', isMobile && 'flex-1')}
+      className={cn('h-10 px-3', isMobile && MOBILE_TOOLBAR_BUTTON)}
       disabled={!reorderMode && !canReorder}
       onClick={() => {
         setReorderMode((current) => !current)
@@ -1571,17 +1705,63 @@ export function AdminProductsPage() {
   )
 
   const actionsMenu = (
-    <ProductActionsMenu
+    <BulkActionsMenu
       selectedCount={selectedCount}
-      sortByAvailability={sortByAvailability}
       // Everything in here either needs a selection or reshuffles the list, so
       // it's out of reach while reordering.
       disabled={reorderMode}
-      triggerClassName={isMobile ? 'flex-1' : undefined}
-      onSortByAvailability={() => setSortDialogOpen(true)}
+      triggerClassName={isMobile ? MOBILE_TOOLBAR_BUTTON : undefined}
+      leading={
+        <DropdownMenuItem onSelect={() => setSortDialogOpen(true)}>
+          <ArrowDownUp className="size-4" />
+          Sort by availability: {sortByAvailability ? 'On' : 'Off'}
+        </DropdownMenuItem>
+      }
       onDuplicate={duplicateSelectedProducts}
       onDelete={() => setBulkDeleteOpen(true)}
     />
+  )
+
+  // The category screen's own trio: reorder the list, act on what's checked,
+  // and add to it.
+  const categoryReorderButton = (
+    <Button
+      type="button"
+      variant="outline"
+      className={cn('h-10 px-3', MOBILE_TOOLBAR_BUTTON)}
+      disabled={categorySelectMode}
+      onClick={() => setCategoryReorderMode((current) => !current)}
+    >
+      {categoryReorderMode ? 'Done' : 'Reorder'}
+    </Button>
+  )
+
+  const categoryActionsMenu = (
+    <BulkActionsMenu
+      selectedCount={selectedCategories.length}
+      disabled={categoryReorderMode}
+      triggerClassName={MOBILE_TOOLBAR_BUTTON}
+      onDuplicate={() => {
+        duplicateCategories(selectedCategories)
+        setSelectedCategoryIds([])
+      }}
+      onDelete={() => setPendingCategoryDelete(selectedCategories)}
+    />
+  )
+
+  // Just "Add" — the row's three buttons split the width evenly, and a third of
+  // a phone doesn't hold "Add category". The screen is the category picker, so
+  // there's nothing else it could be adding.
+  const addCategoryButton = (
+    <Button
+      type="button"
+      className={cn('h-10 px-3', MOBILE_TOOLBAR_BUTTON)}
+      disabled={categoryReorderMode}
+      onClick={() => setCategoryDialog({ mode: 'add' })}
+    >
+      <Plus className="size-4" />
+      Add
+    </Button>
   )
 
   // Categories get their own screen on mobile, so adding one from here would be
@@ -1593,7 +1773,7 @@ export function AdminProductsPage() {
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
-          className={cn('h-10 px-3', isMobile && 'flex-1')}
+          className={cn('h-10 px-3', isMobile && MOBILE_TOOLBAR_BUTTON)}
           disabled={reorderMode}
         >
           <Plus className="size-4" />
@@ -1620,13 +1800,15 @@ export function AdminProductsPage() {
     </DropdownMenu>
   )
 
-  const pageTitle = !isMobile
-    ? 'Products & Bundles'
-    : !mobileShowsProducts
-      ? 'Select category'
-      : hasCategories
-        ? selectedCategoryName
-        : 'Products & Bundles'
+  // Search spans the catalog, so its results aren't a category's list any more.
+  const pageTitle =
+    !isMobile || isSearching
+      ? 'Products & Bundles'
+      : !mobileShowsProducts
+        ? 'Select category'
+        : hasCategories
+          ? selectedCategoryName
+          : 'Products & Bundles'
 
   return (
     <>
@@ -1655,43 +1837,29 @@ export function AdminProductsPage() {
         </header>
 
         {isMobile ? (
-          mobileShowsProducts ? (
-            // Search/select, then the channel filter, then the three actions —
-            // one row each, 8px apart, like the All Orders mobile toolbar.
-            <div className="mb-4 flex w-full flex-col gap-2">
-              {mobileSearchRow}
-              {channelField}
-              <div className="flex w-full items-center gap-2">
-                {reorderButton}
-                {actionsMenu}
-                {addMenu}
-              </div>
+          // Search/select, then the channel filter, then the actions — one row
+          // each, 8px apart, like the All Orders mobile toolbar. Both screens
+          // share this shape, and the search row keeps its slot across them, so
+          // typing a query on the category screen doesn't drop focus when the
+          // results take over.
+          <div className="mb-4 flex w-full flex-col gap-2">
+            {mobileSearchRow}
+            {showsProductList ? channelField : null}
+            <div className="flex w-full items-center gap-2">
+              {/* With the field holding the row above, the select toggle drops
+                  into the slot Reorder would have had — reordering is off
+                  while a filter is applied anyway. */}
+              {searchOpen
+                ? selectToggle('outline', MOBILE_TOOLBAR_BUTTON)
+                : showsProductList
+                  ? reorderButton
+                  : categoriesReorderable
+                    ? categoryReorderButton
+                    : null}
+              {showsProductList ? actionsMenu : categoryActionsMenu}
+              {showsProductList ? addMenu : addCategoryButton}
             </div>
-          ) : (
-            // Picking a category needs no search or filters — just a way to
-            // reorder the list and a way to add to it.
-            <div className="mb-4 flex w-full items-center gap-2">
-              {categoriesReorderable ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-10 flex-1 px-3"
-                  onClick={() => setCategoryReorderMode((current) => !current)}
-                >
-                  {categoryReorderMode ? 'Done' : 'Reorder'}
-                </Button>
-              ) : null}
-              <Button
-                type="button"
-                className="h-10 flex-1 px-3"
-                disabled={categoryReorderMode}
-                onClick={() => setCategoryDialog({ mode: 'add' })}
-              >
-                <Plus className="size-4" />
-                Add category
-              </Button>
-            </div>
-          )
+          </div>
         ) : (
           /* Full-width toolbar: search + channel filter on the left, Reorder /
              Actions / Add on the right. Opening search hands it both slots. */
@@ -1767,6 +1935,11 @@ export function AdminProductsPage() {
                       listReorderable={
                         isMobile ? categoriesDraggable : categoriesReorderable
                       }
+                      selectMode={categoriesSelectable}
+                      // The catch-all is nobody's to duplicate or delete, so it
+                      // sits the selection out.
+                      selectable={!entry.isDefault}
+                      checked={selectedCategoryIds.includes(entry.id)}
                       disabled={reorderMode}
                       dragging={draggingCategoryId === entry.id}
                       rowRef={(node) => registerCategoryRow(entry.id, node)}
@@ -1778,14 +1951,18 @@ export function AdminProductsPage() {
                         // products screen.
                         setMobileView('products')
                       }}
+                      onCheckedChange={(checked) =>
+                        toggleCategorySelected(entry.id, checked)
+                      }
                       onEdit={() =>
                         setCategoryDialog({
                           mode: 'edit',
                           category: entry.category,
                         })
                       }
-                      onDuplicate={() => duplicateCategory(entry.category)}
-                      onDelete={() => setPendingCategoryDelete(entry.category)}
+                      onCopyLink={() => copyCategoryLink(entry.category)}
+                      onDuplicate={() => duplicateCategories([entry.category])}
+                      onDelete={() => setPendingCategoryDelete([entry.category])}
                       dragProps={dragProps}
                     />
                   )
@@ -1808,9 +1985,11 @@ export function AdminProductsPage() {
             <ListSurface mobile={isMobile}>
                 {displayedProducts.length === 0 ? (
                   <p className="py-8 text-center text-sm text-muted-foreground">
-                    {isFiltering
-                      ? 'No products match your filters.'
-                      : 'No products in this category.'}
+                    {isSearching
+                      ? 'No products match your search.'
+                      : isFiltering
+                        ? 'No products match your filters.'
+                        : 'No products in this category.'}
                   </p>
                 ) : (
                   <>
@@ -1943,9 +2122,15 @@ export function AdminProductsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete category?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {pendingCategoryDelete && pendingCategoryDelete.length > 1
+                ? `Delete ${pendingCategoryDelete.length} categories?`
+                : 'Delete category?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Any products inside this category will not be deleted
+              {pendingCategoryDelete && pendingCategoryDelete.length > 1
+                ? 'Any products inside these categories will not be deleted'
+                : 'Any products inside this category will not be deleted'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1953,7 +2138,7 @@ export function AdminProductsPage() {
             <AlertDialogAction
               variant="destructive"
               onClick={() =>
-                pendingCategoryDelete && deleteCategory(pendingCategoryDelete)
+                pendingCategoryDelete && deleteCategories(pendingCategoryDelete)
               }
             >
               Delete
