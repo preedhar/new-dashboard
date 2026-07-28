@@ -18,6 +18,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
+import { Combobox as ComboboxPrimitive } from '@base-ui/react'
 import { toast } from 'sonner'
 
 import {
@@ -34,6 +35,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from '@/components/ui/combobox'
 import {
   Dialog,
   DialogBody,
@@ -494,6 +503,209 @@ function CategoryDialog({
 }
 
 // ---------------------------------------------------------------------------
+// Change categories dialog: the product's memberships as removable chips, with
+// an "Add" chip opening a searchable list — the same field the order details
+// pane uses for customer tags.
+// ---------------------------------------------------------------------------
+
+function ChangeCategoriesDialog({
+  product,
+  categories,
+  onOpenChange,
+  onSave,
+}: {
+  product: Product
+  // Every real category on the store. The catch-all isn't one of them — a
+  // product lands there by belonging to none of these.
+  categories: Category[]
+  onOpenChange: (open: boolean) => void
+  // Categories typed into the field are handed back alongside the memberships
+  // rather than added as they're typed, so Cancel leaves nothing behind.
+  onSave: (values: { categoryIds: string[]; created: Category[] }) => void
+}) {
+  // Anchors the popover to the field so it spans the full available width.
+  const anchor = React.useRef<HTMLDivElement | null>(null)
+  // The popup mounts here rather than at <body>: a modal dialog parks
+  // `pointer-events: none` on the body and only lifts it for its own content,
+  // and its focus trap and outside-click dismissal both go by DOM containment.
+  // Mounted inside the dialog, the popup counts as part of it on all three.
+  // State rather than a ref so the portal re-resolves once the node exists —
+  // handed a ref that's still empty, it would quietly fall back to <body>.
+  const [content, setContent] = React.useState<HTMLDivElement | null>(null)
+  const [drafts, setDrafts] = React.useState<Category[]>([])
+  const [value, setValue] = React.useState<Category[]>(() =>
+    categories.filter((category) => product.categoryIds.includes(category.id)),
+  )
+  const [query, setQuery] = React.useState('')
+
+  const options = React.useMemo(
+    () => [...categories, ...drafts],
+    [categories, drafts],
+  )
+
+  const trimmed = query.trim()
+  const canCreate =
+    trimmed !== '' &&
+    !options.some(
+      (category) => category.name.toLowerCase() === trimmed.toLowerCase(),
+    )
+
+  function createCategory() {
+    if (!canCreate) return
+    // Only the name is asked for here; the slug follows from it and the image
+    // stays empty until the category is edited from its own row.
+    const created: Category = {
+      id: nextId('category'),
+      name: trimmed,
+      url: slugify(trimmed),
+      image: null,
+    }
+    setDrafts((current) => [...current, created])
+    setValue((current) => [...current, created])
+    setQuery('')
+  }
+
+  function removeCategory(id: string) {
+    setValue((current) => current.filter((category) => category.id !== id))
+  }
+
+  // Shared chip styling for the selected categories and the "Add" button. A
+  // fixed 36px height rather than padding, so a chip carrying an icon still
+  // lines up with one that doesn't.
+  const chipClass =
+    'inline-flex h-9 items-center gap-1.5 rounded-md bg-secondary px-3 text-base font-normal text-secondary-foreground'
+
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent
+        ref={setContent}
+        // The popup hangs below the field and past the dialog's own box, which
+        // the default `overflow-hidden` would cut off. The body keeps its own
+        // scrolling either way.
+        className="overflow-visible sm:max-w-lg [&_[data-slot=dialog-close]]:size-10"
+      >
+        <DialogHeader className="text-center">
+          <DialogTitle asChild>
+            {/* The title is the merchant's own text now, so it can run long:
+                the padding keeps it clear of the close button and the ellipsis
+                takes over from there. */}
+            <TypographyH4 className="truncate px-10 font-semibold">
+              {product.name}
+            </TypographyH4>
+          </DialogTitle>
+        </DialogHeader>
+
+        <DialogBody>
+          <Combobox
+            items={options}
+            value={value}
+            onValueChange={(next: Category[], details) => {
+              // base-ui clears the whole selection on Escape — ignore that
+              // change.
+              if (details.reason === 'escape-key') return
+              setValue(next)
+            }}
+            inputValue={query}
+            onInputValueChange={(next) => setQuery(next)}
+            itemToStringLabel={(category: Category) => category.name}
+            isItemEqualToValue={(a: Category, b: Category) => a.id === b.id}
+            multiple
+          >
+            <div ref={anchor} className="flex flex-wrap items-center gap-1.5">
+              {value.map((category) => (
+                <span key={category.id} className={chipClass}>
+                  <Folder className="size-4 shrink-0 text-muted-foreground" />
+                  {category.name}
+                  <button
+                    type="button"
+                    aria-label={`Remove ${category.name}`}
+                    onClick={() => removeCategory(category.id)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </span>
+              ))}
+              <ComboboxPrimitive.Trigger
+                render={
+                  <button
+                    type="button"
+                    className={cn(
+                      chipClass,
+                      'text-muted-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] hover:text-foreground',
+                    )}
+                  >
+                    <Plus className="size-4" />
+                    Add category
+                  </button>
+                }
+              />
+            </div>
+            <ComboboxContent anchor={anchor} container={content}>
+              <ComboboxInput
+                placeholder="Search categories…"
+                showTrigger={false}
+                className="m-3! h-10! bg-white! pl-2"
+              />
+              {!canCreate ? (
+                <ComboboxEmpty>No categories found.</ComboboxEmpty>
+              ) : null}
+              <ComboboxList>
+                {(category: Category) => (
+                  <ComboboxItem key={category.id} value={category}>
+                    <Folder className="text-muted-foreground" />
+                    {category.name}
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+              {canCreate ? (
+                <button
+                  type="button"
+                  // Keep input focus (and the popover open) when clicking.
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={createCategory}
+                  className="flex w-full cursor-default items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden hover:bg-accent hover:text-accent-foreground"
+                >
+                  <span>
+                    Create "<span className="font-medium">{trimmed}</span>"
+                  </span>
+                  <Plus className="size-4 shrink-0 text-muted-foreground" />
+                </button>
+              ) : null}
+            </ComboboxContent>
+          </Combobox>
+        </DialogBody>
+
+        <DialogFooter className="flex-row">
+          <Button
+            variant="outline"
+            className="h-10 flex-1 px-3"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            className="h-10 flex-1 px-3"
+            onClick={() => {
+              const categoryIds = value.map((category) => category.id)
+              onSave({
+                categoryIds,
+                // A category typed in and then taken off again never happened.
+                created: drafts.filter((draft) =>
+                  categoryIds.includes(draft.id),
+                ),
+              })
+            }}
+          >
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Sort by availability dialog
 // ---------------------------------------------------------------------------
 
@@ -633,7 +845,6 @@ function CategoryRow({
   selectMode,
   selectable,
   checked,
-  disabled,
   dragging,
   className,
   rowRef,
@@ -654,9 +865,6 @@ function CategoryRow({
   // with a chevron up top and the manage menu below.
   mobile: boolean
   reorderable: boolean
-  // The whole category list goes inert while the products are being reordered,
-  // so the list the merchant is dragging within can't change under them.
-  disabled: boolean
   // Whether any row in the list shows a drag handle. When true, every row
   // reserves the handle's width so their images stay aligned.
   listReorderable: boolean
@@ -687,7 +895,6 @@ function CategoryRow({
           type="button"
           variant="ghost"
           size="icon-lg"
-          disabled={disabled}
           className="shrink-0 text-muted-foreground"
           aria-label={`Manage ${name}`}
         >
@@ -809,6 +1016,9 @@ function CategoryRow({
     )
   }
 
+  // Handles showing means the list is being reordered, so the rows stop acting
+  // as pickers and their manage menus step aside.
+  const inReorder = listReorderable
   return (
     <div
       ref={rowRef}
@@ -816,12 +1026,16 @@ function CategoryRow({
       className={cn(
         'group flex items-center gap-3 rounded-lg px-4 py-4 transition-colors',
         reorderable && 'cursor-grab active:cursor-grabbing',
-        dragging ? 'opacity-0' : selected ? 'bg-muted' : !disabled && 'hover:bg-muted/50',
-        disabled && 'opacity-50',
+        dragging
+          ? 'opacity-0'
+          : selected
+            ? 'bg-muted'
+            : !inReorder && 'hover:bg-muted/50',
         className,
       )}
     >
-      {listReorderable ? (
+      {inReorder ? (
+        // The catch-all can't move, so its slot just holds the space.
         reorderable ? (
           <GripVertical className="size-4 shrink-0 text-muted-foreground" />
         ) : (
@@ -831,7 +1045,7 @@ function CategoryRow({
       <button
         type="button"
         onClick={onSelect}
-        disabled={disabled}
+        disabled={inReorder}
         className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-default"
       >
         <img
@@ -846,7 +1060,9 @@ function CategoryRow({
           </span>
         </span>
       </button>
-      {manageMenu}
+      {/* Editing or deleting would reshuffle the list mid-drag, so the menu
+          sits reordering out — its slot stays to keep the rows the same shape. */}
+      {inReorder ? <span className="size-10 shrink-0" aria-hidden /> : manageMenu}
     </div>
   )
 }
@@ -862,12 +1078,13 @@ function ProductRow({
   reorderable,
   selected,
   selectable,
-  showCategoryCount,
+  hasCategories,
   dragging,
   rowRef,
   onSelectedChange,
   onChannelsChange,
   onEdit,
+  onChangeCategories,
   onCopyLink,
   onDuplicate,
   onDelete,
@@ -884,9 +1101,10 @@ function ProductRow({
   selected: boolean
   // Desktop always offers the checkbox; mobile only once "Select" is on.
   selectable: boolean
-  // With no categories on the store there's nothing for the membership count to
-  // say, so the subtitle drops it and shows the price alone.
-  showCategoryCount: boolean
+  // Whether the store has any category at all. With none, there's nothing for
+  // the membership count to say and nothing to move the product between, so the
+  // subtitle shows the price alone and the menu drops "Change categories".
+  hasCategories: boolean
   // While this row is the one being dragged, its in-list instance is hidden
   // (leaving empty space) since the browser already shows it as a floating
   // drag image.
@@ -895,6 +1113,7 @@ function ProductRow({
   onSelectedChange: (selected: boolean) => void
   onChannelsChange: (channels: Channel[]) => void
   onEdit: () => void
+  onChangeCategories: () => void
   onCopyLink: () => void
   onDuplicate: () => void
   onDelete: () => void
@@ -924,20 +1143,30 @@ function ProductRow({
   const meta = (
     <span className="flex items-center gap-2 text-sm text-muted-foreground">
       {formatPrice(product.price)}
-      {showCategoryCount ? (
+      {hasCategories ? (
         <>
           {separator}
-          <span>
-            In {categoryCount} {categoryCount === 1 ? 'category' : 'categories'}
+          {/* The folder carries the meaning on screen; the noun is kept for
+              anyone hearing the row rather than seeing it. */}
+          <span className="flex items-center gap-1">
+            <Folder aria-hidden className="size-4 shrink-0" />
+            {categoryCount}
+            <span className="sr-only">
+              {categoryCount === 1 ? 'category' : 'categories'}
+            </span>
           </span>
         </>
       ) : null}
-      {product.isBundle ? (
-        <>
-          {separator}
-          <span>Bundle</span>
-        </>
-      ) : null}
+    </span>
+  )
+
+  // Bundles are called out beside the name rather than in the meta line. The
+  // badge never shrinks, so a name long enough to truncate gives way to it
+  // instead of pushing it off the row.
+  const nameLine = (
+    <span className={cn('flex min-w-0 items-center gap-2', mobile && 'flex-1')}>
+      <span className="truncate text-sm font-medium">{product.name}</span>
+      {product.isBundle ? <Badge variant="outline">Bundle</Badge> : null}
     </span>
   )
 
@@ -960,11 +1189,23 @@ function ProductRow({
           <MoreHorizontal className="size-5" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-40">
+      {/* `w-auto` undoes the base width, which is pinned to the trigger — a
+          40px icon button — and would otherwise hold the menu at its `min-w-40`
+          floor and clip anything longer. Sizing to content instead lets
+          "Change categories" set the width it needs. */}
+      <DropdownMenuContent align="end" className="w-auto min-w-40">
         <DropdownMenuItem onSelect={onEdit}>
           <Pencil className="size-4" />
           Edit
         </DropdownMenuItem>
+        {/* Nothing to file the product under until the store has a category, so
+            the entry waits until there's one. */}
+        {hasCategories ? (
+          <DropdownMenuItem onSelect={onChangeCategories}>
+            <Folder className="size-4" />
+            Change categories
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuItem onSelect={onCopyLink}>
           <Link2 className="size-4" />
           Copy link
@@ -1022,9 +1263,7 @@ function ProductRow({
             alt=""
             className="size-10 shrink-0 rounded-md object-cover"
           />
-          <span className="min-w-0 flex-1 truncate text-sm font-medium">
-            {product.name}
-          </span>
+          {nameLine}
           {channelsButton}
         </div>
         <div className="flex items-center justify-between gap-2">
@@ -1052,7 +1291,7 @@ function ProductRow({
         className="size-11 shrink-0 rounded-md object-cover"
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="truncate text-sm font-medium">{product.name}</span>
+        {nameLine}
         {meta}
       </div>
       {channelsButton}
@@ -1122,9 +1361,9 @@ export function AdminProductsPage() {
   // they're asked for.
   const [searchOpen, setSearchOpen] = React.useState(false)
   const [selectMode, setSelectMode] = React.useState(false)
-  // Categories drag freely on desktop; on the mobile category screen the rows
-  // are links, so dragging waits for its own Reorder button. Picking them works
-  // the same way, behind its own Select button.
+  // The mobile category screen has its own Reorder button, since desktop's lives
+  // in a toolbar that screen doesn't have. Picking works the same way, behind
+  // its own Select button.
   const [categoryReorderMode, setCategoryReorderMode] = React.useState(false)
   const [categorySelectMode, setCategorySelectMode] = React.useState(false)
   const [selectedCategoryIds, setSelectedCategoryIds] = React.useState<string[]>(
@@ -1150,13 +1389,13 @@ export function AdminProductsPage() {
 
   // Reordering is only offered once there are at least two real categories.
   const categoriesReorderable = categories.length >= 2
-  // Handles are on screen whenever the list can be dragged: always on desktop,
-  // and on mobile only while its Reorder button is on.
+  // Handles are on screen only while reordering: on desktop both columns answer
+  // to the toolbar's Reorder button, and on mobile the category screen has its
+  // own. Search replaces the list with results, so there's nothing to drag.
   const categoriesDraggable =
     categoriesReorderable &&
-    !reorderMode &&
     !isSearching &&
-    (!isMobile || categoryReorderMode)
+    (isMobile ? categoryReorderMode : reorderMode)
 
   // With nothing to choose between, the category screen would be an empty
   // detour — the products stand in as the mobile landing page.
@@ -1244,6 +1483,10 @@ export function AdminProductsPage() {
   // order still maps 1:1 to the stored one.
   const canReorder = viewProducts.length > 1 && !isFiltering
   const productsReorderable = reorderMode && canReorder
+  // On desktop the one button governs both columns, so either list having
+  // something to drag is enough to offer it.
+  const canReorderAnything =
+    canReorder || (!isMobile && categoriesReorderable && !isSearching)
 
   // Only what's on screen can be acted on, so a selection made before a filter
   // was applied can't quietly duplicate or delete hidden rows.
@@ -1441,6 +1684,25 @@ export function AdminProductsPage() {
 
   function editProduct() {
     toast('Editing products is coming soon')
+  }
+
+  // Which product has the "Change categories" dialog open, if any.
+  const [categoriesProduct, setCategoriesProduct] =
+    React.useState<Product | null>(null)
+
+  function saveProductCategories(
+    product: Product,
+    { categoryIds, created }: { categoryIds: string[]; created: Category[] },
+  ) {
+    // Categories invented in the dialog join the list before the product points
+    // at them, so the left column and the row's count agree from the first
+    // render.
+    if (created.length > 0) {
+      setCategories((current) => [...current, ...created])
+    }
+    updateProduct(product.id, { categoryIds })
+    setCategoriesProduct(null)
+    toast.success('Categories updated')
   }
 
   function duplicateProduct(product: Product) {
@@ -1691,7 +1953,7 @@ export function AdminProductsPage() {
       type="button"
       variant="outline"
       className={cn('h-10 px-3', isMobile && MOBILE_TOOLBAR_BUTTON)}
-      disabled={!reorderMode && !canReorder}
+      disabled={!reorderMode && !canReorderAnything}
       onClick={() => {
         setReorderMode((current) => !current)
         // Dragging and picking are separate jobs, so entering either one drops
@@ -1932,15 +2194,12 @@ export function AdminProductsPage() {
                       mobile={isMobile}
                       className={isMobile ? 'rounded-none' : undefined}
                       reorderable={!entry.isDefault && categoriesDraggable}
-                      listReorderable={
-                        isMobile ? categoriesDraggable : categoriesReorderable
-                      }
+                      listReorderable={categoriesDraggable}
                       selectMode={categoriesSelectable}
                       // The catch-all is nobody's to duplicate or delete, so it
                       // sits the selection out.
                       selectable={!entry.isDefault}
                       checked={selectedCategoryIds.includes(entry.id)}
-                      disabled={reorderMode}
                       dragging={draggingCategoryId === entry.id}
                       rowRef={(node) => registerCategoryRow(entry.id, node)}
                       onSelect={() => {
@@ -1970,10 +2229,14 @@ export function AdminProductsPage() {
                 )}
             </ListSurface>
             {/* Only worth saying once there's more than the catch-all to pick
-                from, and only where both columns are on screen at once. */}
+                from, and only where both columns are on screen at once. While
+                the handles are out the rows aren't pickers, so the hint says
+                what they are instead. */}
             {hasCategories && !isMobile ? (
               <p className="text-sm text-muted-foreground">
-                Select a category to view its products
+                {categoriesDraggable
+                  ? 'Drag a category to reorder the list'
+                  : 'Select a category to view its products'}
               </p>
             ) : null}
           </div>
@@ -2030,7 +2293,7 @@ export function AdminProductsPage() {
                           reorderable={productsReorderable}
                           selected={selectedProductIds.includes(product.id)}
                           selectable={productsSelectable}
-                          showCategoryCount={categories.length > 0}
+                          hasCategories={hasCategories}
                           dragging={draggingProductId === product.id}
                           rowRef={(node) => registerProductRow(product.id, node)}
                           onSelectedChange={(selected) =>
@@ -2040,6 +2303,7 @@ export function AdminProductsPage() {
                             updateProduct(product.id, { channels })
                           }
                           onEdit={editProduct}
+                          onChangeCategories={() => setCategoriesProduct(product)}
                           onCopyLink={() => copyProductLink(product)}
                           onDuplicate={() => duplicateProduct(product)}
                           onDelete={() => setPendingProductDelete(product)}
@@ -2069,6 +2333,17 @@ export function AdminProductsPage() {
             if (!open) setCategoryDialog(null)
           }}
           onSave={saveCategory}
+        />
+      ) : null}
+
+      {categoriesProduct ? (
+        <ChangeCategoriesDialog
+          product={categoriesProduct}
+          categories={categories}
+          onOpenChange={(open) => {
+            if (!open) setCategoriesProduct(null)
+          }}
+          onSave={(values) => saveProductCategories(categoriesProduct, values)}
         />
       ) : null}
 
