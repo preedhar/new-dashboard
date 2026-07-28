@@ -93,14 +93,20 @@ function ComboboxContent({
   align = "start",
   alignOffset = 0,
   anchor,
+  container,
   ...props
 }: ComboboxPrimitive.Popup.Props &
   Pick<
     ComboboxPrimitive.Positioner.Props,
     "side" | "align" | "sideOffset" | "alignOffset" | "anchor"
-  >) {
+  > &
+  Pick<ComboboxPrimitive.Portal.Props, "container">) {
   return (
-    <ComboboxPrimitive.Portal>
+    // `container` overrides the default <body> mount. Inside a modal dialog the
+    // body is left `pointer-events: none`, so a popup portalled there renders
+    // but can't be clicked — pass the dialog's own element to keep the popup in
+    // its subtree.
+    <ComboboxPrimitive.Portal container={container}>
       <ComboboxPrimitive.Positioner
         side={side}
         sideOffset={sideOffset}
