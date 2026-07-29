@@ -2,6 +2,7 @@ import * as React from 'react'
 import {
   ArrowLeft,
   Bookmark,
+  Boxes,
   CircleDollarSign,
   CircleHelp,
   Copy,
@@ -140,6 +141,17 @@ const LABEL_OPTIONS = [
 // offers a sample set to pick from — anything else is typed in and created.
 const CATEGORY_OPTIONS = ['Hot Drinks', 'Cold Drinks', 'Pastries', 'Mains']
 
+// The products a bundle can be built out of — the same stand-in catalog, minus
+// the bundles themselves. Mirrors the order page's product picker.
+const PRODUCT_OPTIONS = [
+  'Americano, Iced',
+  'Butter Croissant',
+  'Caesar Salad',
+  'Cappuccino',
+  'Oat Milk Latte',
+  'Pad Thai',
+]
+
 type ProductImage = { id: string; name: string; url: string }
 
 // A percentage off, a flat amount off each unit, or a flat amount off the order.
@@ -173,6 +185,14 @@ type Variant = {
   inventory: string
 }
 
+// One line of a bundle: a product from the catalog, and how many of it the
+// bundle packs in. Only bundles carry these.
+type BundleProduct = {
+  id: string
+  product: string
+  quantity: string
+}
+
 // Whether stock is counted once for the product or separately per variant. Only
 // offered once the product has a variant to count.
 type InventoryScope = 'product' | 'variant'
@@ -196,6 +216,8 @@ type ProductForm = {
   inventory: string
   presetQuantities: string
   bulkDiscounts: BulkDiscountSettings
+  // What a bundle is made of. A plain product keeps this empty.
+  products: BundleProduct[]
   variants: Variant[]
   // Questions asked when the product is added to an order — the same shape the
   // order form page uses for its custom questions.
@@ -222,6 +244,7 @@ const INITIAL_FORM: ProductForm = {
   inventory: '',
   presetQuantities: '',
   bulkDiscounts: emptyBulkDiscounts(),
+  products: [],
   variants: [],
   customizations: [],
 }
@@ -261,6 +284,25 @@ const EDIT_FORM: ProductForm = {
       inventory: '',
     },
   ],
+}
+
+// The bundle the edit page opens on, standing in for a fetch the same way
+// EDIT_FORM does: the products it packs in place of the stock count and
+// variants a bundle never carries.
+const EDIT_BUNDLE_FORM: ProductForm = {
+  ...EDIT_FORM,
+  name: 'Lunch for Two',
+  url: 'lunch-for-two',
+  price: '24.00',
+  description: 'Two mains and two drinks, at a set price.',
+  categories: ['Mains'],
+  inventory: '',
+  products: [
+    { id: 'seed-bundle-caesar', product: 'Caesar Salad', quantity: '1' },
+    { id: 'seed-bundle-padthai', product: 'Pad Thai', quantity: '1' },
+    { id: 'seed-bundle-americano', product: 'Americano, Iced', quantity: '2' },
+  ],
+  variants: [],
 }
 
 // Which optional rows the edit page opens with: every one the product already
@@ -620,10 +662,12 @@ function InventoryInput({
 function ProductLinkField({
   id,
   url,
+  placeholder,
   onChange,
 }: {
   id: string
   url: string
+  placeholder: string
   onChange: (url: string) => void
 }) {
   return (
@@ -633,7 +677,7 @@ function ProductLinkField({
         id={id}
         value={url}
         onChange={(event) => onChange(slugify(event.target.value))}
-        placeholder="iced-latte"
+        placeholder={placeholder}
       />
       <InputGroupAddon align="inline-end">
         <Button
@@ -1111,11 +1155,15 @@ function tierSummary(tier: BulkDiscount) {
 // button, and a sticky Cancel/Save footer.
 function BulkDiscountsDialog({
   settings,
+  scopeChoice,
   saveLabel,
   onOpenChange,
   onSave,
 }: {
   settings: BulkDiscountSettings
+  // Set where the discounts have variants to scope. A bundle is bought as one
+  // thing, so it takes the discounts without the choice.
+  scopeChoice: boolean
   saveLabel: string
   onOpenChange: (open: boolean) => void
   onSave: (settings: BulkDiscountSettings) => void
@@ -1183,7 +1231,7 @@ function BulkDiscountsDialog({
   }
 
   // Shown as soon as there's a discount row to scope, filled in or not.
-  const showScope = draft.tiers.length > 0
+  const showScope = scopeChoice && draft.tiers.length > 0
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
@@ -1362,6 +1410,210 @@ function BulkDiscountsDialog({
 }
 
 // ---------------------------------------------------------------------------
+// Bundle products
+// ---------------------------------------------------------------------------
+
+// Searchable product picker: the field itself is the search box, and every
+// option carries the product's image. Mirrors the picker on the order page.
+function ProductCombobox({
+  id,
+  value,
+  options,
+  onChange,
+  container,
+}: {
+  id: string
+  value: string
+  options: string[]
+  onChange: (product: string) => void
+  container?: HTMLElement | null
+}) {
+  const anchor = React.useRef<HTMLDivElement | null>(null)
+
+  return (
+    <Combobox
+      items={options}
+      value={value || null}
+      onValueChange={(next: string | null, details) => {
+        // base-ui clears the selection on Escape — ignore that change.
+        if (details.reason === 'escape-key') return
+        onChange(next ?? '')
+      }}
+    >
+      <InputGroup ref={anchor} className="h-10">
+        {value ? (
+          <InputGroupAddon align="inline-start">
+            <img
+              src={productImage}
+              alt=""
+              className="size-6 shrink-0 rounded-sm object-cover"
+            />
+          </InputGroupAddon>
+        ) : null}
+        <ComboboxPrimitive.Input
+          render={
+            <InputGroupInput
+              id={id}
+              placeholder="Search products…"
+              className={value ? undefined : 'pl-3'}
+            />
+          }
+        />
+        <InputGroupAddon align="inline-end">
+          <ComboboxTrigger />
+        </InputGroupAddon>
+      </InputGroup>
+      <ComboboxContent anchor={anchor} container={container}>
+        <ComboboxEmpty>No products found.</ComboboxEmpty>
+        <ComboboxList>
+          {(product: string) => (
+            <ComboboxItem key={product} value={product}>
+              <img
+                src={productImage}
+                alt=""
+                className="size-6 shrink-0 rounded-sm object-cover"
+              />
+              {product}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  )
+}
+
+// Everything the dialog edits; the page assigns the id on save.
+type BundleProductDraft = Omit<BundleProduct, 'id'>
+
+// The muted line under a bundled product's name: how many of it the bundle
+// packs in.
+function bundleProductSummary(item: BundleProduct) {
+  return `Qty ${item.quantity.trim() || '1'}`
+}
+
+// The add/edit dialog for one of a bundle's products: which product, and how
+// many of it. Shaped like the variant dialog, minus its optional fields.
+function BundleProductDialog({
+  initial,
+  options,
+  saveLabel,
+  onOpenChange,
+  onSave,
+}: {
+  initial: BundleProduct | null
+  // The catalog with the bundle's other products taken out: a product belongs
+  // on one row, and the quantity there says how many of it to pack.
+  options: string[]
+  saveLabel: string
+  onOpenChange: (open: boolean) => void
+  onSave: (draft: BundleProductDraft) => void
+}) {
+  const isEditing = initial !== null
+  // The picker's popup mounts inside the dialog rather than at <body> — see
+  // the variant dialog for why.
+  const [content, setContent] = React.useState<HTMLDivElement | null>(null)
+
+  const [draft, setDraft] = React.useState<BundleProductDraft>(() =>
+    initial
+      ? { product: initial.product, quantity: initial.quantity }
+      : { product: '', quantity: '1' },
+  )
+
+  function update<K extends keyof BundleProductDraft>(
+    key: K,
+    value: BundleProductDraft[K],
+  ) {
+    setDraft((current) => ({ ...current, [key]: value }))
+  }
+
+  // A bundle packs at least one of whatever it lists, so an emptied quantity
+  // falls back on one rather than blocking the save.
+  const payload: BundleProductDraft = {
+    product: draft.product,
+    quantity: draft.quantity.trim() || '1',
+  }
+  const changed =
+    initial === null ||
+    payload.product !== initial.product ||
+    payload.quantity !== initial.quantity
+  const canSave = payload.product !== '' && changed
+
+  function handleSave() {
+    if (payload.product === '') {
+      toast.error('Select a product')
+      return
+    }
+    onSave(payload)
+  }
+
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent
+        ref={setContent}
+        className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10"
+      >
+        <DialogHeader className="text-center">
+          <DialogTitle asChild>
+            <TypographyH4 className="font-semibold">
+              {isEditing ? 'Edit product' : 'Add product'}
+            </TypographyH4>
+          </DialogTitle>
+        </DialogHeader>
+
+        <DialogBody className="flex flex-col gap-6">
+          <div className="space-y-1.5">
+            <Label htmlFor="bundle-product" className="text-sm font-medium">
+              Product
+            </Label>
+            <ProductCombobox
+              id="bundle-product"
+              value={draft.product}
+              options={options}
+              onChange={(product) => update('product', product)}
+              container={content}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label
+              htmlFor="bundle-product-quantity"
+              className="text-sm font-medium"
+            >
+              Quantity
+            </Label>
+            <Input
+              id="bundle-product-quantity"
+              type="number"
+              min={1}
+              value={draft.quantity}
+              onChange={(event) => update('quantity', event.target.value)}
+              className="h-10"
+            />
+          </div>
+        </DialogBody>
+
+        <DialogFooter className="flex-row">
+          <Button
+            variant="outline"
+            className="h-10 flex-1 px-3"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            className="h-10 flex-1 px-3"
+            onClick={handleSave}
+            disabled={!canSave}
+          >
+            {saveLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Variants
 // ---------------------------------------------------------------------------
 
@@ -1387,37 +1639,43 @@ function variantSummary(variant: Variant) {
   return price === '' || Number(price) === 0 ? 'No extra charge' : `$${price}`
 }
 
-// A single row in the Variants and Customizations lists: name + summary with an
-// edit/delete menu, which "Reorder" swaps for a drag handle. Mirrors the
-// delivery method rows on the fulfillment page, and the product rows' reorder
-// mode on the Products page.
+// A single row in the Products, Variants and Customizations lists: name +
+// summary with an edit/delete menu, which "Reorder" swaps for a drag handle.
+// Mirrors the delivery method rows on the fulfillment page, and the product
+// rows' reorder mode on the Products page.
 function ListRow({
   icon: Icon,
   name,
   summary,
-  reorderMode,
-  dragging,
+  reorderMode = false,
+  dragging = false,
   rowRef,
   onDragStart,
   onDragOver,
   onDragEnd,
   onEdit,
+  canDelete = true,
   onDelete,
 }: {
   icon: IconComponent
   name: string
   summary: string
-  reorderMode: boolean
+  // Left off by a list that keeps the order it's given (a bundle's products),
+  // which never leaves the menu behind for a drag handle.
+  reorderMode?: boolean
   // While this row is the one being dragged, its in-list instance is hidden
   // and the cursor carries the floating copy `setRowDragImage` made of it.
-  dragging: boolean
+  dragging?: boolean
   // Registers the row with the list's FLIP transition, so the rows it displaces
   // slide into their new spots.
-  rowRef: (node: HTMLElement | null) => void
-  onDragStart: () => void
-  onDragOver: (event: React.DragEvent<HTMLElement>) => void
-  onDragEnd: () => void
+  rowRef?: (node: HTMLElement | null) => void
+  onDragStart?: () => void
+  onDragOver?: (event: React.DragEvent<HTMLElement>) => void
+  onDragEnd?: () => void
   onEdit: () => void
+  // Cleared by the row a list can't go below, which leaves it with Edit alone —
+  // the way the order page hides Delete on a lone item.
+  canDelete?: boolean
   onDelete: () => void
 }) {
   return (
@@ -1426,7 +1684,7 @@ function ListRow({
       draggable={reorderMode}
       onDragStart={(event) => {
         setRowDragImage(event)
-        onDragStart()
+        onDragStart?.()
       }}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
@@ -1472,10 +1730,12 @@ function ListRow({
               <Pencil className="size-4" />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onSelect={onDelete}>
-              <Trash2 className="size-4" />
-              Delete
-            </DropdownMenuItem>
+            {canDelete ? (
+              <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+                <Trash2 className="size-4" />
+                Delete
+              </DropdownMenuItem>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
       )}
@@ -1749,19 +2009,27 @@ export function AdminProductFormPage({
   // Editing saves as it goes: selects, switches and dialogs commit on change,
   // while text fields wait for the Save button under them.
   mode = 'add',
+  // A bundle is sold as one packaged thing, so it goes without the three parts
+  // of the form that only make sense per unit: the stock count, the variants,
+  // and the choice of which variant a bulk discount counts. Everything else is
+  // the product form.
+  kind = 'product',
 }: {
   title?: string
   mode?: 'add' | 'edit'
+  kind?: 'product' | 'bundle'
 }) {
   const isEditing = mode === 'edit'
+  const isBundle = kind === 'bundle'
   // Editing commits a dialog's changes on the spot, so its button saves. Adding
   // only folds them into the draft the footer submits later — nothing is saved
   // yet, so it closes the dialog with "Done" instead.
   const dialogSaveLabel = isEditing ? 'Save' : 'Done'
-  const initialForm = React.useMemo<ProductForm>(
-    () => (isEditing ? { ...EDIT_FORM, ...productFromHistory() } : INITIAL_FORM),
-    [isEditing],
-  )
+  const initialForm = React.useMemo<ProductForm>(() => {
+    if (!isEditing) return INITIAL_FORM
+    const seed = isBundle ? EDIT_BUNDLE_FORM : EDIT_FORM
+    return { ...seed, ...productFromHistory() }
+  }, [isEditing, isBundle])
 
   const [form, setForm] = React.useState<ProductForm>(initialForm)
   // What's been saved. Text fields diverge from it until their Save button
@@ -1779,6 +2047,11 @@ export function AdminProductFormPage({
   const [categoryOptions, setCategoryOptions] = React.useState(CATEGORY_OPTIONS)
   const [labelOptions, setLabelOptions] = React.useState(LABEL_OPTIONS)
   const [bulkDiscountsOpen, setBulkDiscountsOpen] = React.useState(false)
+  const [productDialog, setProductDialog] = React.useState<
+    { mode: 'add' } | { mode: 'edit'; product: BundleProduct } | null
+  >(null)
+  const [pendingDeleteProduct, setPendingDeleteProduct] =
+    React.useState<BundleProduct | null>(null)
   const [variantDialog, setVariantDialog] = React.useState<
     { mode: 'add' } | { mode: 'edit'; variant: Variant } | null
   >(null)
@@ -1868,6 +2141,46 @@ export function AdminProductFormPage({
       name,
       url: urlEdited ? current.url : slugify(name),
     }))
+  }
+
+  // --- Bundle products -----------------------------------------------------
+
+  // The catalog the dialog offers, minus what the bundle already packs — the
+  // row being edited excepted, so it can keep the product it's on.
+  function productOptionsFor(editing: BundleProduct | null) {
+    const taken = form.products
+      .filter((item) => item.id !== editing?.id)
+      .map((item) => item.product)
+    return PRODUCT_OPTIONS.filter((product) => !taken.includes(product))
+  }
+
+  function saveBundleProduct(draft: BundleProductDraft) {
+    const editingId =
+      productDialog?.mode === 'edit' ? productDialog.product.id : null
+    // Minted out here so both copies of the form get the same id — see
+    // `saveVariant`.
+    const saveable = { ...draft, id: editingId ?? nextId('bundle-product') }
+    commit((current) => ({
+      ...current,
+      products: editingId
+        ? current.products.map((item) =>
+            item.id === editingId ? saveable : item,
+          )
+        : [...current.products, saveable],
+    }))
+    setProductDialog(null)
+    toast.success(editingId ? 'Product updated' : 'Product added')
+  }
+
+  function confirmDeleteProduct() {
+    if (!pendingDeleteProduct) return
+    const { id } = pendingDeleteProduct
+    commit((current) => ({
+      ...current,
+      products: current.products.filter((item) => item.id !== id),
+    }))
+    setPendingDeleteProduct(null)
+    toast.success('Product removed')
   }
 
   // --- Variants ------------------------------------------------------------
@@ -1997,10 +2310,15 @@ export function AdminProductFormPage({
     // it sits, so Enter in a text field shouldn't file the whole form.
     if (isEditing) return
     if (form.name.trim() === '') {
-      toast.error('Enter a product name')
+      toast.error(isBundle ? 'Enter a bundle name' : 'Enter a product name')
       return
     }
-    toast.success('Product added')
+    // A bundle is the products it packs, so it can't be filed empty.
+    if (isBundle && form.products.length === 0) {
+      toast.error('Add at least one product')
+      return
+    }
+    toast.success(isBundle ? 'Bundle added' : 'Product added')
     navigateTo(PRODUCTS_PATH)
   }
 
@@ -2068,12 +2386,18 @@ export function AdminProductFormPage({
             {/* Each text field keeps its Save button in the same divider group
                 as the field it commits. */}
             <div>
-              <FormRow id="product-name" label="Product name" icon={Package}>
+              <FormRow
+                id={`${kind}-name`}
+                label={isBundle ? 'Bundle name' : 'Product name'}
+                icon={isBundle ? Boxes : Package}
+              >
                 <Input
-                  id="product-name"
+                  id={`${kind}-name`}
                   value={form.name}
                   onChange={(event) => updateName(event.target.value)}
-                  placeholder="e.g. Iced Latte"
+                  placeholder={
+                    isBundle ? 'e.g. Double Cheeseburger' : 'e.g. Iced Latte'
+                  }
                   className="h-10"
                 />
               </FormRow>
@@ -2082,9 +2406,9 @@ export function AdminProductFormPage({
               ) : null}
             </div>
             <div>
-              <FormRow id="product-price" label="Price" icon={CircleDollarSign}>
+              <FormRow id={`${kind}-price`} label="Price" icon={CircleDollarSign}>
                 <CurrencyInput
-                  id="product-price"
+                  id={`${kind}-price`}
                   value={form.price}
                   // With variants of their own prices, the product's price is
                   // the one it starts from.
@@ -2097,7 +2421,7 @@ export function AdminProductFormPage({
               ) : null}
             </div>
             <FormRow
-              id="product-images"
+              id={`${kind}-images`}
               label="Images"
               icon={Images}
               description={imagesHint(form.images)}
@@ -2105,7 +2429,7 @@ export function AdminProductFormPage({
               labelClassName="sm:mt-2.5"
             >
               <ImagesField
-                id="product-images"
+                id={`${kind}-images`}
                 images={form.images}
                 align="end"
                 onChange={(images) => updateAndSave('images', images)}
@@ -2127,7 +2451,7 @@ export function AdminProductFormPage({
           <Section title="Appearance">
             <div>
               <OptionalFormRow
-                fieldKey="product-description"
+                fieldKey={`${kind}-description`}
                 label="Description"
                 icon={FileText}
                 align="start"
@@ -2135,13 +2459,13 @@ export function AdminProductFormPage({
                 onToggle={(value) => toggleField('description', value)}
               >
                 <Textarea
-                  id="product-description"
+                  id={`${kind}-description`}
                   // One row tall to start with; `field-sizing-content` grows it
                   // from there as the merchant types.
                   rows={1}
                   value={form.description}
                   onChange={(event) => update('description', event.target.value)}
-                  placeholder="Describe the product details"
+                  placeholder={`Describe the ${kind} details`}
                   className="min-h-10"
                 />
               </OptionalFormRow>
@@ -2150,7 +2474,7 @@ export function AdminProductFormPage({
               ) : null}
             </div>
             <OptionalFormRow
-              fieldKey="product-categories"
+              fieldKey={`${kind}-categories`}
               label="Categories"
               icon={Folder}
               align="start"
@@ -2158,7 +2482,7 @@ export function AdminProductFormPage({
               onToggle={(value) => toggleField('categories', value)}
             >
               <CategoriesField
-                id="product-categories"
+                id={`${kind}-categories`}
                 categories={form.categories}
                 options={categoryOptions}
                 onChange={(categories) =>
@@ -2170,14 +2494,14 @@ export function AdminProductFormPage({
               />
             </OptionalFormRow>
             <OptionalFormRow
-              fieldKey="product-label"
+              fieldKey={`${kind}-label`}
               label="Labels"
               icon={Bookmark}
               enabled={!!enabled.label}
               onToggle={(value) => toggleField('label', value)}
             >
               <LabelField
-                id="product-label"
+                id={`${kind}-label`}
                 value={form.label}
                 color={form.labelColor}
                 options={labelOptions}
@@ -2190,17 +2514,65 @@ export function AdminProductFormPage({
             </OptionalFormRow>
           </Section>
 
+          {/* What the bundle is made of. Shaped like Customizations, but the
+              rows stay in the order they're added — a bundle's contents aren't
+              a list the customer reads through. */}
+          {isBundle ? (
+            <Section
+              title="Products"
+              divided
+              action={
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="h-10 px-3"
+                  // With the whole catalog packed there's nothing left for the
+                  // dialog to offer.
+                  disabled={productOptionsFor(null).length === 0}
+                  onClick={() => setProductDialog({ mode: 'add' })}
+                >
+                  <Plus className="size-4" />
+                  Add product
+                </Button>
+              }
+            >
+              {form.products.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  No products
+                </p>
+              ) : (
+                form.products.map((item) => (
+                  <ListRow
+                    key={item.id}
+                    icon={Package}
+                    name={item.product}
+                    summary={bundleProductSummary(item)}
+                    onEdit={() =>
+                      setProductDialog({ mode: 'edit', product: item })
+                    }
+                    // An existing bundle is saved as it goes, so emptying its
+                    // list would leave a bundle of nothing behind. The last
+                    // product can be swapped (Edit) but not removed.
+                    canDelete={!isEditing || form.products.length > 1}
+                    onDelete={() => setPendingDeleteProduct(item)}
+                  />
+                ))
+              )}
+            </Section>
+          ) : null}
+
           <Section title="Advanced">
             <div>
               <FormRow
-                id="product-url"
-                label="Product link"
+                id={`${kind}-url`}
+                label={isBundle ? 'Bundle link' : 'Product link'}
                 icon={Link2}
                 description="For online store"
               >
                 <ProductLinkField
-                  id="product-url"
+                  id={`${kind}-url`}
                   url={form.url}
+                  placeholder={isBundle ? 'double-cheeseburger' : 'iced-latte'}
                   onChange={(url) => {
                     setUrlEdited(true)
                     update('url', url)
@@ -2211,72 +2583,76 @@ export function AdminProductFormPage({
                 <SaveRow onClick={() => saveFields(['url'])} />
               ) : null}
             </div>
+            {/* A bundle is stocked through the products it's made of, so it has
+                no count of its own to keep. */}
+            {isBundle ? null : (
+              <div>
+                <OptionalFormRow
+                  fieldKey="product-inventory"
+                  label="Inventory"
+                  icon={Warehouse}
+                  description="Set units available in stock"
+                  // With variants in play the control grows a choice above the
+                  // count, so the label moves to the top of the row.
+                  align={hasVariants ? 'start' : 'center'}
+                  enabled={!!enabled.inventory}
+                  onToggle={(value) => toggleField('inventory', value)}
+                >
+                  <div className="space-y-3">
+                    {hasVariants ? (
+                      <RadioGroup
+                        aria-label="Track inventory"
+                        value={form.inventoryScope}
+                        onValueChange={(value) =>
+                          updateInventoryScope(value as InventoryScope)
+                        }
+                        className="flex w-full flex-col gap-0 divide-y overflow-hidden rounded-lg border"
+                      >
+                        {INVENTORY_SCOPES.map((option) => (
+                          <FieldLabel
+                            key={option.value}
+                            htmlFor={`inventory-scope-${option.value}`}
+                            className="flex w-full items-center justify-between gap-1 rounded-none px-3 py-3 text-sm font-normal transition-colors hover:bg-muted/50 has-[[data-checked]]:bg-primary/5"
+                          >
+                            {option.label}
+                            <RadioGroupItem
+                              value={option.value}
+                              id={`inventory-scope-${option.value}`}
+                            />
+                          </FieldLabel>
+                        ))}
+                      </RadioGroup>
+                    ) : null}
+                    {/* Counting by variant moves the count into each variant's own
+                        dialog, so this row says where to find it instead. */}
+                    {countsByVariant ? (
+                      <p className="text-sm text-muted-foreground sm:text-right">
+                        Set in the Variants section below
+                      </p>
+                    ) : (
+                      <InventoryInput
+                        id="product-inventory"
+                        value={form.inventory}
+                        onChange={(value) => update('inventory', value)}
+                      />
+                    )}
+                  </div>
+                </OptionalFormRow>
+                {/* Counting by product keeps the button on screen the whole time
+                    the row is showing a count, and that one button commits both
+                    the count and the choice above it — neither saves on its own.
+                    (Counting by variant has nothing left here to save, so that
+                    choice commits itself.) */}
+                {isEditing && !!enabled.inventory && !countsByVariant ? (
+                  <SaveRow
+                    onClick={() => saveFields(['inventory', 'inventoryScope'])}
+                  />
+                ) : null}
+              </div>
+            )}
             <div>
               <OptionalFormRow
-                fieldKey="product-inventory"
-                label="Inventory"
-                icon={Warehouse}
-                description="Set units available in stock"
-                // With variants in play the control grows a choice above the
-                // count, so the label moves to the top of the row.
-                align={hasVariants ? 'start' : 'center'}
-                enabled={!!enabled.inventory}
-                onToggle={(value) => toggleField('inventory', value)}
-              >
-                <div className="space-y-3">
-                  {hasVariants ? (
-                    <RadioGroup
-                      aria-label="Track inventory"
-                      value={form.inventoryScope}
-                      onValueChange={(value) =>
-                        updateInventoryScope(value as InventoryScope)
-                      }
-                      className="flex w-full flex-col gap-0 divide-y overflow-hidden rounded-lg border"
-                    >
-                      {INVENTORY_SCOPES.map((option) => (
-                        <FieldLabel
-                          key={option.value}
-                          htmlFor={`inventory-scope-${option.value}`}
-                          className="flex w-full items-center justify-between gap-1 rounded-none px-3 py-3 text-sm font-normal transition-colors hover:bg-muted/50 has-[[data-checked]]:bg-primary/5"
-                        >
-                          {option.label}
-                          <RadioGroupItem
-                            value={option.value}
-                            id={`inventory-scope-${option.value}`}
-                          />
-                        </FieldLabel>
-                      ))}
-                    </RadioGroup>
-                  ) : null}
-                  {/* Counting by variant moves the count into each variant's own
-                      dialog, so this row says where to find it instead. */}
-                  {countsByVariant ? (
-                    <p className="text-sm text-muted-foreground sm:text-right">
-                      Set in the Variants section below
-                    </p>
-                  ) : (
-                    <InventoryInput
-                      id="product-inventory"
-                      value={form.inventory}
-                      onChange={(value) => update('inventory', value)}
-                    />
-                  )}
-                </div>
-              </OptionalFormRow>
-              {/* Counting by product keeps the button on screen the whole time
-                  the row is showing a count, and that one button commits both
-                  the count and the choice above it — neither saves on its own.
-                  (Counting by variant has nothing left here to save, so that
-                  choice commits itself.) */}
-              {isEditing && !!enabled.inventory && !countsByVariant ? (
-                <SaveRow
-                  onClick={() => saveFields(['inventory', 'inventoryScope'])}
-                />
-              ) : null}
-            </div>
-            <div>
-              <OptionalFormRow
-                fieldKey="product-preset-quantities"
+                fieldKey={`${kind}-preset-quantities`}
                 label="Preset quantities"
                 icon={ShoppingCart}
                 description="Set quantities to choose from"
@@ -2284,7 +2660,7 @@ export function AdminProductFormPage({
                 onToggle={(value) => toggleField('presetQuantities', value)}
               >
                 <Input
-                  id="product-preset-quantities"
+                  id={`${kind}-preset-quantities`}
                   value={form.presetQuantities}
                   onChange={(event) =>
                     update('presetQuantities', event.target.value)
@@ -2331,7 +2707,7 @@ export function AdminProductFormPage({
               </div>
             ) : (
               <OptionalFormRow
-                fieldKey="product-bulk-discounts"
+                fieldKey={`${kind}-bulk-discounts`}
                 label="Bulk discounts"
                 icon={Tag}
                 description="Set sale prices on bulk orders"
@@ -2343,73 +2719,77 @@ export function AdminProductFormPage({
             )}
           </Section>
 
-          <Section
-            title="Variants"
-            divided
-            action={
-              <div className="flex items-center gap-2">
-                {/* Two rows are the least that can trade places, so below that
-                    the button isn't offered at all. */}
-                {variantReorderMode || form.variants.length > 1 ? (
+          {/* A bundle is one fixed package rather than a thing sold in a few
+              shapes, so it has no variants to list. */}
+          {isBundle ? null : (
+            <Section
+              title="Variants"
+              divided
+              action={
+                <div className="flex items-center gap-2">
+                  {/* Two rows are the least that can trade places, so below that
+                      the button isn't offered at all. */}
+                  {variantReorderMode || form.variants.length > 1 ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-10 px-3"
+                      onClick={() => setVariantReorderMode((current) => !current)}
+                    >
+                      {variantReorderMode ? 'Done' : 'Reorder'}
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="secondary"
                     className="h-10 px-3"
-                    onClick={() => setVariantReorderMode((current) => !current)}
+                    // Adding mid-drag would drop a row into a list being sorted.
+                    disabled={variantReorderMode}
+                    onClick={() => setVariantDialog({ mode: 'add' })}
                   >
-                    {variantReorderMode ? 'Done' : 'Reorder'}
+                    <Plus className="size-4" />
+                    Add variant
                   </Button>
-                ) : null}
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="h-10 px-3"
-                  // Adding mid-drag would drop a row into a list being sorted.
-                  disabled={variantReorderMode}
-                  onClick={() => setVariantDialog({ mode: 'add' })}
-                >
-                  <Plus className="size-4" />
-                  Add variant
-                </Button>
-              </div>
-            }
-          >
-            {form.variants.length === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">
-                No variants
-              </p>
-            ) : (
-              form.variants.map((variant, index) => (
-                <ListRow
-                  key={variant.id}
-                  icon={Layers}
-                  name={variant.name}
-                  summary={variantSummary(variant)}
-                  reorderMode={variantReorderMode}
-                  dragging={draggingVariantId === variant.id}
-                  rowRef={(node) => registerVariantRow(variant.id, node)}
-                  onDragStart={() => {
-                    dragIndex.current = index
-                    setDraggingVariantId(variant.id)
-                  }}
-                  onDragOver={(event) => {
-                    if (!variantReorderMode || dragIndex.current === null) return
-                    event.preventDefault()
-                    if (dragIndex.current !== index) {
-                      moveVariant(dragIndex.current, index)
+                </div>
+              }
+            >
+              {form.variants.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  No variants
+                </p>
+              ) : (
+                form.variants.map((variant, index) => (
+                  <ListRow
+                    key={variant.id}
+                    icon={Layers}
+                    name={variant.name}
+                    summary={variantSummary(variant)}
+                    reorderMode={variantReorderMode}
+                    dragging={draggingVariantId === variant.id}
+                    rowRef={(node) => registerVariantRow(variant.id, node)}
+                    onDragStart={() => {
                       dragIndex.current = index
-                    }
-                  }}
-                  onDragEnd={() => {
-                    dragIndex.current = null
-                    setDraggingVariantId(null)
-                  }}
-                  onEdit={() => setVariantDialog({ mode: 'edit', variant })}
-                  onDelete={() => setPendingDeleteVariant(variant)}
-                />
-              ))
-            )}
-          </Section>
+                      setDraggingVariantId(variant.id)
+                    }}
+                    onDragOver={(event) => {
+                      if (!variantReorderMode || dragIndex.current === null) return
+                      event.preventDefault()
+                      if (dragIndex.current !== index) {
+                        moveVariant(dragIndex.current, index)
+                        dragIndex.current = index
+                      }
+                    }}
+                    onDragEnd={() => {
+                      dragIndex.current = null
+                      setDraggingVariantId(null)
+                    }}
+                    onEdit={() => setVariantDialog({ mode: 'edit', variant })}
+                    onDelete={() => setPendingDeleteVariant(variant)}
+                  />
+                ))
+              )}
+            </Section>
+          )}
 
           {/* Customizations are the order form's custom questions, asked about
               this product rather than the order — so the section is shaped like
@@ -2518,6 +2898,7 @@ export function AdminProductFormPage({
       {bulkDiscountsOpen ? (
         <BulkDiscountsDialog
           settings={form.bulkDiscounts}
+          scopeChoice={!isBundle}
           saveLabel={dialogSaveLabel}
           onOpenChange={(open) => {
             // Backing out without saving leaves no tiers, so the row goes back
@@ -2529,6 +2910,24 @@ export function AdminProductFormPage({
             setBulkDiscountsOpen(false)
             toast.success('Bulk discounts saved')
           }}
+        />
+      ) : null}
+
+      {productDialog ? (
+        <BundleProductDialog
+          // Re-mount per open/target so the draft starts fresh.
+          key={
+            productDialog.mode === 'edit' ? productDialog.product.id : 'add'
+          }
+          initial={productDialog.mode === 'edit' ? productDialog.product : null}
+          options={productOptionsFor(
+            productDialog.mode === 'edit' ? productDialog.product : null,
+          )}
+          saveLabel={dialogSaveLabel}
+          onOpenChange={(open) => {
+            if (!open) setProductDialog(null)
+          }}
+          onSave={saveBundleProduct}
         />
       ) : null}
 
@@ -2577,6 +2976,33 @@ export function AdminProductFormPage({
       ) : null}
 
       <AlertDialog
+        open={pendingDeleteProduct !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteProduct(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove product?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDeleteProduct
+                ? `"${pendingDeleteProduct.product}" will be removed from this bundle.`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={confirmDeleteProduct}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
         open={pendingDeleteVariant !== null}
         onOpenChange={(open) => {
           if (!open) setPendingDeleteVariant(null)
@@ -2614,7 +3040,7 @@ export function AdminProductFormPage({
             <AlertDialogTitle>Delete customization?</AlertDialogTitle>
             <AlertDialogDescription>
               {pendingDeleteCustomization
-                ? `"${pendingDeleteCustomization.title}" will be removed from this product.`
+                ? `"${pendingDeleteCustomization.title}" will be removed from this ${kind}.`
                 : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
