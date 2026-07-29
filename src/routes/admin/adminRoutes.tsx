@@ -61,6 +61,7 @@ import { AdminSettingsWebsiteAppearancePage } from './pages/AdminSettingsWebsite
 import { AdminSettingsWebsiteCustomDomainPage } from './pages/AdminSettingsWebsiteCustomDomainPage'
 import { AdminCalendarPage } from './pages/AdminCalendarPage'
 import { AdminProductsPage } from './pages/AdminProductsPage'
+import { AdminProductFormPage } from './pages/AdminProductFormPage'
 import { AdminCheckoutsPage } from './pages/AdminCheckoutsPage'
 import { AdminOrderFormPage } from './pages/AdminOrderFormPage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
@@ -280,6 +281,22 @@ export const adminRoutes: AdminRoute[] = [
     title: 'Products',
     icon: Package,
     component: AdminProductsPage,
+  },
+  {
+    path: '/admin/products/new',
+    label: 'Add product',
+    title: 'Add product',
+    icon: Package,
+    component: () => <AdminProductFormPage />,
+  },
+  {
+    path: '/admin/products/edit',
+    label: 'Edit product',
+    title: 'Edit product',
+    icon: Package,
+    component: () => (
+      <AdminProductFormPage mode="edit" title="Edit product" />
+    ),
   },
   {
     path: '/admin/products/categories',

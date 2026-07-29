@@ -76,21 +76,16 @@ import { TypographyH4 } from '@/components/ui/typography'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 
+import { CHANNELS, STORE_DOMAIN, slugify, type Channel } from '../catalog'
 import { SelectFilter } from './AdminOrdersAllPage'
 import { ImageUploadControl } from './AdminSettingsWebsiteAppearancePage'
 
 import productImage from '@/assets/product.png'
-import globeIcon from '@/assets/channels/globe.png'
-import monitorIcon from '@/assets/channels/monitor.png'
-import qrIcon from '@/assets/channels/qr.png'
 
 // The catch-all category. It always sits last and can't be renamed, given a
 // URL, duplicated, deleted, or reordered — it simply collects every product not
 // filed under a category of its own.
 const DEFAULT_CATEGORY_ID = 'everything-else'
-
-// The merchant's free Cococart subdomain, the base for every storefront link.
-const STORE_DOMAIN = 'haus.cococart.co'
 
 // The buttons closing out a mobile toolbar row divide it into equal shares —
 // `min-w-0` so a wider label can't claim more than its own, which is what keeps
@@ -107,15 +102,6 @@ function nextId(prefix: string) {
   const unique =
     crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
   return `${prefix}-${unique}`
-}
-
-// Turn a category name into a URL-friendly slug for the storefront path.
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
 }
 
 // The storefront address a category's slug resolves to.
@@ -201,14 +187,6 @@ function useReorderTransition() {
 
   return register
 }
-
-type Channel = 'online-store' | 'pos' | 'qr'
-
-const CHANNELS: { value: Channel; label: string; icon: string }[] = [
-  { value: 'online-store', label: 'Online Store', icon: globeIcon },
-  { value: 'pos', label: 'POS', icon: monitorIcon },
-  { value: 'qr', label: 'QR Code', icon: qrIcon },
-]
 
 // Options for the toolbar's channel filter (the SelectFilter shared with the
 // All Orders page), each carrying its channel icon.
@@ -1664,26 +1642,22 @@ export function AdminProductsPage() {
 
   // Add a product filed under the current category, or uncategorised when the
   // catch-all is selected.
+  // Products are created on their own page, which the router reaches by path.
   function addProduct() {
-    const created: Product = {
-      id: nextId('product'),
-      name: 'New product',
-      price: 0,
-      categoryIds: selectedIsDefault ? [] : [selectedCategoryId],
-      channels: ['online-store', 'pos', 'qr'],
-    }
-    setProducts((current) => [...current, created])
-    toast.success('Product added')
+    window.history.pushState(null, '', '/admin/products/new')
+    window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
-  // Neither bundles nor the product editor are modeled yet; both entries are
-  // placeholders.
+  // Bundles aren't modeled yet; the entry is a placeholder.
   function addBundle() {
     toast('Bundles are coming soon')
   }
 
-  function editProduct() {
-    toast('Editing products is coming soon')
+  // Products are edited on their own page. There's no catalog behind these
+  // screens yet, so the row travels in history state for the form to open on.
+  function editProduct(product: Product) {
+    window.history.pushState({ product }, '', '/admin/products/edit')
+    window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
   // Which product has the "Change categories" dialog open, if any.
@@ -2302,7 +2276,7 @@ export function AdminProductsPage() {
                           onChannelsChange={(channels) =>
                             updateProduct(product.id, { channels })
                           }
-                          onEdit={editProduct}
+                          onEdit={() => editProduct(product)}
                           onChangeCategories={() => setCategoriesProduct(product)}
                           onCopyLink={() => copyProductLink(product)}
                           onDuplicate={() => duplicateProduct(product)}
