@@ -1220,17 +1220,27 @@ function ProductRow({
         )}
       </span>
     )
+    // In select mode the whole row is the checkbox's target, the way the orders
+    // list behaves; otherwise it opens the product for editing.
+    const inSelect = selectable && !reorderMode
+    const activate = inSelect ? () => onSelectedChange(!selected) : onEdit
+    const interactive = !reorderMode
     return (
       <div
         ref={rowRef}
         {...dragProps}
-        // In select mode the whole row is the target, the way the orders list
-        // behaves.
-        onClick={
-          selectable && !reorderMode ? () => onSelectedChange(!selected) : undefined
-        }
+        role={interactive ? 'button' : undefined}
+        tabIndex={interactive ? 0 : undefined}
+        onClick={interactive ? activate : undefined}
+        onKeyDown={(event) => {
+          if (!interactive) return
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            activate()
+          }
+        }}
         className={cn(
-          'flex w-full flex-col gap-1 px-4 py-3 sm:px-6',
+          'flex w-full flex-col gap-1 px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-6',
           reorderable && 'cursor-grab active:cursor-grabbing',
           dragging && 'opacity-0',
         )}
@@ -1246,7 +1256,15 @@ function ProductRow({
         </div>
         <div className="flex items-center justify-between gap-2">
           {meta}
-          {selectable || reorderMode ? trailing : manageMenu}
+          {selectable || reorderMode ? (
+            trailing
+          ) : (
+            // Everywhere else in the row opens the product; only this corner
+            // keeps its own click.
+            <span onClick={(event) => event.stopPropagation()}>
+              {manageMenu}
+            </span>
+          )}
         </div>
       </div>
     )
@@ -1257,21 +1275,31 @@ function ProductRow({
       ref={rowRef}
       {...dragProps}
       className={cn(
-        'flex items-center gap-3 px-2 py-4',
+        'flex items-center gap-3 rounded-lg px-2 py-4 transition-colors',
         reorderable && 'cursor-grab active:cursor-grabbing',
-        dragging && 'opacity-0',
+        dragging ? 'opacity-0' : !reorderMode && 'hover:bg-muted/50',
       )}
     >
       {leading}
-      <img
-        src={productImage}
-        alt=""
-        className="size-11 shrink-0 rounded-md object-cover"
-      />
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        {nameLine}
-        {meta}
-      </div>
+      {/* The row body opens the product; the checkbox, the channels button and
+          the menu keep their own clicks. Reordering stops it acting as a link,
+          since leaving the page mid-drag would strand the move. */}
+      <button
+        type="button"
+        onClick={onEdit}
+        disabled={reorderMode}
+        className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-default"
+      >
+        <img
+          src={productImage}
+          alt=""
+          className="size-11 shrink-0 rounded-md object-cover"
+        />
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          {nameLine}
+          {meta}
+        </span>
+      </button>
       {channelsButton}
       {manageMenu}
     </div>
