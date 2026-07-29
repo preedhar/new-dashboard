@@ -88,6 +88,7 @@ import { cn } from '@/lib/utils'
 import productImage from '@/assets/product.png'
 
 import { CHANNELS, STORE_DOMAIN, slugify, type Channel } from '../catalog'
+import { setRowDragImage, useReorderTransition } from '../reorder'
 import { CustomQuestionDialog } from '../components/custom-question-dialog'
 import {
   customCaption,
@@ -202,7 +203,7 @@ type ProductForm = {
 }
 
 function emptyBulkDiscounts(): BulkDiscountSettings {
-  return { tiers: [], scope: 'same-variant' }
+  return { tiers: [], scope: 'all-variants' }
 }
 
 const INITIAL_FORM: ProductForm = {
@@ -1110,10 +1111,12 @@ function tierSummary(tier: BulkDiscount) {
 // button, and a sticky Cancel/Save footer.
 function BulkDiscountsDialog({
   settings,
+  saveLabel,
   onOpenChange,
   onSave,
 }: {
   settings: BulkDiscountSettings
+  saveLabel: string
   onOpenChange: (open: boolean) => void
   onSave: (settings: BulkDiscountSettings) => void
 }) {
@@ -1350,7 +1353,7 @@ function BulkDiscountsDialog({
             onClick={handleSave}
             disabled={!canSave}
           >
-            Save
+            {saveLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1393,6 +1396,8 @@ function ListRow({
   name,
   summary,
   reorderMode,
+  dragging,
+  rowRef,
   onDragStart,
   onDragOver,
   onDragEnd,
@@ -1403,6 +1408,12 @@ function ListRow({
   name: string
   summary: string
   reorderMode: boolean
+  // While this row is the one being dragged, its in-list instance is hidden
+  // and the cursor carries the floating copy `setRowDragImage` made of it.
+  dragging: boolean
+  // Registers the row with the list's FLIP transition, so the rows it displaces
+  // slide into their new spots.
+  rowRef: (node: HTMLElement | null) => void
   onDragStart: () => void
   onDragOver: (event: React.DragEvent<HTMLElement>) => void
   onDragEnd: () => void
@@ -1411,13 +1422,18 @@ function ListRow({
 }) {
   return (
     <div
+      ref={rowRef}
       draggable={reorderMode}
-      onDragStart={onDragStart}
+      onDragStart={(event) => {
+        setRowDragImage(event)
+        onDragStart()
+      }}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
       className={cn(
         'flex items-start justify-between gap-4 py-4',
         reorderMode && 'cursor-grab active:cursor-grabbing',
+        dragging && 'opacity-0',
       )}
     >
       <div className="min-w-0 flex-1">
@@ -1517,6 +1533,7 @@ function VariantDialog({
   showInventory,
   pricePlaceholder,
   labelOptions,
+  saveLabel,
   onCreateLabel,
   onOpenChange,
   onSave,
@@ -1528,6 +1545,7 @@ function VariantDialog({
   // The product's own price, suggested for a variant that doesn't set one.
   pricePlaceholder: string
   labelOptions: string[]
+  saveLabel: string
   onCreateLabel: (label: string) => void
   onOpenChange: (open: boolean) => void
   onSave: (draft: VariantDraft) => void
@@ -1713,7 +1731,7 @@ function VariantDialog({
             onClick={handleSave}
             disabled={!canSave}
           >
-            Save
+            {saveLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1736,6 +1754,10 @@ export function AdminProductFormPage({
   mode?: 'add' | 'edit'
 }) {
   const isEditing = mode === 'edit'
+  // Editing commits a dialog's changes on the spot, so its button saves. Adding
+  // only folds them into the draft the footer submits later — nothing is saved
+  // yet, so it closes the dialog with "Done" instead.
+  const dialogSaveLabel = isEditing ? 'Save' : 'Done'
   const initialForm = React.useMemo<ProductForm>(
     () => (isEditing ? { ...EDIT_FORM, ...productFromHistory() } : INITIAL_FORM),
     [isEditing],
@@ -1765,6 +1787,12 @@ export function AdminProductFormPage({
   // "Reorder" swaps each variant's manage menu for a drag handle, as the
   // Products page does for its rows.
   const [variantReorderMode, setVariantReorderMode] = React.useState(false)
+  // The row the cursor is carrying, hidden in place while its floating copy
+  // moves. Both lists drag the way the Products page's rows do.
+  const [draggingVariantId, setDraggingVariantId] = React.useState<string | null>(
+    null,
+  )
+  const registerVariantRow = useReorderTransition()
   const [customizationDialog, setCustomizationDialog] = React.useState<
     { mode: 'add' } | { mode: 'edit'; customization: CustomQuestion } | null
   >(null)
@@ -1772,6 +1800,10 @@ export function AdminProductFormPage({
     React.useState<CustomQuestion | null>(null)
   const [customizationReorderMode, setCustomizationReorderMode] =
     React.useState(false)
+  const [draggingCustomizationId, setDraggingCustomizationId] = React.useState<
+    string | null
+  >(null)
+  const registerCustomizationRow = useReorderTransition()
 
   // A typed value: only the working form moves, so a Save button (edit) or the
   // footer (add) still has something to commit.
@@ -1816,15 +1848,18 @@ export function AdminProductFormPage({
     setEnabled((current) => ({ ...current, [key]: value }))
   }
 
-  // Handing the count to the variants drops the product-wide one, so a stale
-  // number can't linger behind the choice.
   function updateInventoryScope(scope: InventoryScope) {
-    commit((current) => ({
-      ...current,
-      inventoryScope: scope,
-      inventory: scope === 'variant' ? '' : current.inventory,
-    }))
-    if (isEditing) runSaveFeedback()
+    if (scope === 'variant') {
+      // Counting by variant leaves the row with nothing to press Save on, so
+      // the choice commits itself — and drops the product-wide count on the way
+      // out, so a stale number can't linger behind it.
+      commit((current) => ({ ...current, inventoryScope: scope, inventory: '' }))
+      if (isEditing) runSaveFeedback()
+      return
+    }
+    // Counting by product hands the row a count and the Save button under it,
+    // so the choice waits and is committed by that button along with the count.
+    update('inventoryScope', scope)
   }
 
   function updateName(name: string) {
@@ -2228,10 +2263,15 @@ export function AdminProductFormPage({
                   )}
                 </div>
               </OptionalFormRow>
-              {/* The count is a text field; the scope above it is a choice that
-                  saves as it's picked. */}
-              {isFieldDirty(['inventory']) ? (
-                <SaveRow onClick={() => saveFields(['inventory'])} />
+              {/* Counting by product keeps the button on screen the whole time
+                  the row is showing a count, and that one button commits both
+                  the count and the choice above it — neither saves on its own.
+                  (Counting by variant has nothing left here to save, so that
+                  choice commits itself.) */}
+              {isEditing && !!enabled.inventory && !countsByVariant ? (
+                <SaveRow
+                  onClick={() => saveFields(['inventory', 'inventoryScope'])}
+                />
               ) : null}
             </div>
             <div>
@@ -2346,8 +2386,11 @@ export function AdminProductFormPage({
                   name={variant.name}
                   summary={variantSummary(variant)}
                   reorderMode={variantReorderMode}
+                  dragging={draggingVariantId === variant.id}
+                  rowRef={(node) => registerVariantRow(variant.id, node)}
                   onDragStart={() => {
                     dragIndex.current = index
+                    setDraggingVariantId(variant.id)
                   }}
                   onDragOver={(event) => {
                     if (!variantReorderMode || dragIndex.current === null) return
@@ -2359,6 +2402,7 @@ export function AdminProductFormPage({
                   }}
                   onDragEnd={() => {
                     dragIndex.current = null
+                    setDraggingVariantId(null)
                   }}
                   onEdit={() => setVariantDialog({ mode: 'edit', variant })}
                   onDelete={() => setPendingDeleteVariant(variant)}
@@ -2412,8 +2456,13 @@ export function AdminProductFormPage({
                   name={customization.title}
                   summary={customCaption(customization)}
                   reorderMode={customizationReorderMode}
+                  dragging={draggingCustomizationId === customization.id}
+                  rowRef={(node) =>
+                    registerCustomizationRow(customization.id, node)
+                  }
                   onDragStart={() => {
                     customizationDragIndex.current = index
+                    setDraggingCustomizationId(customization.id)
                   }}
                   onDragOver={(event) => {
                     if (
@@ -2430,6 +2479,7 @@ export function AdminProductFormPage({
                   }}
                   onDragEnd={() => {
                     customizationDragIndex.current = null
+                    setDraggingCustomizationId(null)
                   }}
                   onEdit={() =>
                     setCustomizationDialog({ mode: 'edit', customization })
@@ -2468,6 +2518,7 @@ export function AdminProductFormPage({
       {bulkDiscountsOpen ? (
         <BulkDiscountsDialog
           settings={form.bulkDiscounts}
+          saveLabel={dialogSaveLabel}
           onOpenChange={(open) => {
             // Backing out without saving leaves no tiers, so the row goes back
             // to its Plus button on its own.
@@ -2491,6 +2542,7 @@ export function AdminProductFormPage({
           showInventory={!!enabled.inventory && countsByVariant}
           pricePlaceholder={form.price.trim() || PRICE_PLACEHOLDER}
           labelOptions={labelOptions}
+          saveLabel={dialogSaveLabel}
           onCreateLabel={(label) =>
             setLabelOptions((current) => [...current, label])
           }
@@ -2516,6 +2568,7 @@ export function AdminProductFormPage({
           }
           noun="customization"
           showChoiceSurcharge
+          saveLabel={dialogSaveLabel}
           onOpenChange={(open) => {
             if (!open) setCustomizationDialog(null)
           }}

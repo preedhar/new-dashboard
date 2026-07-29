@@ -47,12 +47,16 @@ export function CustomQuestionDialog({
   // Only a product's customizations can price a choice; the order form's
   // questions ask without charging, so they leave this off.
   showChoiceSurcharge = false,
+  // What the confirm button says. Pages that only hold the question in a draft
+  // until they submit call it "Done", since nothing is saved yet.
+  saveLabel = 'Save',
   onOpenChange,
   onSave,
 }: {
   initial: CustomQuestion | null
   noun?: string
   showChoiceSurcharge?: boolean
+  saveLabel?: string
   onOpenChange: (open: boolean) => void
   onSave: (draft: CustomQuestionDraft) => void
 }) {
@@ -523,7 +527,7 @@ export function CustomQuestionDialog({
             onClick={handleSave}
             disabled={!canSave}
           >
-            Save
+            {saveLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
