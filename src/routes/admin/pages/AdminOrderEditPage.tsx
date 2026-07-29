@@ -3,25 +3,25 @@ import {
   ArrowLeft,
   BadgePercent,
   Calendar as CalendarIcon,
-  CircleDollarSign,
   CircleDot,
-  CirclePlus,
+  CircleHelp,
   Clock,
   Coins,
   ConciergeBell,
   FileText,
   Gift,
-  Hash,
   Landmark,
   Mail,
   MapPin,
   MessageSquare,
+  MoreHorizontal,
   Package,
-  Percent,
+  Pencil,
   Phone,
   Plus,
   ShoppingBag,
   Store,
+  Tag,
   Trash2,
   Truck,
   User,
@@ -50,15 +50,31 @@ import {
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Card } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from '@/components/ui/input-group'
+import { Kbd } from '@/components/ui/kbd'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { TypographyLarge } from '@/components/ui/typography'
+import { TypographyH4, TypographyLarge } from '@/components/ui/typography'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Combobox,
@@ -76,6 +92,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 type IconComponent = React.ComponentType<{ className?: string }>
 
@@ -159,18 +176,53 @@ type OrderItem = {
   addonsSurcharge: string
 }
 
-function createEmptyItem(id: string): OrderItem {
+// Everything the item dialog edits; the page assigns the id on save.
+type OrderItemDraft = Omit<OrderItem, 'id'>
+
+// Monotonic id source for items. A module-level counter keeps ids stable across
+// dialog remounts. Mirrors the product form page.
+let idCounter = 0
+function nextId(prefix: string) {
+  idCounter += 1
+  return `${prefix}-${idCounter}`
+}
+
+function itemDraft(item: OrderItem | null): OrderItemDraft {
   return {
-    id,
-    product: '',
-    unitPrice: '',
-    quantity: '1',
-    discount: '',
-    instructions: '',
-    instructionsSurcharge: '',
-    addOns: '',
-    addonsSurcharge: '',
+    product: item?.product ?? '',
+    unitPrice: item?.unitPrice ?? '',
+    quantity: item?.quantity ?? '1',
+    discount: item?.discount ?? '',
+    instructions: item?.instructions ?? '',
+    instructionsSurcharge: item?.instructionsSurcharge ?? '',
+    addOns: item?.addOns ?? '',
+    addonsSurcharge: item?.addonsSurcharge ?? '',
   }
+}
+
+function formatCurrency(amount: number) {
+  return `$${amount.toFixed(2)}`
+}
+
+// What the line costs: the unit price times how many of it, then the
+// customization surcharges added and the discount taken off — those three price
+// the line as a whole rather than each unit. A discount bigger than the rest
+// takes the line to zero rather than below it.
+function lineItemPrice(item: OrderItem) {
+  const amount = (value: string) => Number.parseFloat(value) || 0
+  const quantity = Number.parseInt(item.quantity, 10) || 1
+  const total =
+    amount(item.unitPrice) * quantity +
+    amount(item.instructionsSurcharge) +
+    amount(item.addonsSurcharge) -
+    amount(item.discount)
+  return Math.max(0, total)
+}
+
+// The special instructions and add-ons an item was ordered with — what the
+// product form calls its customizations.
+function hasCustomizations(item: OrderItem) {
+  return item.instructions.trim() !== '' || item.addOns.trim() !== ''
 }
 
 const INITIAL_FORM: OrderEditForm = {
@@ -194,7 +246,7 @@ const INITIAL_FORM: OrderEditForm = {
   gst: '',
   tip: '',
   specialRequests: '',
-  items: [createEmptyItem('item-1')],
+  items: [],
 }
 
 type Country = { name: string; code: string; dial: string; flag: string }
@@ -236,20 +288,40 @@ function formatDate(date: Date) {
   return date.toLocaleDateString('en-US', options)
 }
 
-// A titled section: heading sits outside the card, fields stack as divided rows
-// inside it.
+// A titled section: heading (with an optional right-aligned action) sits outside
+// the card, fields stack as divided rows inside it. Form rows lose their
+// dividers on mobile, where each row already stacks; list rows (items) keep them
+// at every width. Mirrors the product form page.
 function Section({
   title,
+  action,
+  divided = false,
   children,
 }: {
   title?: string
+  action?: React.ReactNode
+  divided?: boolean
   children: React.ReactNode
 }) {
   return (
     <section className="space-y-3">
-      {title ? <TypographyLarge>{title}</TypographyLarge> : null}
+      {title || action ? (
+        <div className="flex items-center justify-between gap-4">
+          {title ? <TypographyLarge>{title}</TypographyLarge> : <span />}
+          {action ? <div className="shrink-0">{action}</div> : null}
+        </div>
+      ) : null}
       <Card className="gap-0 py-0 shadow-none">
-        <div className="divide-y-0 divide-border/50 px-4 sm:divide-y sm:px-6">{children}</div>
+        <div
+          className={cn(
+            'px-4 sm:px-6',
+            divided
+              ? 'divide-y divide-border/50'
+              : 'divide-y-0 divide-border/50 sm:divide-y',
+          )}
+        >
+          {children}
+        </div>
       </Card>
     </section>
   )
@@ -457,10 +529,14 @@ function ProductCombobox({
   id,
   value,
   onChange,
+  container,
 }: {
   id: string
   value: string
   onChange: (value: string) => void
+  // Mounts the popup inside the dialog rather than at <body>, so it isn't
+  // trapped behind the modal overlay.
+  container?: HTMLElement | null
 }) {
   const anchor = useComboboxAnchor()
 
@@ -497,7 +573,7 @@ function ProductCombobox({
           <ComboboxTrigger />
         </InputGroupAddon>
       </InputGroup>
-      <ComboboxContent anchor={anchor}>
+      <ComboboxContent anchor={anchor} container={container}>
         <ComboboxEmpty>No products found.</ComboboxEmpty>
         <ComboboxList>
           {(product: string) => (
@@ -516,147 +592,358 @@ function ProductCombobox({
   )
 }
 
-// One item card: the product, pricing and customization fields plus a Delete
-// button (shown only when more than one item exists).
-function ItemCard({
+// A single item row: product name with its quantity beside it, over a
+// description of what the line costs and what was asked for. Mirrors the
+// bundle's product rows on the product form page, and the item lines in the
+// order details pane on the All Orders page.
+function ItemRow({
   item,
-  index,
-  canDelete,
+  onEdit,
   onDelete,
-  onChange,
-  enabled,
-  onToggle,
 }: {
   item: OrderItem
-  index: number
-  canDelete: boolean
+  onEdit: () => void
   onDelete: () => void
-  onChange: (key: keyof OrderItem, value: string) => void
-  enabled: Record<string, boolean>
-  onToggle: (key: string, value: boolean) => void
 }) {
-  const p = item.id
+  const name = item.product
+  // Each part of the description, separated by a dot when there's more than one.
+  const details: { key: string; icon?: IconComponent; label: string }[] = [
+    { key: 'price', label: formatCurrency(lineItemPrice(item)) },
+    ...(item.discount.trim() !== ''
+      ? [{ key: 'discount', icon: Tag, label: 'Discount' }]
+      : []),
+    ...(hasCustomizations(item)
+      ? [{ key: 'customizations', icon: CircleHelp, label: 'Customizations' }]
+      : []),
+  ]
 
   return (
-    <Card className="gap-0 py-0 shadow-none">
-      <div className="divide-y-0 divide-border/50 px-4 sm:divide-y sm:px-6">
-        <FormRow id={`${p}-product`} label={`Item ${index + 1}`} icon={Package}>
-          <ProductCombobox
-            id={`${p}-product`}
-            value={item.product}
-            onChange={(value) => onChange('product', value)}
-          />
-        </FormRow>
-        <FormRow id={`${p}-unit-price`} label="Unit price" icon={CircleDollarSign}>
-          <CurrencyInput
-            id={`${p}-unit-price`}
-            value={item.unitPrice}
-            onChange={(value) => onChange('unitPrice', value)}
-          />
-        </FormRow>
-        <FormRow id={`${p}-quantity`} label="Quantity" icon={Hash}>
-          <Input
-            id={`${p}-quantity`}
-            type="number"
-            min={1}
-            value={item.quantity}
-            onChange={(event) => onChange('quantity', event.target.value)}
-            className="h-10"
-          />
-        </FormRow>
-        <OptionalFormRow
-          fieldKey={`${p}-discount`}
-          label="Discount"
-          icon={Percent}
-          enabled={!!enabled[`${p}-discount`]}
-          onToggle={(value) => onToggle(`${p}-discount`, value)}
-        >
-          <CurrencyInput
-            id={`${p}-discount`}
-            value={item.discount}
-            onChange={(value) => onChange('discount', value)}
-          />
-        </OptionalFormRow>
-        {/* Special instructions + its surcharge share one divider group. */}
-        <div>
-          <OptionalFormRow
-            fieldKey={`${p}-instructions`}
-            label="Special instructions"
-            icon={FileText}
-            enabled={!!enabled[`${p}-instructions`]}
-            onToggle={(value) => onToggle(`${p}-instructions`, value)}
-          >
-            <Textarea
-              id={`${p}-instructions`}
-              value={item.instructions}
-              onChange={(event) => onChange('instructions', event.target.value)}
-              placeholder="e.g. Less sweet, no ice"
-            />
-          </OptionalFormRow>
-          {enabled[`${p}-instructions`] ? (
-            <OptionalFormRow
-              fieldKey={`${p}-instructions-surcharge`}
-              label="Surcharge"
-              icon={CirclePlus}
-              enabled={!!enabled[`${p}-instructions-surcharge`]}
-              onToggle={(value) => onToggle(`${p}-instructions-surcharge`, value)}
-            >
-              <CurrencyInput
-                id={`${p}-instructions-surcharge`}
-                value={item.instructionsSurcharge}
-                onChange={(value) => onChange('instructionsSurcharge', value)}
-              />
-            </OptionalFormRow>
-          ) : null}
+    <div className="flex items-start justify-between gap-4 py-4">
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-4 md:gap-6">
+          <Package className="size-4 shrink-0 text-muted-foreground" />
+          {/* The quantity rides beside the name, as it does in the details pane. */}
+          <p className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-medium">
+            <span className="truncate">{name}</span>
+            <Kbd className="text-sm text-foreground">
+              {item.quantity.trim() || '1'}
+            </Kbd>
+          </p>
         </div>
-        {/* Add-ons + its surcharge share one divider group. */}
-        <div>
-          <OptionalFormRow
-            fieldKey={`${p}-addons`}
-            label="Add-ons"
-            icon={FileText}
-            enabled={!!enabled[`${p}-addons`]}
-            onToggle={(value) => onToggle(`${p}-addons`, value)}
-          >
-            <Input
-              id={`${p}-addons`}
-              value={item.addOns}
-              onChange={(event) => onChange('addOns', event.target.value)}
-              placeholder="e.g. 1x Oat Milk, 1x Espresso Shot"
-              className="h-10"
-            />
-          </OptionalFormRow>
-          {enabled[`${p}-addons`] ? (
-            <OptionalFormRow
-              fieldKey={`${p}-addons-surcharge`}
-              label="Surcharge"
-              icon={CirclePlus}
-              enabled={!!enabled[`${p}-addons-surcharge`]}
-              onToggle={(value) => onToggle(`${p}-addons-surcharge`, value)}
-            >
-              <CurrencyInput
-                id={`${p}-addons-surcharge`}
-                value={item.addonsSurcharge}
-                onChange={(value) => onChange('addonsSurcharge', value)}
-              />
-            </OptionalFormRow>
-          ) : null}
+        {/* Description aligns with the icon on mobile and under the name on desktop. */}
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground md:pl-10">
+          {details.map(({ key, icon: Icon, label }, index) => (
+            <React.Fragment key={key}>
+              {index > 0 ? (
+                <span
+                  aria-hidden
+                  className="size-1 shrink-0 rounded-full bg-muted-foreground/40"
+                />
+              ) : null}
+              <span className="flex items-center gap-1.5">
+                {Icon ? <Icon className="size-3.5 shrink-0" /> : null}
+                {label}
+              </span>
+            </React.Fragment>
+          ))}
         </div>
       </div>
-      {canDelete ? (
-        <div className="border-t border-border/50 px-4 py-3 sm:px-6">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button
             type="button"
             variant="ghost"
-            className="h-10 w-full text-destructive hover:text-destructive"
-            onClick={onDelete}
+            size="icon"
+            className="size-10 shrink-0 text-muted-foreground"
+            aria-label={`Manage ${name}`}
           >
+            <MoreHorizontal className="size-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-40">
+          <DropdownMenuItem onSelect={onEdit}>
+            <Pencil className="size-4" />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onSelect={onDelete}>
             <Trash2 className="size-4" />
             Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  )
+}
+
+// Every optional field in the item dialog is a label + switch, with the control
+// revealed beneath it. Declared out here so typing in a revealed field doesn't
+// remount it (and drop focus) on every render. Mirrors the variant dialog.
+function OptionalSection({
+  id,
+  label,
+  nested = false,
+  enabled,
+  onToggle,
+  children,
+}: {
+  id: string
+  label: string
+  // Set by a field that hangs off another one, which names itself in the
+  // quieter style the customization dialog gives its "Choice"/"Surcharge"
+  // sub-labels.
+  nested?: boolean
+  enabled: boolean
+  onToggle: (value: boolean) => void
+  children: React.ReactNode
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-4">
+        {/* The label drives the switch, not the control it reveals — clicking
+            the field's name is how you turn it on. */}
+        <Label
+          htmlFor={`${id}-enabled`}
+          className={cn(
+            'text-sm',
+            nested ? 'font-normal text-muted-foreground' : 'font-medium',
+          )}
+        >
+          {label}
+        </Label>
+        <Switch
+          id={`${id}-enabled`}
+          aria-label={label}
+          checked={enabled}
+          onCheckedChange={onToggle}
+        />
+      </div>
+      {enabled ? children : null}
+    </div>
+  )
+}
+
+// The add/edit dialog for one of the order's items. Product, price and quantity
+// are always asked for; the customization fields sit behind switches, as the
+// optional fields in the product form's dialogs do. Re-mounted per open so the
+// draft always starts fresh from the item being edited.
+function ItemDialog({
+  initial,
+  saveLabel,
+  onOpenChange,
+  onSave,
+}: {
+  initial: OrderItem | null
+  saveLabel: string
+  onOpenChange: (open: boolean) => void
+  onSave: (draft: OrderItemDraft) => void
+}) {
+  const isEditing = initial !== null
+  // The picker's popup mounts inside the dialog rather than at <body> — see
+  // `ProductCombobox`.
+  const [content, setContent] = React.useState<HTMLDivElement | null>(null)
+
+  const [draft, setDraft] = React.useState<OrderItemDraft>(() =>
+    itemDraft(initial),
+  )
+
+  // A switch starts on when the item already carries that field, the way the
+  // other dialogs default theirs.
+  const filled = (value: string | undefined) => (value ?? '').trim() !== ''
+  const [discountOn, setDiscountOn] = React.useState(() =>
+    filled(initial?.discount),
+  )
+  const [instructionsOn, setInstructionsOn] = React.useState(() =>
+    filled(initial?.instructions),
+  )
+  const [instructionsSurchargeOn, setInstructionsSurchargeOn] = React.useState(
+    () => filled(initial?.instructionsSurcharge),
+  )
+  const [addOnsOn, setAddOnsOn] = React.useState(() => filled(initial?.addOns))
+  const [addonsSurchargeOn, setAddonsSurchargeOn] = React.useState(() =>
+    filled(initial?.addonsSurcharge),
+  )
+
+  function update<K extends keyof OrderItemDraft>(
+    key: K,
+    value: OrderItemDraft[K],
+  ) {
+    setDraft((current) => ({ ...current, [key]: value }))
+  }
+
+  // An item is bought at least once, so an emptied quantity falls back on one
+  // rather than blocking the save. A field whose switch is off saves empty, and
+  // a surcharge only travels with the field it's charged for.
+  const payload: OrderItemDraft = {
+    product: draft.product,
+    unitPrice: draft.unitPrice.trim(),
+    quantity: draft.quantity.trim() || '1',
+    discount: discountOn ? draft.discount.trim() : '',
+    instructions: instructionsOn ? draft.instructions.trim() : '',
+    instructionsSurcharge:
+      instructionsOn && instructionsSurchargeOn
+        ? draft.instructionsSurcharge.trim()
+        : '',
+    addOns: addOnsOn ? draft.addOns.trim() : '',
+    addonsSurcharge:
+      addOnsOn && addonsSurchargeOn ? draft.addonsSurcharge.trim() : '',
+  }
+  const changed =
+    initial === null ||
+    (Object.keys(payload) as Array<keyof OrderItemDraft>).some(
+      (key) => payload[key] !== initial[key],
+    )
+  const canSave = payload.product !== '' && changed
+
+  function handleSave() {
+    if (payload.product === '') {
+      toast.error('Select a product')
+      return
+    }
+    onSave(payload)
+  }
+
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent
+        ref={setContent}
+        className="sm:max-w-lg [&_[data-slot=dialog-close]]:size-10"
+      >
+        <DialogHeader className="text-center">
+          <DialogTitle asChild>
+            <TypographyH4 className="font-semibold">
+              {isEditing ? 'Edit item' : 'Add item'}
+            </TypographyH4>
+          </DialogTitle>
+        </DialogHeader>
+
+        <DialogBody className="flex flex-col gap-6">
+          <div className="space-y-1.5">
+            <Label htmlFor="item-product" className="text-sm font-medium">
+              Product
+            </Label>
+            <ProductCombobox
+              id="item-product"
+              value={draft.product}
+              onChange={(value) => update('product', value)}
+              container={content}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="item-unit-price" className="text-sm font-medium">
+              Unit price
+            </Label>
+            <CurrencyInput
+              id="item-unit-price"
+              value={draft.unitPrice}
+              onChange={(value) => update('unitPrice', value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="item-quantity" className="text-sm font-medium">
+              Quantity
+            </Label>
+            <Input
+              id="item-quantity"
+              type="number"
+              min={1}
+              value={draft.quantity}
+              onChange={(event) => update('quantity', event.target.value)}
+              className="h-10"
+            />
+          </div>
+
+          <OptionalSection
+            id="item-discount"
+            label="Discount"
+            enabled={discountOn}
+            onToggle={setDiscountOn}
+          >
+            <CurrencyInput
+              id="item-discount"
+              value={draft.discount}
+              onChange={(value) => update('discount', value)}
+            />
+          </OptionalSection>
+
+          <OptionalSection
+            id="item-instructions"
+            label="Special instructions"
+            enabled={instructionsOn}
+            onToggle={setInstructionsOn}
+          >
+            {/* 40px tall to start; `field-sizing-content` grows it as the
+                instructions are typed. */}
+            <Textarea
+              id="item-instructions"
+              value={draft.instructions}
+              onChange={(event) => update('instructions', event.target.value)}
+              placeholder="e.g. Less sweet, no ice"
+              className="min-h-10"
+            />
+            <OptionalSection
+              id="item-instructions-surcharge"
+              label="Surcharge"
+              nested
+              enabled={instructionsSurchargeOn}
+              onToggle={setInstructionsSurchargeOn}
+            >
+              <CurrencyInput
+                id="item-instructions-surcharge"
+                value={draft.instructionsSurcharge}
+                onChange={(value) => update('instructionsSurcharge', value)}
+              />
+            </OptionalSection>
+          </OptionalSection>
+
+          <OptionalSection
+            id="item-addons"
+            label="Add-ons"
+            enabled={addOnsOn}
+            onToggle={setAddOnsOn}
+          >
+            <Input
+              id="item-addons"
+              value={draft.addOns}
+              onChange={(event) => update('addOns', event.target.value)}
+              placeholder="e.g. 1x Oat Milk, 1x Espresso Shot"
+              className="h-10"
+            />
+            <OptionalSection
+              id="item-addons-surcharge"
+              label="Surcharge"
+              nested
+              enabled={addonsSurchargeOn}
+              onToggle={setAddonsSurchargeOn}
+            >
+              <CurrencyInput
+                id="item-addons-surcharge"
+                value={draft.addonsSurcharge}
+                onChange={(value) => update('addonsSurcharge', value)}
+              />
+            </OptionalSection>
+          </OptionalSection>
+        </DialogBody>
+
+        <DialogFooter className="flex-row">
+          <Button
+            variant="outline"
+            className="h-10 flex-1 px-3"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
           </Button>
-        </div>
-      ) : null}
-    </Card>
+          <Button
+            className="h-10 flex-1 px-3"
+            onClick={handleSave}
+            disabled={!canSave}
+          >
+            {saveLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -668,6 +955,13 @@ export function AdminOrderEditPage({
   const [form, setForm] = React.useState<OrderEditForm>(INITIAL_FORM)
   const [enabled, setEnabled] = React.useState<Record<string, boolean>>({})
   const [dateOpen, setDateOpen] = React.useState(false)
+  // The item dialog: 'add' for a new item, or the item being edited. null when
+  // closed.
+  const [itemDialog, setItemDialog] = React.useState<
+    { mode: 'add' } | { mode: 'edit'; item: OrderItem } | null
+  >(null)
+  const [pendingDeleteItem, setPendingDeleteItem] =
+    React.useState<OrderItem | null>(null)
 
   function update<K extends keyof OrderEditForm>(key: K, value: OrderEditForm[K]) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -677,35 +971,28 @@ export function AdminOrderEditPage({
     setEnabled((current) => ({ ...current, [key]: value }))
   }
 
-  const nextItemId = React.useRef(2)
-
-  function updateItem(id: string, key: keyof OrderItem, value: string) {
+  function saveItem(draft: OrderItemDraft) {
+    const editingId = itemDialog?.mode === 'edit' ? itemDialog.item.id : null
+    const saveable = { ...draft, id: editingId ?? nextId('item') }
     setForm((current) => ({
       ...current,
-      items: current.items.map((item) =>
-        item.id === id ? { ...item, [key]: value } : item,
-      ),
+      items: editingId
+        ? current.items.map((item) => (item.id === editingId ? saveable : item))
+        : [...current.items, saveable],
     }))
+    setItemDialog(null)
+    toast.success(editingId ? 'Item updated' : 'Item added')
   }
 
-  function addItem() {
-    const id = `item-${nextItemId.current++}`
-    setForm((current) => ({ ...current, items: [...current.items, createEmptyItem(id)] }))
-  }
-
-  function deleteItem(id: string) {
+  function confirmDeleteItem() {
+    if (!pendingDeleteItem) return
+    const { id } = pendingDeleteItem
     setForm((current) => ({
       ...current,
       items: current.items.filter((item) => item.id !== id),
     }))
-    // Drop any optional-field toggles that belonged to the removed item.
-    setEnabled((current) => {
-      const next = { ...current }
-      for (const key of Object.keys(next)) {
-        if (key.startsWith(`${id}-`)) delete next[key]
-      }
-      return next
-    })
+    setPendingDeleteItem(null)
+    toast.success('Item removed')
   }
 
   // Client-side navigation to the All Orders page (matches the app's router).
@@ -723,6 +1010,11 @@ export function AdminOrderEditPage({
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
+    // An order is the items it's for, so it can't be filed empty.
+    if (form.items.length === 0) {
+      toast.error('Add at least one item')
+      return
+    }
     toast.success('Order updated')
     goToAllOrders()
   }
@@ -936,11 +1228,14 @@ export function AdminOrderEditPage({
             enabled={!!enabled.address}
             onToggle={(value) => toggleField('address', value)}
           >
+            {/* 40px tall to start; `field-sizing-content` grows it as the
+                address is typed (min-h-10 overrides the component's min-h-16). */}
             <Textarea
               id="fulfill-address"
               value={form.address}
               onChange={(event) => update('address', event.target.value)}
               placeholder="Street, city, postal code"
+              className="min-h-10"
             />
           </OptionalFormRow>
           <OptionalFormRow
@@ -950,84 +1245,125 @@ export function AdminOrderEditPage({
             enabled={!!enabled.instructions}
             onToggle={(value) => toggleField('instructions', value)}
           >
+            {/* 40px tall to start; `field-sizing-content` grows it as the
+                instructions are typed. */}
             <Textarea
               id="fulfill-instructions"
               value={form.instructions}
               onChange={(event) => update('instructions', event.target.value)}
               placeholder="Unit number, landmarks, etc."
+              className="min-h-10"
             />
           </OptionalFormRow>
-          <OptionalFormRow
-            fieldKey="giftRecipientName"
-            label="Gift recipient name"
-            icon={Gift}
-            enabled={!!enabled.giftRecipientName}
-            onToggle={(value) => toggleField('giftRecipientName', value)}
-          >
-            <Input
-              id="gift-recipient-name"
-              value={form.giftRecipientName}
-              onChange={(event) => update('giftRecipientName', event.target.value)}
-              placeholder="Recipient name"
-              className="h-10"
-            />
-          </OptionalFormRow>
-          <OptionalFormRow
-            fieldKey="giftRecipientPhone"
-            label="Gift recipient phone"
-            icon={Phone}
-            enabled={!!enabled.giftRecipientPhone}
-            onToggle={(value) => toggleField('giftRecipientPhone', value)}
-          >
-            <PhoneInput
-              id="gift-recipient-phone"
-              country={form.giftRecipientPhoneCountry}
-              onCountryChange={(code) => update('giftRecipientPhoneCountry', code)}
-              number={form.giftRecipientPhone}
-              onNumberChange={(value) => update('giftRecipientPhone', value)}
-              placeholder="812 3456 7890"
-            />
-          </OptionalFormRow>
-          <OptionalFormRow
-            fieldKey="giftMessage"
-            label="Gift message"
-            icon={MessageSquare}
-            enabled={!!enabled.giftMessage}
-            onToggle={(value) => toggleField('giftMessage', value)}
-          >
-            <Textarea
-              id="gift-message"
-              value={form.giftMessage}
-              onChange={(event) => update('giftMessage', event.target.value)}
-              placeholder="Add a personal note"
-            />
-          </OptionalFormRow>
+          {/* Gift order and the recipient fields it reveals share one divider
+              group, so the gift block reads as a single unit. */}
+          <div>
+            <div className="my-[10px] flex min-h-10 items-center justify-between gap-6 py-4">
+              <Label
+                htmlFor="gift-order"
+                className="flex items-center gap-3 text-sm font-medium sm:gap-6"
+              >
+                <Gift className="size-4 shrink-0 text-muted-foreground" />
+                Gift order
+              </Label>
+              <Switch
+                id="gift-order"
+                className="shrink-0"
+                checked={!!enabled.giftOrder}
+                onCheckedChange={(value) => toggleField('giftOrder', value)}
+              />
+            </div>
+            {enabled.giftOrder ? (
+              <>
+                <FormRow
+                  id="gift-recipient-name"
+                  label="Gift recipient name"
+                  icon={User}
+                >
+                  <Input
+                    id="gift-recipient-name"
+                    value={form.giftRecipientName}
+                    onChange={(event) =>
+                      update('giftRecipientName', event.target.value)
+                    }
+                    placeholder="Recipient name"
+                    className="h-10"
+                  />
+                </FormRow>
+                <FormRow
+                  id="gift-recipient-phone"
+                  label="Gift recipient phone"
+                  icon={Phone}
+                >
+                  <PhoneInput
+                    id="gift-recipient-phone"
+                    country={form.giftRecipientPhoneCountry}
+                    onCountryChange={(code) =>
+                      update('giftRecipientPhoneCountry', code)
+                    }
+                    number={form.giftRecipientPhone}
+                    onNumberChange={(value) =>
+                      update('giftRecipientPhone', value)
+                    }
+                    placeholder="812 3456 7890"
+                  />
+                </FormRow>
+                <OptionalFormRow
+                  fieldKey="giftMessage"
+                  label="Gift message"
+                  icon={MessageSquare}
+                  enabled={!!enabled.giftMessage}
+                  onToggle={(value) => toggleField('giftMessage', value)}
+                >
+                  {/* 40px tall to start; `field-sizing-content` grows it as the
+                      note is typed (min-h-10 overrides the component's min-h-16). */}
+                  <Textarea
+                    id="gift-message"
+                    value={form.giftMessage}
+                    onChange={(event) =>
+                      update('giftMessage', event.target.value)
+                    }
+                    placeholder="Add a personal note"
+                    className="min-h-10"
+                  />
+                </OptionalFormRow>
+              </>
+            ) : null}
+          </div>
         </Section>
 
-        <section className="flex flex-col gap-3">
-          <TypographyLarge>Items</TypographyLarge>
-          {form.items.map((item, index) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              index={index}
-              canDelete={form.items.length > 1}
-              onDelete={() => deleteItem(item.id)}
-              onChange={(key, value) => updateItem(item.id, key, value)}
-              enabled={enabled}
-              onToggle={toggleField}
-            />
-          ))}
-          <Button
-            type="button"
-            variant="secondary"
-            className="h-10 w-full"
-            onClick={addItem}
-          >
-            <Plus className="size-4" />
-            Add item
-          </Button>
-        </section>
+        {/* What the order is for. Shaped like the bundle's Products section on
+            the product form page: rows here, fields in the dialog. */}
+        <Section
+          title="Items"
+          divided
+          action={
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-10 px-3"
+              onClick={() => setItemDialog({ mode: 'add' })}
+            >
+              <Plus className="size-4" />
+              Add item
+            </Button>
+          }
+        >
+          {form.items.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              No items
+            </p>
+          ) : (
+            form.items.map((item) => (
+              <ItemRow
+                key={item.id}
+                item={item}
+                onEdit={() => setItemDialog({ mode: 'edit', item })}
+                onDelete={() => setPendingDeleteItem(item)}
+              />
+            ))
+          )}
+        </Section>
 
         <Section title="Other">
           <OptionalFormRow
@@ -1111,12 +1447,49 @@ export function AdminOrderEditPage({
               Cancel
             </Button>
             <Button type="submit" variant="outline" className="h-10">
-              Save changes
+              Save
             </Button>
           </div>
         </div>
       ) : null}
     </form>
+
+    {itemDialog ? (
+      <ItemDialog
+        // Re-mount per open/target so the draft starts fresh.
+        key={itemDialog.mode === 'edit' ? itemDialog.item.id : 'add'}
+        initial={itemDialog.mode === 'edit' ? itemDialog.item : null}
+        saveLabel={itemDialog.mode === 'edit' ? 'Save' : 'Add item'}
+        onOpenChange={(open) => {
+          if (!open) setItemDialog(null)
+        }}
+        onSave={saveItem}
+      />
+    ) : null}
+
+    <AlertDialog
+      open={pendingDeleteItem !== null}
+      onOpenChange={(open) => {
+        if (!open) setPendingDeleteItem(null)
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove item?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {pendingDeleteItem
+              ? `"${pendingDeleteItem.product}" will be removed from this order.`
+              : null}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" onClick={confirmDeleteItem}>
+            Remove
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
     <AlertDialog
       open={pendingNav !== null}
