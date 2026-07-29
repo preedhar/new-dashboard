@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Boxes,
   CalendarDays,
   CalendarRange,
   CircleDollarSign,
@@ -316,6 +317,24 @@ export const adminRoutes: AdminRoute[] = [
     component: createAdminPlaceholder(
       'Bundles',
       'A future workspace for grouped products, bundle pricing, and package offers.',
+    ),
+  },
+  // A bundle is created and edited on the product form, which drops the fields
+  // that only apply to a single product (see its `kind` prop).
+  {
+    path: '/admin/products/bundles/new',
+    label: 'Add bundle',
+    title: 'Add bundle',
+    icon: Boxes,
+    component: () => <AdminProductFormPage kind="bundle" title="Add bundle" />,
+  },
+  {
+    path: '/admin/products/bundles/edit',
+    label: 'Edit bundle',
+    title: 'Edit bundle',
+    icon: Boxes,
+    component: () => (
+      <AdminProductFormPage kind="bundle" mode="edit" title="Edit bundle" />
     ),
   },
   {

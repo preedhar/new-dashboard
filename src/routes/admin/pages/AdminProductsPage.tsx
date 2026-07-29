@@ -1652,15 +1652,21 @@ export function AdminProductsPage() {
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
-  // Bundles aren't modeled yet; the entry is a placeholder.
+  // Bundles are created on the product form's bundle page, which drops the
+  // fields a packaged bundle doesn't carry.
   function addBundle() {
-    toast('Bundles are coming soon')
+    window.history.pushState(null, '', '/admin/products/bundles/new')
+    window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
-  // Products are edited on their own page. There's no catalog behind these
-  // screens yet, so the row travels in history state for the form to open on.
+  // Products are edited on their own page — a bundle on the bundle flavour of
+  // it. There's no catalog behind these screens yet, so the row travels in
+  // history state for the form to open on.
   function editProduct(product: Product) {
-    window.history.pushState({ product }, '', '/admin/products/edit')
+    const path = product.isBundle
+      ? '/admin/products/bundles/edit'
+      : '/admin/products/edit'
+    window.history.pushState({ product }, '', path)
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
