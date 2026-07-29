@@ -72,11 +72,17 @@ import {
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { TypographyH4 } from '@/components/ui/typography'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 
 import { CHANNELS, STORE_DOMAIN, slugify, type Channel } from '../catalog'
+import { setRowDragImage, useReorderTransition } from '../reorder'
 import { SelectFilter } from './AdminOrdersAllPage'
 import { ImageUploadControl } from './AdminSettingsWebsiteAppearancePage'
 
@@ -111,81 +117,6 @@ function categoryLink(url: string) {
 
 function formatPrice(value: number) {
   return `$${value.toFixed(2)}`
-}
-
-// Give the drag a floating copy of the row that tracks the cursor. The in-list
-// row is hidden (opacity-0) once dragging starts, so without an explicit drag
-// image the browser would show nothing; this clones the row, lays it out
-// off-screen as an elevated card, and hands it to the drag operation.
-function setRowDragImage(event: React.DragEvent<HTMLElement>) {
-  const node = event.currentTarget
-  const rect = node.getBoundingClientRect()
-  const offsetX = event.clientX - rect.left
-  const offsetY = event.clientY - rect.top
-  const clone = node.cloneNode(true) as HTMLElement
-  clone.classList.remove('opacity-0')
-  clone.style.position = 'fixed'
-  clone.style.top = '0'
-  clone.style.left = '-10000px'
-  clone.style.width = `${rect.width}px`
-  clone.style.margin = '0'
-  clone.style.opacity = '1'
-  clone.style.pointerEvents = 'none'
-  clone.style.borderRadius = '8px'
-  clone.style.background = 'var(--card, #ffffff)'
-  clone.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.06)'
-  document.body.appendChild(clone)
-  event.dataTransfer.setDragImage(clone, offsetX, offsetY)
-  // The drag image is snapshotted synchronously, so the clone can go now.
-  window.setTimeout(() => clone.remove(), 0)
-}
-
-// FLIP reorder animation: rows register their node by id, and after every
-// render each row that changed vertical position is snapped back to its old
-// spot with a transform, then transitioned to its new spot — so reorders slide
-// instead of jumping. Returns a ref callback to attach to each row.
-function useReorderTransition() {
-  const nodes = React.useRef(new Map<string, HTMLElement>())
-  const prevTops = React.useRef(new Map<string, number>())
-
-  const register = React.useCallback(
-    (id: string, node: HTMLElement | null) => {
-      if (node) nodes.current.set(id, node)
-      else nodes.current.delete(id)
-    },
-    [],
-  )
-
-  React.useLayoutEffect(() => {
-    const nextTops = new Map<string, number>()
-    nodes.current.forEach((node, id) => {
-      const top = node.offsetTop
-      nextTops.set(id, top)
-      const prev = prevTops.current.get(id)
-      if (prev !== undefined && prev !== top) {
-        const delta = prev - top
-        node.style.transition = 'none'
-        node.style.transform = `translateY(${delta}px)`
-        // A row mid-slide would otherwise pass back under the stationary
-        // cursor and fire another dragover, swapping it back on a loop. Make
-        // it ignore pointer/drag events until it settles.
-        node.style.pointerEvents = 'none'
-        // Next frame: release to the new position with a transition.
-        requestAnimationFrame(() => {
-          node.style.transition = 'transform 200ms ease'
-          node.style.transform = ''
-          const done = () => {
-            node.style.pointerEvents = ''
-            node.removeEventListener('transitionend', done)
-          }
-          node.addEventListener('transitionend', done)
-        })
-      }
-    })
-    prevTops.current = nextTops
-  })
-
-  return register
 }
 
 // Options for the toolbar's channel filter (the SelectFilter shared with the
@@ -1118,21 +1049,52 @@ function ProductRow({
       •
     </span>
   )
+  // The folder carries the meaning on screen; the noun is kept for anyone
+  // hearing the row rather than seeing it.
+  const categoryReadout = (
+    <>
+      <Folder aria-hidden className="size-4 shrink-0" />
+      {categoryCount}
+      <span className="sr-only">
+        {categoryCount === 1 ? 'category' : 'categories'}
+      </span>
+    </>
+  )
+  // On desktop the readout is also the way into the product's categories —
+  // there's room there to hover a target this small, and the pointer to tell
+  // that it is one. On a phone it stays a readout and the manage menu keeps the
+  // job. Reordering takes it out of reach, as it does the rest of the row.
+  const categoryMeta = mobile ? (
+    <span className="flex items-center gap-1">{categoryReadout}</span>
+  ) : (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          disabled={reorderMode}
+          // Left unlabelled on purpose: the count and its sr-only noun already
+          // name the button, and the tooltip is announced as its description
+          // when it takes focus.
+          onClick={(event) => {
+            // The row behind it opens the product for editing.
+            event.stopPropagation()
+            onChangeCategories()
+          }}
+          className="-mx-1 flex items-center gap-1 rounded-md px-1 py-0.5 transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none"
+        >
+          {categoryReadout}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>Change categories</TooltipContent>
+    </Tooltip>
+  )
   const meta = (
     <span className="flex items-center gap-2 text-sm text-muted-foreground">
       {formatPrice(product.price)}
       {hasCategories ? (
         <>
           {separator}
-          {/* The folder carries the meaning on screen; the noun is kept for
-              anyone hearing the row rather than seeing it. */}
-          <span className="flex items-center gap-1">
-            <Folder aria-hidden className="size-4 shrink-0" />
-            {categoryCount}
-            <span className="sr-only">
-              {categoryCount === 1 ? 'category' : 'categories'}
-            </span>
-          </span>
+          {categoryMeta}
         </>
       ) : null}
     </span>
@@ -1270,6 +1232,8 @@ function ProductRow({
     )
   }
 
+  // Reordering takes the row out of service as a link.
+  const rowInteractive = !reorderMode
   return (
     <div
       ref={rowRef}
@@ -1281,14 +1245,26 @@ function ProductRow({
       )}
     >
       {leading}
-      {/* The row body opens the product; the checkbox, the channels button and
-          the menu keep their own clicks. Reordering stops it acting as a link,
-          since leaving the page mid-drag would strand the move. */}
-      <button
-        type="button"
-        onClick={onEdit}
-        disabled={reorderMode}
-        className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-default"
+      {/* The row body opens the product; the checkbox, the categories readout,
+          the channels button and the menu keep their own clicks. Reordering
+          stops it acting as a link, since leaving the page mid-drag would
+          strand the move. It carries the click itself rather than being a
+          <button>, which couldn't hold the categories button inside it — the
+          same shape the phone row uses. */}
+      <div
+        role={rowInteractive ? 'button' : undefined}
+        tabIndex={rowInteractive ? 0 : undefined}
+        onClick={rowInteractive ? onEdit : undefined}
+        onKeyDown={(event) => {
+          // Only the row's own keys; the categories button inside it answers
+          // for itself.
+          if (!rowInteractive || event.target !== event.currentTarget) return
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onEdit()
+          }
+        }}
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <img
           src={productImage}
@@ -1299,7 +1275,7 @@ function ProductRow({
           {nameLine}
           {meta}
         </span>
-      </button>
+      </div>
       {channelsButton}
       {manageMenu}
     </div>
