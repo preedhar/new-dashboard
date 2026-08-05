@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   ArrowUpRight,
   CalendarDays,
   ChevronRight,
@@ -23,6 +24,7 @@ import onlineStoreIcon from "@/assets/apps/online-store.png"
 import posIcon from "@/assets/apps/pos.png"
 import qrCodeOrderingIcon from "@/assets/apps/qr-code-ordering.png"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TypographyH2, TypographyH3, TypographyLarge, TypographyMuted } from "@/components/ui/typography"
 import { STORE_DOMAIN } from "../catalog"
@@ -121,8 +123,25 @@ const otherApps: AppListing[] = [
 
 export function AdminAppsPage() {
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 pt-8">
-      <TypographyH2 className="text-center">Find everything your business needs</TypographyH2>
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-10">
+      {/* The desktop chrome for this route is suppressed in AdminPage, so the
+          page supplies its own back affordance on a phone. The heading clears
+          the button's column until there's room to centre it against nothing. */}
+      <header className="relative flex items-center justify-center">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-lg"
+          aria-label="Go back"
+          onClick={() => window.history.back()}
+          className="absolute top-0 left-0 md:hidden"
+        >
+          <ArrowLeft className="size-5" />
+        </Button>
+        <TypographyH2 className="px-12 text-center md:px-0">
+          Find everything your business needs
+        </TypographyH2>
+      </header>
 
       <AppSection title="Recommended for Haus" apps={recommendedApps} />
       <AppSection title="More Apps" apps={otherApps} />
@@ -197,8 +216,8 @@ function AppCardBody({ app, Icon }: { app: AppListing; Icon: LucideIcon }) {
       <Icon aria-hidden="true" className="absolute top-4 right-4 size-5 text-muted-foreground" />
       {/* App Store style icon tile: a rounded, bordered white container that
           frames the artwork so it reads as an app icon, not a loose image. */}
-      <span className="flex size-18 shrink-0 items-center justify-center rounded-xl border border-border bg-background">
-        <img src={app.icon} alt="" className="size-10" />
+      <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-border bg-background sm:size-18">
+        <img src={app.icon} alt="" className="size-8 sm:size-10" />
       </span>
       <div className="flex min-w-0 flex-col items-center gap-1">
         <div className="flex flex-wrap items-center justify-center gap-2">
