@@ -1,86 +1,122 @@
 import {
+  ArrowUpRight,
   CalendarDays,
-  ChefHat,
-  Mail,
-  Monitor,
-  QrCode,
+  ChevronRight,
+  Download,
+  Globe,
+  MoreHorizontal,
+  ReceiptText,
   Settings,
-  ShoppingBag,
   Store,
-  Users,
+  Truck,
+  type LucideIcon,
 } from "lucide-react"
 
+import AndroidIcon from "@/assets/apps/android.svg?react"
+import bookingsIcon from "@/assets/apps/bookings.png"
+import crmIcon from "@/assets/apps/crm.png"
+import emailMarketingIcon from "@/assets/apps/email-marketing.png"
+import IosIcon from "@/assets/apps/ios.svg?react"
+import kitchenDisplayIcon from "@/assets/apps/kitchen-display.png"
+import loyaltyProgramIcon from "@/assets/apps/loyalty-program.png"
+import onlineStoreIcon from "@/assets/apps/online-store.png"
+import posIcon from "@/assets/apps/pos.png"
+import qrCodeOrderingIcon from "@/assets/apps/qr-code-ordering.png"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TypographyH2, TypographyH3, TypographyLarge, TypographyMuted } from "@/components/ui/typography"
+import { STORE_DOMAIN } from "../catalog"
+
+// Wide enough for both lucide icons and the brand marks imported through SVGR.
+type AppLinkIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>
+
+// A link can carry a status badge (e.g. whether that setting is switched on),
+// and `external` marks the ones that leave the dashboard rather than drill in.
+type AppLink = {
+  title: string
+  href: string
+  icon: AppLinkIcon
+  badge?: string
+  external?: boolean
+}
 
 type AppListing = {
   title: string
   description: string
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  // App artwork imported as a URL, matching the channel icons in catalog.ts.
+  icon: string
   badge?: string
-  installed?: boolean
+  // In-product pages and actions for the app. One link makes the card a direct
+  // link to it; several put them behind a popover on the card.
+  links?: AppLink[]
 }
 
 const recommendedApps: AppListing[] = [
   {
     title: "Online Store",
-    description: "Sell products through a polished storefront built for orders, checkout, and pickup.",
-    icon: ShoppingBag,
-    badge: "Basic",
-    installed: true,
+    description: "Sell online with a fast and beautiful website",
+    icon: onlineStoreIcon,
+    links: [
+      { title: "Fulfillment", href: "/admin/apps/online-store/fulfillment", icon: Truck },
+      { title: "Calendar", href: "/admin/apps/online-store/calendar", icon: CalendarDays },
+      { title: "Checkouts", href: "/admin/apps/online-store/checkouts", icon: ReceiptText },
+      { title: "Website", href: "/admin/settings/website", icon: Globe },
+      { title: "View store", href: `https://${STORE_DOMAIN}`, icon: Store, external: true },
+    ],
   },
   {
     title: "POS",
-    description: "Take in-person orders, track payments, and keep sales synced with your store.",
-    icon: Store,
+    description: "Take in-person orders at your physical store",
+    icon: posIcon,
+    links: [
+      { title: "Download iOS app", href: "#", icon: IosIcon, external: true },
+      { title: "Download Android app", href: "#", icon: AndroidIcon, external: true },
+    ],
   },
   {
     title: "QR Code Ordering",
-    description: "Let customers scan, browse, and order from their table or pickup location.",
-    icon: QrCode,
+    description: "Reduce staff costs by letting customers scan to order",
+    icon: qrCodeOrderingIcon,
+    links: [
+      { title: "Settings", href: "#", icon: Settings, badge: "Enabled" },
+      { title: "Download QR codes", href: "#", icon: Download },
+      { title: "Checkouts", href: "#", icon: ReceiptText },
+      { title: "View store", href: `https://${STORE_DOMAIN}`, icon: Store, external: true },
+    ],
   },
   {
     title: "Bookings",
-    description: "Accept appointments, classes, and reservations with simple scheduling tools.",
-    icon: CalendarDays,
+    description: "Accept bookings for reservations, events, etc.",
+    icon: bookingsIcon,
+    links: [{ title: "View", href: "/admin/bookings/all", icon: CalendarDays, external: true }],
   },
   {
     title: "Kitchen Display",
-    description: "Send incoming orders to a clear kitchen queue so preparation stays organized.",
-    icon: ChefHat,
+    description: "Automatically send orders to your kitchen",
+    icon: kitchenDisplayIcon,
+    links: [{ title: "View", href: "#", icon: ReceiptText, external: true }],
   },
 ]
 
 const otherApps: AppListing[] = [
   {
     title: "Loyalty Program",
-    description: "Reward repeat customers with points, perks, and simple retention campaigns.",
-    icon: Users,
+    description: "Encourage repeat purchases by rewarding points",
+    icon: loyaltyProgramIcon,
+    links: [{ title: "View", href: "/admin/marketing/loyalty", icon: Store, external: true }],
   },
   {
     title: "Email Marketing",
-    description: "Send product launches, promos, and customer updates from your store dashboard.",
-    icon: Mail,
+    description: "Bring customers back to your store with updates",
+    icon: emailMarketingIcon,
+    links: [{ title: "View", href: "/admin/marketing/email", icon: Store, external: true }],
   },
   {
     title: "CRM",
-    description: "Track customer details, order history, and follow-ups in one place.",
-    icon: Monitor,
+    description: "View and segment customers based on their history",
+    icon: crmIcon,
+    links: [{ title: "View", href: "/admin/marketing/customers", icon: Store, external: true }],
   },
-]
-
-const onlineStoreSettingsItems = [
-  { title: "Fulfillment", href: "/admin/apps/online-store/fulfillment" },
-  { title: "Calendar", href: "/admin/apps/online-store/calendar" },
-  { title: "Checkouts", href: "/admin/apps/online-store/checkouts" },
-  { title: "Website", href: "/admin/settings/website" },
 ]
 
 export function AdminAppsPage() {
@@ -89,7 +125,7 @@ export function AdminAppsPage() {
       <TypographyH2 className="text-center">Find everything your business needs</TypographyH2>
 
       <AppSection title="Recommended for Haus" apps={recommendedApps} />
-      <AppSection title="Other Apps" apps={otherApps} />
+      <AppSection title="More Apps" apps={otherApps} />
     </div>
   )
 }
@@ -97,8 +133,8 @@ export function AdminAppsPage() {
 function AppSection({ title, apps }: { title: string; apps: AppListing[] }) {
   return (
     <section className="space-y-8">
-      <TypographyH3 className="text-center">{title}</TypographyH3>
-      <div className="grid gap-8 md:grid-cols-2">
+      <TypographyH3 className="text-center text-xl">{title}</TypographyH3>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-12">
         {apps.map((app) => (
           <AppCard key={app.title} app={app} />
         ))}
@@ -107,57 +143,104 @@ function AppSection({ title, apps }: { title: string; apps: AppListing[] }) {
   )
 }
 
+// `relative` anchors the trailing chevron/arrow to the card's top right corner
+// so it stays out of the centred stack. The card's own box carries no surface —
+// that lives on the layer below, which is what grows on hover. `isolate` keeps
+// that layer's negative z-index scoped to the card.
+const CARD_CLASS =
+  "group relative isolate flex w-full flex-col items-center justify-center gap-2 rounded-xl p-3 text-center sm:gap-3 sm:p-8"
+
+// The surface sits on its own absolutely positioned layer so hover can expand it
+// past the card's bounds. Growing the card itself would reflow or rescale the
+// content; this leaves every child exactly where it was.
+// rounded-xl matches the shadcn Card radius used on the store settings page.
+const CARD_SURFACE_CLASS =
+  "absolute inset-0 -z-10 rounded-xl border border-border bg-neutral-50 transition-all duration-200 group-hover:-inset-2.5 group-hover:bg-muted"
+
 function AppCard({ app }: { app: AppListing }) {
-  const Icon = app.icon
+  const links = app.links ?? []
+  // A lone link is a destination in its own right, so the card goes straight
+  // there. Several links need somewhere to choose from, so the card is a
+  // popover trigger instead.
+  const directLink = links.length === 1 ? links[0] : null
+
+  if (directLink) {
+    return (
+      <a href={directLink.href} {...newTabProps(directLink)} className={CARD_CLASS}>
+        <AppCardBody app={app} Icon={directLink.external ? ArrowUpRight : ChevronRight} />
+      </a>
+    )
+  }
 
   return (
-    <article className="flex min-h-40 items-start gap-4 rounded-md border border-border bg-background p-5 shadow-xs">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
-        <Icon aria-hidden="true" className="size-7 text-foreground" strokeWidth={1.8} />
-      </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-2">
-            <TypographyLarge>{app.title}</TypographyLarge>
-          </div>
-          {app.installed ? (
-            <div className="flex shrink-0 items-center gap-2">
-              <Button type="button" variant="secondary" size="sm">
-                UPGRADE
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon-sm"
-                    aria-label="Online Store settings"
-                  >
-                    <Settings aria-hidden="true" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 rounded-lg p-1">
-                  {onlineStoreSettingsItems.map((item, index) => (
-                    <DropdownMenuItem
-                      key={item.title}
-                      asChild
-                      className={index === 0 ? "bg-muted" : undefined}
-                    >
-                      <a href={item.href}>{item.title}</a>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ) : (
-            <Button type="button" size="sm">
-              GET
-            </Button>
-          )}
-        </div>
-        <TypographyMuted className="max-w-prose leading-6">{app.description}</TypographyMuted>
-        {app.badge ? <Badge variant="secondary">{app.badge}</Badge> : null}
-      </div>
-    </article>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button type="button" className={CARD_CLASS}>
+          <AppCardBody app={app} Icon={MoreHorizontal} />
+        </button>
+      </PopoverTrigger>
+      {/* Matching the trigger width keeps the list aligned with the card it
+          belongs to rather than floating at an unrelated size. */}
+      <PopoverContent className="w-(--radix-popover-trigger-width) min-w-56 p-2">
+        {links.map((link) => (
+          <AppLinkRow key={link.title} link={link} />
+        ))}
+      </PopoverContent>
+    </Popover>
   )
+}
+
+function AppCardBody({ app, Icon }: { app: AppListing; Icon: LucideIcon }) {
+  return (
+    <>
+      <span aria-hidden="true" className={CARD_SURFACE_CLASS} />
+      <Icon aria-hidden="true" className="absolute top-4 right-4 size-5 text-muted-foreground" />
+      {/* App Store style icon tile: a rounded, bordered white container that
+          frames the artwork so it reads as an app icon, not a loose image. */}
+      <span className="flex size-18 shrink-0 items-center justify-center rounded-xl border border-border bg-background">
+        <img src={app.icon} alt="" className="size-10" />
+      </span>
+      <div className="flex min-w-0 flex-col items-center gap-1">
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <TypographyLarge className="text-base sm:text-lg">{app.title}</TypographyLarge>
+          {app.badge ? <Badge variant="outline">{app.badge}</Badge> : null}
+        </div>
+        <TypographyMuted className="leading-6">{app.description}</TypographyMuted>
+      </div>
+    </>
+  )
+}
+
+function AppLinkRow({ link }: { link: AppLink }) {
+  const LeadingIcon = link.icon
+  // Links that leave the dashboard get an outbound arrow; ones that drill into
+  // it keep the chevron.
+  const TrailingIcon = link.external ? ArrowUpRight : ChevronRight
+
+  return (
+    <a
+      href={link.href}
+      {...newTabProps(link)}
+      className="flex h-10 items-center justify-between gap-2 rounded-md px-2 text-sm font-normal text-foreground transition-colors hover:bg-muted"
+    >
+      <span className="flex min-w-0 items-center gap-2">
+        <LeadingIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+        <span className="truncate">{link.title}</span>
+        {link.badge ? (
+          <Badge variant="secondary" className="border-transparent bg-green-400/10 text-green-900">
+            {link.badge}
+          </Badge>
+        ) : null}
+      </span>
+      <TrailingIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+    </a>
+  )
+}
+
+// Only a real URL can usefully open in a new tab; a "#" placeholder would just
+// open a blank one.
+function newTabProps(link: AppLink) {
+  return link.href.startsWith("http")
+    ? { target: "_blank", rel: "noreferrer" }
+    : {}
 }
