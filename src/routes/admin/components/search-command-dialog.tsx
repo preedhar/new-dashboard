@@ -220,36 +220,42 @@ export function SearchCommandDialog({ open, onOpenChange }: SearchCommandDialogP
       <Command shouldFilter={false}>
         <CommandInput ref={inputRef} placeholder="Search" value={query} onValueChange={setQuery} />
 
-        {/* On a phone the row scrolls sideways rather than wrapping, so the
+        {/* The filters only make sense against results, so they appear once the
+            merchant starts searching and stay hidden over the suggestions.
+            On a phone the row scrolls sideways rather than wrapping, so the
             results keep their place on screen. The scrollbar is hidden here
             rather than via a shared utility, which this project doesn't define. */}
-        <div className="flex items-center gap-2 overflow-x-auto px-4 pt-1 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {SEARCH_FILTERS.map((type) => {
-            const active = filter === type
+        {searching ? (
+          <div className="flex items-center gap-2 overflow-x-auto px-4 pt-1 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {SEARCH_FILTERS.map((type) => {
+              const active = filter === type
 
-            return (
-              <Button
-                key={type}
-                variant="outline"
-                aria-pressed={active}
-                className={cn(FILTER_BUTTON_CLASS, active && FILTER_BUTTON_ACTIVE_CLASS)}
-                onClick={() => handleFilterClick(type)}
-              >
-                {type}
-                {active ? (
-                  <span
-                    aria-hidden
-                    className="-mr-1 inline-flex size-5 items-center justify-center rounded-sm text-foreground"
-                  >
-                    <X className="size-4" />
-                  </span>
-                ) : null}
-              </Button>
-            )
-          })}
-        </div>
+              return (
+                <Button
+                  key={type}
+                  variant="outline"
+                  aria-pressed={active}
+                  className={cn(FILTER_BUTTON_CLASS, active && FILTER_BUTTON_ACTIVE_CLASS)}
+                  onClick={() => handleFilterClick(type)}
+                >
+                  {type}
+                  {active ? (
+                    <span
+                      aria-hidden
+                      className="-mr-1 inline-flex size-5 items-center justify-center rounded-sm text-foreground"
+                    >
+                      <X className="size-4" />
+                    </span>
+                  ) : null}
+                </Button>
+              )
+            })}
+          </div>
+        ) : null}
 
-        <CommandList>
+        {/* Pad the scroll area so the last row keeps clear of the modal's
+            rounded bottom edge, matching the space above the first group. */}
+        <CommandList className="pb-2">
           {isEmptyState ? (
             <div className="flex flex-col items-center gap-1 px-4 py-10 text-center">
               <Search className="size-5 text-muted-foreground" />
