@@ -10,8 +10,14 @@ import './App.css'
 function getPathname() {
   const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
 
-  if (pathname === '/') {
+  // Signup stays reachable by visiting it directly; everything else that
+  // isn't an admin route — the root and any unknown path — lands on /admin.
+  if (pathname === '/signup') {
     return '/signup'
+  }
+
+  if (pathname !== '/admin' && !pathname.startsWith('/admin/')) {
+    return '/admin'
   }
 
   // Parent section routes (e.g. /admin/orders) always resolve to their first subpage.
