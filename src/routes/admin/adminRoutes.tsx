@@ -67,6 +67,7 @@ import { AdminCheckoutsPage } from './pages/AdminCheckoutsPage'
 import { AdminOrderFormPage } from './pages/AdminOrderFormPage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
+import { AdminErrorPage } from './pages/AdminErrorPage'
 import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
 
 export type AdminRoute = {
@@ -616,6 +617,13 @@ export const adminRoutes: AdminRoute[] = [
       'POS',
       'A future workspace for configuring point-of-sale tools and workflows.',
     ),
+  },
+  {
+    path: '/admin/error',
+    label: 'Error',
+    title: 'Something went wrong',
+    icon: Home,
+    component: AdminErrorPage,
   },
 ]
 

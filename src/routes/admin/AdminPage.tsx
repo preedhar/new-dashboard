@@ -77,6 +77,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
   const showDesktopHeader =
     activeRoute.path !== '/admin' &&
     activeRoute.path !== '/admin/apps' &&
+    activeRoute.path !== '/admin/error' &&
     activeRoute.path !== '/admin/orders/all' &&
     activeRoute.path !== '/admin/orders/summary' &&
     activeRoute.path !== '/admin/orders/deliveries' &&
@@ -88,6 +89,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
   const showPageTitle =
     activeRoute.path !== '/admin' &&
     activeRoute.path !== '/admin/apps' &&
+    activeRoute.path !== '/admin/error' &&
     activeRoute.path !== '/admin/orders/all' &&
     activeRoute.path !== '/admin/orders/summary' &&
     activeRoute.path !== '/admin/orders/deliveries' &&
