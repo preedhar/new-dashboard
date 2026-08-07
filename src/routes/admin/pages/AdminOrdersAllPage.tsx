@@ -506,6 +506,17 @@ function navigateToAddOrder() {
   window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
+// Client-side navigation to the order edit form. An order Cococart already
+// collected payment for opens the automated variant, which names it that way
+// when an edit changes what the order comes to.
+function navigateToEditOrder(payment: Payment | undefined) {
+  const path = payment?.automated
+    ? '/admin/orders/edit/automated'
+    : '/admin/orders/edit'
+  window.history.pushState(null, '', path)
+  window.dispatchEvent(new PopStateEvent('popstate'))
+}
+
 // Client-side navigation to a full-page order detail view. The order id rides
 // in the query string since the router matches on pathname only.
 function navigateToOrderDetail(orderId: string) {
@@ -1809,8 +1820,7 @@ function OrderDetailPane({
                   onConfirm: () => {},
                 })
               } else if (action.label === 'Edit') {
-                window.history.pushState(null, '', '/admin/orders/edit')
-                window.dispatchEvent(new PopStateEvent('popstate'))
+                navigateToEditOrder(order.payment)
               } else if (action.label === 'Copy') {
                 toast.success('Order copied')
               }
@@ -1908,10 +1918,7 @@ function OrderDetailPane({
                                   onConfirm: () => {},
                                 })
                             : action.label === 'Edit'
-                              ? () => {
-                                  window.history.pushState(null, '', '/admin/orders/edit')
-                                  window.dispatchEvent(new PopStateEvent('popstate'))
-                                }
+                              ? () => navigateToEditOrder(order.payment)
                               : action.label === 'Copy'
                                 ? () => toast.success('Order copied')
                                 : undefined
@@ -3087,10 +3094,9 @@ function OrdersActionsMenu({
                   disabled={isActionDisabled(action.label, selectedCount)}
                   onSelect={
                     action.label === 'Edit'
-                      ? () => {
-                          window.history.pushState(null, '', '/admin/orders/edit')
-                          window.dispatchEvent(new PopStateEvent('popstate'))
-                        }
+                      ? // Edit is only offered for a single selected order, so
+                        // that order's payment decides which form opens.
+                        () => navigateToEditOrder(selectedOrders[0]?.payment)
                       : action.label === 'Archive'
                       ? () => requestConfirm({ action: 'Archive', onConfirm: () => {} })
                       : action.label === 'Receipt'

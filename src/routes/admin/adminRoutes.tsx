@@ -229,11 +229,18 @@ export const adminRoutes: AdminRoute[] = [
     component: () => <AdminOrderEditPage />,
   },
   {
+    path: '/admin/orders/edit/automated',
+    label: 'Edit Order (Automated Payment)',
+    title: 'Edit Order',
+    icon: ReceiptText,
+    component: () => <AdminOrderEditPage paymentAutomated />,
+  },
+  {
     path: '/admin/orders/new',
     label: 'Add Order',
     title: 'Add Order',
     icon: ReceiptText,
-    component: () => <AdminOrderEditPage title="Add order" />,
+    component: () => <AdminOrderEditPage mode="add" title="Add order" />,
   },
   {
     path: '/admin/orders/deliveries',
