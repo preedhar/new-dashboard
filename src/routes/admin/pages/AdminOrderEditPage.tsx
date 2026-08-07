@@ -19,6 +19,7 @@ import {
   Pencil,
   Phone,
   Plus,
+  Receipt,
   ShoppingBag,
   Store,
   Tag,
@@ -225,6 +226,25 @@ function hasCustomizations(item: OrderItem) {
   return item.instructions.trim() !== '' || item.addOns.trim() !== ''
 }
 
+// What the order comes to: every line it's for, plus the charges that price the
+// order as a whole. A charge that sits behind a switch only counts while that
+// switch is on, since the value stays in the form when it's turned off. Rounded
+// to cents so the summary can compare two totals as the numbers it prints.
+function orderTotal(form: OrderEditForm, enabled: Record<string, boolean>) {
+  const amount = (value: string) => Number.parseFloat(value) || 0
+  const optional = (key: string, value: string) =>
+    enabled[key] ? amount(value) : 0
+  const items = form.items.reduce((sum, item) => sum + lineItemPrice(item), 0)
+  const total =
+    items +
+    optional('fulfillmentFee', form.fulfillmentFee) -
+    optional('promotionalDiscount', form.promotionalDiscount) +
+    optional('tip', form.tip) +
+    amount(form.serviceCharge) +
+    amount(form.gst)
+  return Math.round(Math.max(0, total) * 100) / 100
+}
+
 const INITIAL_FORM: OrderEditForm = {
   customerName: '',
   customerPhoneCountry: 'US',
@@ -247,6 +267,62 @@ const INITIAL_FORM: OrderEditForm = {
   tip: '',
   specialRequests: '',
   items: [],
+}
+
+// The order the edit page opens on. There's no order store behind these screens
+// yet, so it stands in for a fetch — and the summary needs something to compare
+// against, since "New Total" only means anything next to what the order was
+// placed for. Mirrors EDIT_FORM on the product form page.
+const EDIT_FORM: OrderEditForm = {
+  ...INITIAL_FORM,
+  customerName: 'Jane Doe',
+  customerPhone: '812 3456 7890',
+  customerEmail: 'jane@example.com',
+  status: 'Approved',
+  timeSlot: '11:00 AM',
+  fulfillType: 'Delivery Zone 1 (0-3km)',
+  address: '18 Boon Lay Way, Singapore 609966',
+  fulfillmentFee: '1.50',
+  serviceCharge: '0.25',
+  gst: '0.25',
+  items: [
+    {
+      ...itemDraft(null),
+      id: 'seed-item-latte',
+      product: 'Matcha Latte',
+      unitPrice: '6.50',
+      quantity: '2',
+    },
+    {
+      ...itemDraft(null),
+      id: 'seed-item-croissant',
+      product: 'Almond Croissant',
+      unitPrice: '4.80',
+      quantity: '1',
+    },
+  ],
+}
+
+// Which optional fields the form opens with switched on: the ones the order
+// already carries a value for.
+function enabledFieldsFor(form: OrderEditForm): Record<string, boolean> {
+  const filled = (value: string) => value.trim() !== ''
+  const isGift =
+    filled(form.giftRecipientName) ||
+    filled(form.giftRecipientPhone) ||
+    filled(form.giftMessage)
+  return {
+    customerPhone: filled(form.customerPhone),
+    customerEmail: filled(form.customerEmail),
+    address: filled(form.address),
+    instructions: filled(form.instructions),
+    giftOrder: isGift,
+    giftMessage: filled(form.giftMessage),
+    specialRequests: filled(form.specialRequests),
+    fulfillmentFee: filled(form.fulfillmentFee),
+    promotionalDiscount: filled(form.promotionalDiscount),
+    tip: filled(form.tip),
+  }
 }
 
 type Country = { name: string; code: string; dial: string; flag: string }
@@ -947,13 +1023,106 @@ function ItemDialog({
   )
 }
 
+// What the order comes to, and — while an edit has it worth something other
+// than what it was placed for — what it was placed for, over the difference
+// that leaves to settle. Shown in the Summary section, and again in the
+// confirmation a repriced order is saved through, so the merchant sees the
+// same figures in both places. The section leads each line with a receipt icon
+// and indents the rest under it; the dialog goes without.
+function TotalSummary({
+  total,
+  previousTotal,
+  showsNewTotal,
+  paymentAutomated,
+  withIcon = false,
+}: {
+  total: number
+  previousTotal: number
+  showsNewTotal: boolean
+  paymentAutomated: boolean
+  withIcon?: boolean
+}) {
+  const isRefund = total < previousTotal
+  const difference = Math.abs(Math.round((total - previousTotal) * 100) / 100)
+  // Everything under the first line hangs off the label the icon precedes.
+  const indent = withIcon ? 'sm:pl-10' : undefined
+
+  return (
+    <div>
+      <div className="space-y-1">
+        <div className="flex items-center justify-between gap-6">
+          <span className="flex items-center gap-3 text-base font-medium sm:gap-6">
+            {withIcon ? (
+              <Receipt className="size-4 shrink-0 text-muted-foreground" />
+            ) : null}
+            {showsNewTotal ? 'New Total' : 'Total'}
+          </span>
+          <span className="text-base font-medium tabular-nums">
+            {formatCurrency(total)}
+          </span>
+        </div>
+        {showsNewTotal ? (
+          <div
+            className={cn(
+              'flex items-center justify-between gap-6 text-sm text-muted-foreground',
+              indent,
+            )}
+          >
+            <span>
+              {paymentAutomated
+                ? 'Payment collected by Cococart'
+                : 'Previous total'}
+            </span>
+            <span className="tabular-nums">
+              {formatCurrency(previousTotal)}
+            </span>
+          </div>
+        ) : null}
+      </div>
+      {/* The difference the edit leaves behind: money still owed by the
+          customer, or owed back to them. Neither moves through Cococart, so the
+          line says how it has to be settled. */}
+      {showsNewTotal ? (
+        <div className={indent}>
+          <div className="mt-4 border-t border-border/50" />
+          <div
+            className={cn(
+              'mt-4 flex items-center justify-between gap-6 text-base font-medium',
+              isRefund ? 'text-destructive' : 'text-green-600',
+            )}
+          >
+            <span>
+              {isRefund
+                ? 'Refund separately to customer'
+                : 'Collect separately from customer'}
+            </span>
+            <span className="tabular-nums">{formatCurrency(difference)}</span>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export function AdminOrderEditPage({
   title = 'Edit Order',
+  // Adding starts from an empty order; editing opens on the order it was called
+  // for and measures every change against what that order came to.
+  mode = 'edit',
+  // Automated payments have already been taken by Cococart, so the summary says
+  // so where a manual order just names its previous total.
+  paymentAutomated = false,
 }: {
   title?: string
+  mode?: 'add' | 'edit'
+  paymentAutomated?: boolean
 }) {
-  const [form, setForm] = React.useState<OrderEditForm>(INITIAL_FORM)
-  const [enabled, setEnabled] = React.useState<Record<string, boolean>>({})
+  const isEditing = mode === 'edit'
+  const initialForm = isEditing ? EDIT_FORM : INITIAL_FORM
+  const [form, setForm] = React.useState<OrderEditForm>(initialForm)
+  const [enabled, setEnabled] = React.useState<Record<string, boolean>>(() =>
+    enabledFieldsFor(initialForm),
+  )
   const [dateOpen, setDateOpen] = React.useState(false)
   // The item dialog: 'add' for a new item, or the item being edited. null when
   // closed.
@@ -1001,12 +1170,42 @@ export function AdminOrderEditPage({
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
-  // The form has unsaved changes whenever its values differ from the initial
-  // (empty) order.
+  // The form has unsaved changes whenever its values differ from the order it
+  // opened on — the empty one when adding.
   const isDirty = React.useMemo(
-    () => JSON.stringify(form) !== JSON.stringify(INITIAL_FORM),
-    [form],
+    () => JSON.stringify(form) !== JSON.stringify(initialForm),
+    [form, initialForm],
   )
+
+  // What the order is worth now, and what it was worth when the page opened.
+  // The two only differ once an edit moves the money, which is when the summary
+  // starts calling the figure a new total.
+  const total = orderTotal(form, enabled)
+  const previousTotal = React.useMemo(
+    () => orderTotal(initialForm, enabledFieldsFor(initialForm)),
+    [initialForm],
+  )
+  const showsNewTotal = isEditing && total !== previousTotal
+  // An edit that lowers the order owes the customer money back; one that raises
+  // it leaves money to collect.
+  const isRefund = total < previousTotal
+
+  // Repricing an order leaves a difference to settle by hand — whether Cococart
+  // took the payment or the merchant did. Saving stops on a confirmation that
+  // lays out the new figures and offers the customer a fresh receipt.
+  const needsSaveConfirmation = showsNewTotal
+  const [saveConfirmOpen, setSaveConfirmOpen] = React.useState(false)
+  const receiptEmail = form.customerEmail.trim() || 'the customer'
+
+  function saveOrder(withReceipt: boolean) {
+    setSaveConfirmOpen(false)
+    toast.success(
+      withReceipt
+        ? `Order updated. Receipt will be sent to ${receiptEmail}`
+        : 'Order updated',
+    )
+    goToAllOrders()
+  }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -1015,8 +1214,11 @@ export function AdminOrderEditPage({
       toast.error('Add at least one item')
       return
     }
-    toast.success('Order updated')
-    goToAllOrders()
+    if (needsSaveConfirmation) {
+      setSaveConfirmOpen(true)
+      return
+    }
+    saveOrder(false)
   }
 
   // When dirty, navigating away is held in `pendingNav` until the user confirms
@@ -1437,6 +1639,22 @@ export function AdminOrderEditPage({
             />
           </FormRow>
         </Section>
+
+        {/* What the order adds up to, once every item and charge above is
+            counted. While an edit has the order worth something other than what
+            it was placed for, the figure is named a new total and the old one
+            sits beneath it. */}
+        <Section title="Summary">
+          <div className="py-4">
+            <TotalSummary
+              total={total}
+              previousTotal={previousTotal}
+              showsNewTotal={showsNewTotal}
+              paymentAutomated={paymentAutomated}
+              withIcon
+            />
+          </div>
+        </Section>
       </div>
 
       {isDirty ? (
@@ -1453,6 +1671,36 @@ export function AdminOrderEditPage({
         </div>
       ) : null}
     </form>
+
+    {/* Saving an order whose value moved: the totals it now carries, and the
+        receipt the customer can be sent for them. Either button files the
+        order — "Skip" just leaves the receipt unsent. */}
+    <AlertDialog open={saveConfirmOpen} onOpenChange={setSaveConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Send receipt to {receiptEmail}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {isRefund
+              ? 'The order total decreased. Refund the difference to the customer separately.'
+              : 'The order total increased. Collect the difference from the customer separately.'}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <TotalSummary
+          total={total}
+          previousTotal={previousTotal}
+          showsNewTotal={showsNewTotal}
+          paymentAutomated={paymentAutomated}
+        />
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => saveOrder(false)}>
+            Skip
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={() => saveOrder(true)}>
+            Send
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
     {itemDialog ? (
       <ItemDialog

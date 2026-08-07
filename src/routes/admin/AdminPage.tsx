@@ -33,6 +33,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
   // is suppressed for them.
   const isOrderFormPage =
     activeRoute.path === '/admin/orders/edit' ||
+    activeRoute.path === '/admin/orders/edit/automated' ||
     activeRoute.path === '/admin/orders/new' ||
     activeRoute.path === '/admin/settings/store' ||
     activeRoute.path === '/admin/settings/website' ||
