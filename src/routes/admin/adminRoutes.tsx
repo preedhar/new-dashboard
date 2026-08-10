@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 
 import { AdminCustomersPage } from './pages/AdminCustomersPage'
+import { AdminLoyaltyPage } from './pages/AdminLoyaltyPage'
 import { AdminOrdersAllPage, AdminOrderDetailPage } from './pages/AdminOrdersAllPage'
 import { AdminOrderEditPage } from './pages/AdminOrderEditPage'
 import { AdminOrdersSummaryPage } from './pages/AdminOrdersSummaryPage'
@@ -437,10 +438,7 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Loyalty',
     title: 'Loyalty',
     icon: Megaphone,
-    component: createAdminPlaceholder(
-      'Loyalty',
-      'A future workspace for rewards, retention programs, and member benefits.',
-    ),
+    component: AdminLoyaltyPage,
   },
   {
     path: '/admin/analytics',
