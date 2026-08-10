@@ -43,6 +43,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path === '/admin/apps/online-store/fulfillment' ||
     activeRoute.path === '/admin/apps/online-store/fulfillment/time-slots' ||
     activeRoute.path === '/admin/apps/online-store/calendar' ||
+    activeRoute.path === '/admin/marketing/loyalty' ||
     activeRoute.path === '/admin/products' ||
     activeRoute.path === '/admin/products/new' ||
     activeRoute.path === '/admin/products/edit' ||
@@ -67,6 +68,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
   const keepsBottomNav =
     activeRoute.path === '/admin/settings/store' ||
     activeRoute.path === '/admin/settings/team' ||
+    activeRoute.path === '/admin/marketing/loyalty' ||
     activeRoute.path === '/admin/products'
   // The order and delivery detail pages provide their own back button and
   // render a full-bleed card, so the shared title/header and the section's
