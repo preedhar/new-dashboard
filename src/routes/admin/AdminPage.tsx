@@ -76,7 +76,8 @@ export function AdminPage({ pathname }: AdminPageProps) {
   const isOrderDetailPage =
     activeRoute.path === '/admin/orders/detail' ||
     activeRoute.path === '/admin/orders/deliveries/detail' ||
-    activeRoute.path === '/admin/orders/earnings/detail'
+    activeRoute.path === '/admin/orders/earnings/detail' ||
+    activeRoute.path === '/admin/marketing/email/detail'
   const showDesktopHeader =
     activeRoute.path !== '/admin' &&
     activeRoute.path !== '/admin/apps' &&
@@ -87,6 +88,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/orders/reviews' &&
     activeRoute.path !== '/admin/orders/earnings' &&
     activeRoute.path !== '/admin/orders/analytics' &&
+    activeRoute.path !== '/admin/marketing/email' &&
     !isOrderDetailPage &&
     !isOrderFormPage
   const showPageTitle =
@@ -99,6 +101,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/orders/reviews' &&
     activeRoute.path !== '/admin/orders/earnings' &&
     activeRoute.path !== '/admin/orders/analytics' &&
+    activeRoute.path !== '/admin/marketing/email' &&
     !isOrderDetailPage &&
     !isOrderFormPage
 
