@@ -28,6 +28,10 @@ import {
 } from 'lucide-react'
 
 import { AdminCustomersPage } from './pages/AdminCustomersPage'
+import {
+  AdminEmailMarketingPage,
+  AdminEmailDetailPage,
+} from './pages/AdminEmailMarketingPage'
 import { AdminLoyaltyPage } from './pages/AdminLoyaltyPage'
 import { AdminOrdersAllPage, AdminOrderDetailPage } from './pages/AdminOrdersAllPage'
 import { AdminOrderEditPage } from './pages/AdminOrderEditPage'
@@ -421,10 +425,14 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Email Marketing',
     title: 'Email Marketing',
     icon: Mail,
-    component: createAdminPlaceholder(
-      'Email Marketing',
-      'A future workspace for newsletters, automations, and customer campaigns.',
-    ),
+    component: AdminEmailMarketingPage,
+  },
+  {
+    path: '/admin/marketing/email/detail',
+    label: 'Email Marketing',
+    title: 'Email Marketing',
+    icon: Mail,
+    component: AdminEmailDetailPage,
   },
   {
     path: '/admin/marketing/customers',
