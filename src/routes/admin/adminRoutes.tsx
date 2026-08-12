@@ -70,6 +70,9 @@ import { AdminProductsPage } from './pages/AdminProductsPage'
 import { AdminProductFormPage } from './pages/AdminProductFormPage'
 import { AdminCheckoutsPage } from './pages/AdminCheckoutsPage'
 import { AdminOrderFormPage } from './pages/AdminOrderFormPage'
+import { AdminPosPage } from './pages/AdminPosPage'
+import { AdminQrCheckoutsPage } from './pages/AdminQrCheckoutsPage'
+import { AdminQrOrderFormPage } from './pages/AdminQrOrderFormPage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
 import { AdminErrorPage } from './pages/AdminErrorPage'
@@ -622,14 +625,25 @@ export const adminRoutes: AdminRoute[] = [
     component: AdminOrderFormPage,
   },
   {
+    path: '/admin/apps/qr-code/checkouts',
+    label: 'Checkouts',
+    title: 'Checkouts',
+    icon: ReceiptText,
+    component: AdminQrCheckoutsPage,
+  },
+  {
+    path: '/admin/apps/qr-code/checkouts/order-form',
+    label: 'Order form',
+    title: 'Order form',
+    icon: ClipboardList,
+    component: AdminQrOrderFormPage,
+  },
+  {
     path: '/admin/apps/pos',
     label: 'POS',
     title: 'POS',
     icon: Monitor,
-    component: createAdminPlaceholder(
-      'POS',
-      'A future workspace for configuring point-of-sale tools and workflows.',
-    ),
+    component: AdminPosPage,
   },
   {
     path: '/admin/error',
