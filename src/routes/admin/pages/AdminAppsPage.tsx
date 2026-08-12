@@ -1,23 +1,22 @@
+import * as React from "react"
 import {
   ArrowLeft,
   ArrowUpRight,
   CalendarDays,
   ChevronRight,
-  Download,
   Globe,
+  Monitor,
   MoreHorizontal,
+  QrCode,
   ReceiptText,
-  Settings,
   Store,
   Truck,
   type LucideIcon,
 } from "lucide-react"
 
-import AndroidIcon from "@/assets/apps/android.svg?react"
 import bookingsIcon from "@/assets/apps/bookings.png"
 import crmIcon from "@/assets/apps/crm.png"
 import emailMarketingIcon from "@/assets/apps/email-marketing.png"
-import IosIcon from "@/assets/apps/ios.svg?react"
 import kitchenDisplayIcon from "@/assets/apps/kitchen-display.png"
 import loyaltyProgramIcon from "@/assets/apps/loyalty-program.png"
 import onlineStoreIcon from "@/assets/apps/online-store.png"
@@ -27,16 +26,22 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { TypographyH2, TypographyH3, TypographyLarge, TypographyMuted } from "@/components/ui/typography"
+import { DownloadQrCodesDialog } from "../components/download-qr-codes-dialog"
 import { STORE_DOMAIN } from "../catalog"
 
 // Wide enough for both lucide icons and the brand marks imported through SVGR.
 type AppLinkIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>
 
-// A link can carry a status badge (e.g. whether that setting is switched on),
-// and `external` marks the ones that leave the dashboard rather than drill in.
+// Links that open something on the page instead of navigating away.
+type AppLinkAction = "download-qr-codes"
+
+// A link either navigates (`href`) or opens a dialog in place (`action`). It can
+// carry a status badge (e.g. whether that setting is switched on), and
+// `external` marks the ones that leave the dashboard rather than drill in.
 type AppLink = {
   title: string
-  href: string
+  href?: string
+  action?: AppLinkAction
   icon: AppLinkIcon
   badge?: string
   external?: boolean
@@ -70,19 +75,20 @@ const recommendedApps: AppListing[] = [
     title: "POS",
     description: "Take in-person orders at your physical store",
     icon: posIcon,
-    links: [
-      { title: "Download iOS app", href: "#", icon: IosIcon, external: true },
-      { title: "Download Android app", href: "#", icon: AndroidIcon, external: true },
-    ],
+    links: [{ title: "View", href: "/admin/apps/pos", icon: Monitor, external: true }],
   },
   {
     title: "QR Code Ordering",
     description: "Reduce staff costs by letting customers scan to order",
     icon: qrCodeOrderingIcon,
     links: [
-      { title: "Settings", href: "#", icon: Settings, badge: "Enabled" },
-      { title: "Download QR codes", href: "#", icon: Download },
-      { title: "Checkouts", href: "#", icon: ReceiptText },
+      {
+        title: "Checkouts",
+        href: "/admin/apps/qr-code/checkouts",
+        icon: ReceiptText,
+        badge: "Enabled",
+      },
+      { title: "Download QR codes", action: "download-qr-codes", icon: QrCode },
       { title: "View store", href: `https://${STORE_DOMAIN}`, icon: Store, external: true },
     ],
   },
@@ -122,6 +128,10 @@ const otherApps: AppListing[] = [
 ]
 
 export function AdminAppsPage() {
+  // The dialogs an app link can open live at the page level so they survive the
+  // popover they were opened from closing.
+  const [openAction, setOpenAction] = React.useState<AppLinkAction | null>(null)
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-10">
       {/* The desktop chrome for this route is suppressed in AdminPage, so the
@@ -143,19 +153,36 @@ export function AdminAppsPage() {
         </TypographyH2>
       </header>
 
-      <AppSection title="Recommended for Haus" apps={recommendedApps} />
-      <AppSection title="More Apps" apps={otherApps} />
+      <AppSection
+        title="Recommended for Haus"
+        apps={recommendedApps}
+        onSelectAction={setOpenAction}
+      />
+      <AppSection title="More Apps" apps={otherApps} onSelectAction={setOpenAction} />
+
+      <DownloadQrCodesDialog
+        open={openAction === "download-qr-codes"}
+        onOpenChange={(open) => setOpenAction(open ? "download-qr-codes" : null)}
+      />
     </div>
   )
 }
 
-function AppSection({ title, apps }: { title: string; apps: AppListing[] }) {
+function AppSection({
+  title,
+  apps,
+  onSelectAction,
+}: {
+  title: string
+  apps: AppListing[]
+  onSelectAction: (action: AppLinkAction) => void
+}) {
   return (
     <section className="space-y-8">
       <TypographyH3 className="text-center text-xl">{title}</TypographyH3>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-12">
         {apps.map((app) => (
-          <AppCard key={app.title} app={app} />
+          <AppCard key={app.title} app={app} onSelectAction={onSelectAction} />
         ))}
       </div>
     </section>
@@ -176,7 +203,16 @@ const CARD_CLASS =
 const CARD_SURFACE_CLASS =
   "absolute inset-0 -z-10 rounded-xl border border-border bg-neutral-50 transition-all duration-200 group-hover:-inset-2.5 group-hover:bg-muted"
 
-function AppCard({ app }: { app: AppListing }) {
+function AppCard({
+  app,
+  onSelectAction,
+}: {
+  app: AppListing
+  onSelectAction: (action: AppLinkAction) => void
+}) {
+  // The popover is controlled so choosing an action can dismiss it before the
+  // dialog it opens takes over the screen.
+  const [open, setOpen] = React.useState(false)
   const links = app.links ?? []
   // A lone link is a destination in its own right, so the card goes straight
   // there. Several links need somewhere to choose from, so the card is a
@@ -184,15 +220,25 @@ function AppCard({ app }: { app: AppListing }) {
   const directLink = links.length === 1 ? links[0] : null
 
   if (directLink) {
+    const Icon = directLink.external ? ArrowUpRight : ChevronRight
+    // An action has nowhere to navigate to, so the whole card becomes a button.
+    if (directLink.action) {
+      const action = directLink.action
+      return (
+        <button type="button" className={CARD_CLASS} onClick={() => onSelectAction(action)}>
+          <AppCardBody app={app} Icon={Icon} />
+        </button>
+      )
+    }
     return (
       <a href={directLink.href} {...newTabProps(directLink)} className={CARD_CLASS}>
-        <AppCardBody app={app} Icon={directLink.external ? ArrowUpRight : ChevronRight} />
+        <AppCardBody app={app} Icon={Icon} />
       </a>
     )
   }
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button type="button" className={CARD_CLASS}>
           <AppCardBody app={app} Icon={MoreHorizontal} />
@@ -202,7 +248,14 @@ function AppCard({ app }: { app: AppListing }) {
           belongs to rather than floating at an unrelated size. */}
       <PopoverContent className="w-(--radix-popover-trigger-width) min-w-56 p-2">
         {links.map((link) => (
-          <AppLinkRow key={link.title} link={link} />
+          <AppLinkRow
+            key={link.title}
+            link={link}
+            onSelectAction={(action) => {
+              setOpen(false)
+              onSelectAction(action)
+            }}
+          />
         ))}
       </PopoverContent>
     </Popover>
@@ -230,28 +283,53 @@ function AppCardBody({ app, Icon }: { app: AppListing; Icon: LucideIcon }) {
   )
 }
 
-function AppLinkRow({ link }: { link: AppLink }) {
+const LINK_ROW_CLASS =
+  "flex h-10 w-full items-center justify-between gap-2 rounded-md px-2 text-sm font-normal text-foreground transition-colors hover:bg-muted"
+
+function AppLinkRow({
+  link,
+  onSelectAction,
+}: {
+  link: AppLink
+  onSelectAction: (action: AppLinkAction) => void
+}) {
   const LeadingIcon = link.icon
   // Links that leave the dashboard get an outbound arrow; ones that drill into
   // it keep the chevron.
   const TrailingIcon = link.external ? ArrowUpRight : ChevronRight
 
-  return (
-    <a
-      href={link.href}
-      {...newTabProps(link)}
-      className="flex h-10 items-center justify-between gap-2 rounded-md px-2 text-sm font-normal text-foreground transition-colors hover:bg-muted"
-    >
+  const body = (
+    <>
       <span className="flex min-w-0 items-center gap-2">
         <LeadingIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
         <span className="truncate">{link.title}</span>
+      </span>
+      {/* The badge trails the row with the chevron rather than sitting against
+          the title, so every row's status lines up down the right edge. */}
+      <span className="flex shrink-0 items-center gap-2">
         {link.badge ? (
           <Badge variant="secondary" className="border-transparent bg-green-400/10 text-green-900">
             {link.badge}
           </Badge>
         ) : null}
+        <TrailingIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
       </span>
-      <TrailingIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+    </>
+  )
+
+  // Rows that open a dialog aren't going anywhere, so they're buttons.
+  if (link.action) {
+    const action = link.action
+    return (
+      <button type="button" className={LINK_ROW_CLASS} onClick={() => onSelectAction(action)}>
+        {body}
+      </button>
+    )
+  }
+
+  return (
+    <a href={link.href} {...newTabProps(link)} className={LINK_ROW_CLASS}>
+      {body}
     </a>
   )
 }
@@ -259,7 +337,7 @@ function AppLinkRow({ link }: { link: AppLink }) {
 // Only a real URL can usefully open in a new tab; a "#" placeholder would just
 // open a blank one.
 function newTabProps(link: AppLink) {
-  return link.href.startsWith("http")
+  return link.href?.startsWith("http")
     ? { target: "_blank", rel: "noreferrer" }
     : {}
 }

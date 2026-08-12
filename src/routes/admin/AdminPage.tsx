@@ -51,6 +51,8 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path === '/admin/products/bundles/edit' ||
     activeRoute.path === '/admin/apps/online-store/checkouts' ||
     activeRoute.path === '/admin/apps/online-store/checkouts/order-form' ||
+    activeRoute.path === '/admin/apps/qr-code/checkouts' ||
+    activeRoute.path === '/admin/apps/qr-code/checkouts/order-form' ||
     activeRoute.path === '/admin/settings/payments' ||
     activeRoute.path === '/admin/settings/payments/manual' ||
     activeRoute.path === '/admin/settings/payments/setup' ||
@@ -89,6 +91,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/orders/earnings' &&
     activeRoute.path !== '/admin/orders/analytics' &&
     activeRoute.path !== '/admin/marketing/email' &&
+    activeRoute.path !== '/admin/apps/pos' &&
     !isOrderDetailPage &&
     !isOrderFormPage
   const showPageTitle =
@@ -102,6 +105,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/orders/earnings' &&
     activeRoute.path !== '/admin/orders/analytics' &&
     activeRoute.path !== '/admin/marketing/email' &&
+    activeRoute.path !== '/admin/apps/pos' &&
     !isOrderDetailPage &&
     !isOrderFormPage
 

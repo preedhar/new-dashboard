@@ -2,18 +2,25 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { APP_LINK_PATH } from '@/lib/app-links'
 import { AdminPage } from '@/routes/admin/AdminPage'
 import { getAdminRedirect } from '@/routes/admin/adminRoutes'
+import { AppRedirectPage } from '@/routes/app/AppRedirectPage'
 import { SignupPage } from '@/routes/signup/SignupPage'
 import './App.css'
 
 function getPathname() {
   const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
 
-  // Signup stays reachable by visiting it directly; everything else that
-  // isn't an admin route — the root and any unknown path — lands on /admin.
+  // Signup and the public app link stay reachable by visiting them directly;
+  // everything else that isn't an admin route — the root and any unknown path —
+  // lands on /admin.
   if (pathname === '/signup') {
     return '/signup'
+  }
+
+  if (pathname === APP_LINK_PATH) {
+    return APP_LINK_PATH
   }
 
   if (pathname !== '/admin' && !pathname.startsWith('/admin/')) {
@@ -49,6 +56,10 @@ function App() {
   const route = useMemo(() => {
     if (pathname === '/signup') {
       return <SignupPage />
+    }
+
+    if (pathname === APP_LINK_PATH) {
+      return <AppRedirectPage />
     }
 
     if (pathname === '/admin' || pathname.startsWith('/admin/')) {
