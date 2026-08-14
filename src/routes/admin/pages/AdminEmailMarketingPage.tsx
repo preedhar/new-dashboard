@@ -35,6 +35,7 @@ import {
   ChooseImageDialog,
   type LibraryImage,
 } from '../components/choose-image-dialog'
+import { CreateEmailDialog } from '../components/create-email-dialog'
 import type { ColumnDef } from '@tanstack/react-table'
 
 type EmailCampaign = {
@@ -390,6 +391,8 @@ export function AdminEmailMarketingPage() {
   const [mailingListOpen, setMailingListOpen] = React.useState(false)
   const [allowSubscribe, setAllowSubscribe] = React.useState(true)
 
+  const [createEmailOpen, setCreateEmailOpen] = React.useState(false)
+
   // The image picked for the next email, kept so the picker reopens on it.
   const [chooseImageOpen, setChooseImageOpen] = React.useState(false)
   const [chosenImage, setChosenImage] = React.useState<LibraryImage | null>(null)
@@ -473,6 +476,11 @@ export function AdminEmailMarketingPage() {
         onChange={setChosenImage}
       />
 
+      <CreateEmailDialog
+        open={createEmailOpen}
+        onOpenChange={setCreateEmailOpen}
+      />
+
       <TypographyLarge className="mb-1">Last 30 days</TypographyLarge>
 
       {/* Non-interactive summary of the last 30 days. */}
@@ -492,14 +500,22 @@ export function AdminEmailMarketingPage() {
       <div className="mt-4 mb-1 flex items-center justify-between gap-4 md:mt-6">
         <TypographyLarge>Emails</TypographyLarge>
         {/* Desktop: button sits inline to the right of the section header. */}
-        <Button type="button" className="hidden h-10 shrink-0 md:inline-flex">
+        <Button
+          type="button"
+          onClick={() => setCreateEmailOpen(true)}
+          className="hidden h-10 shrink-0 md:inline-flex"
+        >
           <Plus className="size-4" />
           Create email
         </Button>
       </div>
 
       {/* Mobile: a full-width button below the section header row. */}
-      <Button type="button" className="mb-1 h-10 w-full md:hidden">
+      <Button
+        type="button"
+        onClick={() => setCreateEmailOpen(true)}
+        className="mb-1 h-10 w-full md:hidden"
+      >
         <Plus className="size-4" />
         Create email
       </Button>
