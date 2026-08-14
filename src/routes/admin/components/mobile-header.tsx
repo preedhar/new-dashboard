@@ -53,7 +53,7 @@ export function MobileHeader({ pathname }: MobileHeaderProps) {
           href="/admin"
           aria-label="Cococart home"
           data-active={pathname === "/admin"}
-          className="flex h-10 shrink-0 items-center gap-2 rounded-md px-2 text-sm text-muted-foreground outline-hidden transition-colors hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_6%)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring data-[active=true]:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_10%)] data-[active=true]:text-foreground"
+          className="flex h-10 shrink-0 items-center gap-2 rounded-md px-2 text-sm text-muted-foreground outline-hidden transition-colors hover:bg-[color-mix(in_oklch,var(--muted),var(--foreground)_6%)] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring data-[active=true]:font-medium data-[active=true]:text-foreground"
         >
           <img src="/cococart-logomark.svg" alt="Cococart" className="h-8 w-8 shrink-0" />
           <span className="truncate">Home</span>
