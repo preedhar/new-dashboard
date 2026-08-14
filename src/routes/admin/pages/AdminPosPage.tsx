@@ -67,23 +67,23 @@ export function AdminPosPage() {
             className="h-px w-full shrink-0 bg-border/50 sm:h-auto sm:w-px sm:self-stretch"
           />
 
-          {/* Apple's and Google's official badge artwork, sized by height so
-              each keeps its own aspect ratio. The gap clears Google's required
-              margin of a quarter of the badge height. The badges differ in
-              width, so they're centred on each other. */}
+          {/* Apple's and Google's official badge artwork, pinned to a shared
+              width so the two stack as a tidy column; each keeps its own aspect
+              ratio through the auto height. The gap clears Google's required
+              margin of a quarter of the badge height. */}
           <div className="flex flex-col items-center gap-3">
             <a href={APP_STORE_URL} target="_blank" rel="noreferrer">
               <img
                 src={appStoreBadge}
                 alt="Download on the App Store"
-                className="h-12 w-auto"
+                className="h-auto w-40"
               />
             </a>
             <a href={GOOGLE_PLAY_URL} target="_blank" rel="noreferrer">
               <img
                 src={googlePlayBadge}
                 alt="Get it on Google Play"
-                className="h-12 w-auto"
+                className="h-auto w-40"
               />
             </a>
           </div>
