@@ -35,7 +35,10 @@ import {
   ChooseImageDialog,
   type LibraryImage,
 } from '../components/choose-image-dialog'
-import { CreateEmailDialog } from '../components/create-email-dialog'
+import {
+  CreateEmailDialog,
+  EmailCreatedScreen,
+} from '../components/create-email-dialog'
 import type { ColumnDef } from '@tanstack/react-table'
 
 type EmailCampaign = {
@@ -392,6 +395,9 @@ export function AdminEmailMarketingPage() {
   const [allowSubscribe, setAllowSubscribe] = React.useState(true)
 
   const [createEmailOpen, setCreateEmailOpen] = React.useState(false)
+  // Creating an email takes over the whole page with a confirmation until the
+  // merchant heads back to the list.
+  const [emailCreated, setEmailCreated] = React.useState(false)
 
   // The image picked for the next email, kept so the picker reopens on it.
   const [chooseImageOpen, setChooseImageOpen] = React.useState(false)
@@ -400,6 +406,10 @@ export function AdminEmailMarketingPage() {
   function openEmail(id: string) {
     setSelectedEmailId(id)
     setPaneEmailId(id)
+  }
+
+  if (emailCreated) {
+    return <EmailCreatedScreen onBack={() => setEmailCreated(false)} />
   }
 
   return (
@@ -479,6 +489,7 @@ export function AdminEmailMarketingPage() {
       <CreateEmailDialog
         open={createEmailOpen}
         onOpenChange={setCreateEmailOpen}
+        onCreate={() => setEmailCreated(true)}
       />
 
       <TypographyLarge className="mb-1">Last 30 days</TypographyLarge>

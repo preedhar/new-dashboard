@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { ImageIcon } from 'lucide-react'
-import { toast } from 'sonner'
+import { ArrowLeft, ImageIcon } from 'lucide-react'
+import Confetti from 'react-confetti-boom'
 
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -17,6 +17,9 @@ import { FieldLabel } from '@/components/ui/field'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { TypographyH4 } from '@/components/ui/typography'
+import emailCreatedIllustration from '@/assets/admin/email-created.png'
+
+const CONFETTI_COLORS = ['#ff577f', '#ff884b', '#ffd384', '#fff9b0']
 
 type EmailTopic = 'products' | 'promotion'
 
@@ -139,19 +142,69 @@ function TemplatePreview({ template }: { template: TemplateId }) {
   )
 }
 
+// The confirmation shown on the page once an email is created: the flying
+// envelope under a burst of confetti, and a way back to the emails list.
+export function EmailCreatedScreen({ onBack }: { onBack: () => void }) {
+  return (
+    // Grows to fill the page shell's remaining height so the message sits in
+    // the middle of it.
+    <div className="relative flex min-h-[60vh] flex-1 flex-col items-center justify-center gap-6 px-4 text-center">
+      {/* Anchored to this column rather than the viewport, so the burst's
+          x: 0.5 lands on the envelope instead of behind the sidebar. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 z-10">
+        <Confetti
+          mode="boom"
+          particleCount={79}
+          shapeSize={14}
+          deg={272}
+          effectCount={1}
+          effectInterval={3000}
+          spreadDeg={64}
+          x={0.5}
+          y={0.16}
+          launchSpeed={0.9}
+          opacityDeltaMultiplier={0}
+          colors={CONFETTI_COLORS}
+        />
+      </div>
+      {/* The artwork is @2x, so it's drawn at half its pixel size. */}
+      <img
+        src={emailCreatedIllustration}
+        alt=""
+        width={160}
+        height={118}
+        className="h-auto w-40 max-w-full"
+      />
+      <TypographyH4 className="font-semibold">
+        Your email will be sent out shortly!
+      </TypographyH4>
+      <Button
+        variant="outline"
+        className="h-10 w-full max-w-xs"
+        onClick={onBack}
+      >
+        <ArrowLeft className="size-4" />
+        Back to email marketing
+      </Button>
+    </div>
+  )
+}
+
 // Picks what a new email is about and which layout it starts from. Nothing is
-// composed yet — creating simply confirms the choice.
+// composed yet — creating hands the choice back to the page, which takes over
+// with a confirmation screen.
 export function CreateEmailDialog({
   open,
   onOpenChange,
+  onCreate,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onCreate: () => void
 }) {
   const [topic, setTopic] = React.useState<EmailTopic>('products')
-  const [template, setTemplate] = React.useState<TemplateId>(
-    RECOMMENDED_TEMPLATE,
-  )
+  const [template, setTemplate] =
+    React.useState<TemplateId>(RECOMMENDED_TEMPLATE)
 
   function handleOpenChange(next: boolean) {
     onOpenChange(next)
@@ -160,13 +213,6 @@ export function CreateEmailDialog({
       setTopic('products')
       setTemplate(RECOMMENDED_TEMPLATE)
     }
-  }
-
-  function handleCreate() {
-    onOpenChange(false)
-    setTopic('products')
-    setTemplate(RECOMMENDED_TEMPLATE)
-    toast.success('Email created')
   }
 
   return (
@@ -274,7 +320,13 @@ export function CreateEmailDialog({
           >
             Cancel
           </Button>
-          <Button className="h-10 flex-1" onClick={handleCreate}>
+          <Button
+            className="h-10 flex-1"
+            onClick={() => {
+              handleOpenChange(false)
+              onCreate()
+            }}
+          >
             Create email
           </Button>
         </DialogFooter>
