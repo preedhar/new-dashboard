@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ArrowLeft, ChevronRight, Mail, Plus, X } from 'lucide-react'
+import { ArrowLeft, ChevronRight, ImagePlus, Mail, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { cn } from '@/lib/utils'
@@ -31,6 +31,10 @@ import {
   TypographyH4,
   TypographyLarge,
 } from '@/components/ui/typography'
+import {
+  ChooseImageDialog,
+  type LibraryImage,
+} from '../components/choose-image-dialog'
 import type { ColumnDef } from '@tanstack/react-table'
 
 type EmailCampaign = {
@@ -386,6 +390,10 @@ export function AdminEmailMarketingPage() {
   const [mailingListOpen, setMailingListOpen] = React.useState(false)
   const [allowSubscribe, setAllowSubscribe] = React.useState(true)
 
+  // The image picked for the next email, kept so the picker reopens on it.
+  const [chooseImageOpen, setChooseImageOpen] = React.useState(false)
+  const [chosenImage, setChosenImage] = React.useState<LibraryImage | null>(null)
+
   function openEmail(id: string) {
     setSelectedEmailId(id)
     setPaneEmailId(id)
@@ -409,7 +417,27 @@ export function AdminEmailMarketingPage() {
         <TypographyH3 className="flex-1 text-center md:text-left">
           Email Marketing
         </TypographyH3>
-        {/* Mailing list: an icon button on mobile, a labelled button on desktop. */}
+        {/* Choose image and Mailing list: icon buttons on mobile, labelled
+            buttons on desktop. */}
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-lg"
+          aria-label="Choose image"
+          onClick={() => setChooseImageOpen(true)}
+          className="shrink-0 text-foreground md:hidden"
+        >
+          <ImagePlus className="size-5" />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setChooseImageOpen(true)}
+          className="hidden h-10 shrink-0 px-3 md:inline-flex"
+        >
+          <ImagePlus className="size-4" />
+          Choose image
+        </Button>
         <Button
           type="button"
           variant="outline"
@@ -436,6 +464,13 @@ export function AdminEmailMarketingPage() {
         onOpenChange={setMailingListOpen}
         allowSubscribe={allowSubscribe}
         onAllowSubscribeChange={setAllowSubscribe}
+      />
+
+      <ChooseImageDialog
+        open={chooseImageOpen}
+        onOpenChange={setChooseImageOpen}
+        value={chosenImage}
+        onChange={setChosenImage}
       />
 
       <TypographyLarge className="mb-1">Last 30 days</TypographyLarge>
