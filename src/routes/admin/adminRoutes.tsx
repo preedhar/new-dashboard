@@ -27,6 +27,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+import { STORE_DOMAIN } from './catalog'
 import { AdminCustomersPage } from './pages/AdminCustomersPage'
 import {
   AdminEmailMarketingPage,
@@ -98,6 +99,8 @@ export type AdminNavItem = {
     // shows an active state of its own (e.g. Online Store → Website, which
     // routes to the Website settings page under Settings).
     redirect?: boolean
+    // An external link leaves the dashboard entirely (e.g. the live storefront).
+    external?: boolean
   }[]
 }
 
@@ -176,6 +179,7 @@ export const appsAdminNav: AdminNavItem[] = [
       },
       { title: 'Checkouts', url: '/admin/apps/online-store/checkouts', icon: ReceiptText },
       { title: 'Website', url: '/admin/settings/website', icon: Globe, redirect: true },
+      { title: 'View store', url: `https://${STORE_DOMAIN}`, icon: Store, external: true },
     ],
   },
   {

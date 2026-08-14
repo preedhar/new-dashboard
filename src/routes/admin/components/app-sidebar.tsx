@@ -62,7 +62,7 @@ export function AppSidebar({ pathname, ...props }: AppSidebarProps) {
             <a
               href="/admin"
               data-active={pathname === "/admin"}
-              className="flex flex-1 flex-col items-center justify-center gap-1 rounded-md py-2 text-xs text-muted-foreground outline-hidden transition-colors hover:bg-[color-mix(in_oklch,var(--sidebar-accent),var(--sidebar-foreground)_5%)] hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[active=true]:bg-[color-mix(in_oklch,var(--sidebar-accent),var(--sidebar-foreground)_10%)] data-[active=true]:text-sidebar-accent-foreground"
+              className="flex flex-1 flex-col items-center justify-center gap-1 rounded-md py-2 text-xs text-muted-foreground outline-hidden transition-colors hover:bg-[color-mix(in_oklch,var(--sidebar-accent),var(--sidebar-foreground)_5%)] hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[active=true]:font-medium data-[active=true]:text-sidebar-foreground"
             >
               <img src="/cococart-logomark.svg" alt="Home" className="size-6 shrink-0" />
               <span>Home</span>

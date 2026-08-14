@@ -15,7 +15,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
-import { ChevronRightIcon } from "lucide-react"
+import { ArrowUpRightIcon, ChevronRightIcon } from "lucide-react"
 
 export function NavMain({
   items,
@@ -31,6 +31,10 @@ export function NavMain({
       title: string
       url: string
       isActive?: boolean
+      // Redirect and external links both leave this section, so they get an
+      // arrow to say so; external ones also open in a new tab.
+      redirect?: boolean
+      external?: boolean
     }[]
   }[]
   label?: string
@@ -81,8 +85,16 @@ export function NavMain({
                                 "data-[active=true]:bg-[color-mix(in_oklch,var(--sidebar-accent),var(--sidebar-foreground)_5%)]",
                             )}
                           >
-                            <a href={subItem.url}>
-                              <span>{subItem.title}</span>
+                            <a
+                              href={subItem.url}
+                              target={subItem.external ? "_blank" : undefined}
+                              rel={subItem.external ? "noreferrer" : undefined}
+                            >
+                              <span className="truncate">{subItem.title}</span>
+                              {subItem.redirect || subItem.external ? (
+                                // The button's own [&>svg] rules force size and color, so override both.
+                                <ArrowUpRightIcon className="size-3.5! shrink-0 text-current!" />
+                              ) : null}
                             </a>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>

@@ -11,9 +11,10 @@ export function MobileAppsMenu() {
   )
   const allApps = appsAdminNav.find((item) => item.url === "/admin/apps")
   // On mobile the Website page is dropped; the "All Apps" tile stands in for it.
-  // Website still lives in the desktop sidebar.
+  // Links that leave the dashboard (View store) are dropped too, to keep the row
+  // to four tiles. Both still live in the desktop sidebar.
   const pages = (onlineStore?.items ?? []).filter(
-    (page) => page.url !== "/admin/settings/website",
+    (page) => page.url !== "/admin/settings/website" && !page.external,
   )
 
   // "All Apps" shares the row as a final tile, styled like the app pages.
