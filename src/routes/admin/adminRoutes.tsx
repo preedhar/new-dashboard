@@ -34,6 +34,7 @@ import {
   AdminEmailDetailPage,
 } from './pages/AdminEmailMarketingPage'
 import { AdminLoyaltyPage } from './pages/AdminLoyaltyPage'
+import { AdminSharePage } from './pages/AdminSharePage'
 import { AdminOrdersAllPage, AdminOrderDetailPage } from './pages/AdminOrdersAllPage'
 import { AdminOrderEditPage } from './pages/AdminOrderEditPage'
 import { AdminOrdersSummaryPage } from './pages/AdminOrdersSummaryPage'
@@ -412,10 +413,7 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Share',
     title: 'Share',
     icon: Megaphone,
-    component: createAdminPlaceholder(
-      'Share',
-      'A future workspace for social links, campaign sharing, and promotional assets.',
-    ),
+    component: AdminSharePage,
   },
   {
     path: '/admin/marketing/discounts',
