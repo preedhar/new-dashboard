@@ -44,6 +44,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path === '/admin/apps/online-store/fulfillment/time-slots' ||
     activeRoute.path === '/admin/apps/online-store/calendar' ||
     activeRoute.path === '/admin/marketing/loyalty' ||
+    activeRoute.path === '/admin/marketing/share' ||
     activeRoute.path === '/admin/products' ||
     activeRoute.path === '/admin/products/new' ||
     activeRoute.path === '/admin/products/edit' ||
@@ -66,11 +67,14 @@ export function AdminPage({ pathname }: AdminPageProps) {
   // sub-menu even though it renders a form. The team settings page lives under
   // the same Settings section, so it keeps the primary bottom nav too. The
   // products page provides its own header (so it's in the list above) but is a
-  // primary section, so it also keeps the bottom nav.
+  // primary section, so it also keeps the bottom nav. The share page is the
+  // Marketing section's mobile hub, so it keeps the bottom nav and its section
+  // sub-menu too.
   const keepsBottomNav =
     activeRoute.path === '/admin/settings/store' ||
     activeRoute.path === '/admin/settings/team' ||
     activeRoute.path === '/admin/marketing/loyalty' ||
+    activeRoute.path === '/admin/marketing/share' ||
     activeRoute.path === '/admin/products'
   // The order and delivery detail pages provide their own back button and
   // render a full-bleed card, so the shared title/header and the section's
