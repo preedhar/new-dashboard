@@ -77,6 +77,7 @@ import { AdminQrCheckoutsPage } from './pages/AdminQrCheckoutsPage'
 import { AdminQrOrderFormPage } from './pages/AdminQrOrderFormPage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
+import { AdminHomeCardsPage } from './pages/AdminHomeCardsPage'
 import { AdminErrorPage } from './pages/AdminErrorPage'
 import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
 
@@ -202,6 +203,15 @@ export const adminRoutes: AdminRoute[] = [
     title: 'Dashboard',
     icon: Home,
     component: AdminOverviewPage,
+  },
+  // Handoff material rather than a merchant-facing page, so it's reachable by
+  // URL but stays out of the nav (like /admin/error).
+  {
+    path: '/admin/home-cards',
+    label: 'Home cards',
+    title: 'Home cards',
+    icon: LayoutGrid,
+    component: AdminHomeCardsPage,
   },
   {
     path: '/admin/orders',
