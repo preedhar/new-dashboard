@@ -19,6 +19,12 @@ function getPathname() {
     return '/signup'
   }
 
+  // The home card gallery lives in the admin shell, but the shorter path it was
+  // asked for still gets there.
+  if (pathname === '/home-cards') {
+    return '/admin/home-cards'
+  }
+
   if (pathname === APP_LINK_PATH) {
     return APP_LINK_PATH
   }
