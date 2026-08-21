@@ -1,3 +1,4 @@
+import { AppAlertBanner } from './components/app-alert-banner'
 import { AppSidebar } from './components/app-sidebar'
 import { MobileBottomNav } from './components/mobile-bottom-nav'
 import { MobileAppsMenu } from './components/mobile-apps-menu'
@@ -118,6 +119,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
       <AppSidebar pathname={activeRoute.path} />
       <SidebarInset className="min-w-0">
         <MobileHeader pathname={activeRoute.path} />
+        <AppAlertBanner />
         {showDesktopHeader ? (
           <header className="hidden h-16 shrink-0 items-center gap-2 border-b border-border px-4 md:flex">
             <Breadcrumb>
