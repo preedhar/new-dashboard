@@ -6,7 +6,9 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { SearchCommandDialog } from "./search-command-dialog"
+import { SetupGuideHintTooltip } from "./setup-guide-hint"
 import { UserMenuContent } from "./user-menu-content"
 
 const HIDE_THRESHOLD = 64
@@ -16,6 +18,7 @@ type MobileHeaderProps = {
 }
 
 export function MobileHeader({ pathname }: MobileHeaderProps) {
+  const isMobile = useIsMobile()
   const [hidden, setHidden] = React.useState(false)
   const [searchOpen, setSearchOpen] = React.useState(false)
   const lastScrollY = React.useRef(0)
@@ -67,18 +70,20 @@ export function MobileHeader({ pathname }: MobileHeaderProps) {
           <span className="truncate">Search</span>
         </button>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              aria-label="Account"
-              className="flex shrink-0 items-center justify-center rounded-full outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Avatar className="size-8">
-                <AvatarImage src="/haus-logo.png" alt="Account" />
-                <AvatarFallback>DL</AvatarFallback>
-              </Avatar>
-            </button>
-          </DropdownMenuTrigger>
+          <SetupGuideHintTooltip side="bottom" enabled={isMobile}>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="Account"
+                className="flex shrink-0 items-center justify-center rounded-full outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Avatar className="size-8">
+                  <AvatarImage src="/haus-logo.png" alt="Account" />
+                  <AvatarFallback>DL</AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+          </SetupGuideHintTooltip>
           <UserMenuContent side="bottom" align="end" className="min-w-56 rounded-lg" />
         </DropdownMenu>
       </header>

@@ -111,9 +111,10 @@ export const ALL_PROMO_TILES: PromoTile[] = [
   },
 ]
 
-// The cards live on home today. The upsell leads, so it takes the grid's first
-// cell, with the verified badge tip beside it.
-const HOME_TILE_IDS = ['upsell-annual', 'tip-verified-badge']
+// The cards live on home today. The annual-billing upsell used to lead the row,
+// but a second setup guide has taken its cell, so only the verified badge tip
+// is left here. The upsell itself stays in the gallery above.
+const HOME_TILE_IDS = ['tip-verified-badge']
 
 // Ordered by HOME_TILE_IDS rather than by the catalogue above, so home keeps its
 // own running order as cards are added to or reordered in the gallery.
