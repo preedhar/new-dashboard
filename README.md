@@ -21,3 +21,19 @@ Open `http://127.0.0.1:5173/signup`.
 6. Email
 
 The flow is intentionally linear so every screen is easy to inspect during engineering handoff.
+
+## Auth screens
+
+`/login` — email and password, based on the shadcn `login-05` block with the SSO
+buttons removed. "Send me a code" (beside the password label) swaps the form for
+a 6-digit one-time code, which can be resent or abandoned via "Change email
+address". The prototype accepts `123456`; anything else shows the error state.
+
+`/reset-password` — request a link, a "check your email" screen, then the new
+password step and a confirmation. Since there is no mail to open, the sent
+screen has an "Open the reset link (for prototype only)" button that stands in
+for the emailed link; visiting `/reset-password?token=…` directly lands on the
+same step.
+
+Both screens are mocked end to end — a successful login just navigates to
+`/admin`.

@@ -6,17 +6,23 @@ import { APP_LINK_PATH } from '@/lib/app-links'
 import { AdminPage } from '@/routes/admin/AdminPage'
 import { getAdminRedirect } from '@/routes/admin/adminRoutes'
 import { AppRedirectPage } from '@/routes/app/AppRedirectPage'
+import { LoginPage } from '@/routes/auth/LoginPage'
+import { ResetPasswordPage } from '@/routes/auth/ResetPasswordPage'
 import { SignupPage } from '@/routes/signup/SignupPage'
 import './App.css'
 
 function getPathname() {
   const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
 
-  // Signup and the public app link stay reachable by visiting them directly;
-  // everything else that isn't an admin route — the root and any unknown path —
-  // lands on /admin.
+  // Signup, the auth screens and the public app link stay reachable by visiting
+  // them directly; everything else that isn't an admin route — the root and any
+  // unknown path — lands on /admin.
   if (pathname === '/signup') {
     return '/signup'
+  }
+
+  if (pathname === '/login' || pathname === '/reset-password') {
+    return pathname
   }
 
   // The card galleries live in the admin shell, but the shorter paths they were
@@ -66,6 +72,14 @@ function App() {
   const route = useMemo(() => {
     if (pathname === '/signup') {
       return <SignupPage />
+    }
+
+    if (pathname === '/login') {
+      return <LoginPage />
+    }
+
+    if (pathname === '/reset-password') {
+      return <ResetPasswordPage />
     }
 
     if (pathname === APP_LINK_PATH) {
