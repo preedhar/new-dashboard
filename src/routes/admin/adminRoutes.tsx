@@ -78,6 +78,7 @@ import { AdminQrOrderFormPage } from './pages/AdminQrOrderFormPage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
 import { AdminHomeCardsPage } from './pages/AdminHomeCardsPage'
+import { AdminSetupCardsPage } from './pages/AdminSetupCardsPage'
 import { AdminErrorPage } from './pages/AdminErrorPage'
 import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
 
@@ -212,6 +213,13 @@ export const adminRoutes: AdminRoute[] = [
     title: 'Home cards',
     icon: LayoutGrid,
     component: AdminHomeCardsPage,
+  },
+  {
+    path: '/admin/setup-cards',
+    label: 'Setup cards',
+    title: 'Setup cards',
+    icon: LayoutGrid,
+    component: AdminSetupCardsPage,
   },
   {
     path: '/admin/orders',

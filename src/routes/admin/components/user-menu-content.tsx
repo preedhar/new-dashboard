@@ -1,9 +1,9 @@
 import * as React from "react"
 import {
   CheckIcon,
+  CircleCheckBigIcon,
   CircleUserIcon,
   LanguagesIcon,
-  ListChecksIcon,
   LogOutIcon,
   Smile,
 } from "lucide-react"
@@ -66,8 +66,8 @@ export function UserMenuContent({
             hidden on this visit. */}
         <DropdownMenuItem asChild>
           <a href="/admin">
-            <ListChecksIcon />
-            Setup guide
+            <CircleCheckBigIcon />
+            Setup Guide
           </a>
         </DropdownMenuItem>
         <DropdownMenuItem>
