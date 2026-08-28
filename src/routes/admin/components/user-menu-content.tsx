@@ -3,6 +3,7 @@ import {
   CheckIcon,
   CircleUserIcon,
   LanguagesIcon,
+  ListChecksIcon,
   LogOutIcon,
   Smile,
 } from "lucide-react"
@@ -60,6 +61,14 @@ export function UserMenuContent({
         <DropdownMenuItem onSelect={() => setProfileOpen(true)}>
           <CircleUserIcon />
           Profile
+        </DropdownMenuItem>
+        {/* A plain link, so it reloads home and brings back a guide that was
+            hidden on this visit. */}
+        <DropdownMenuItem asChild>
+          <a href="/admin">
+            <ListChecksIcon />
+            Setup guide
+          </a>
         </DropdownMenuItem>
         <DropdownMenuItem>
           <Smile />
