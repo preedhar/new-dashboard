@@ -35,5 +35,11 @@ screen has an "Open the reset link (for prototype only)" button that stands in
 for the emailed link; visiting `/reset-password?token=…` directly lands on the
 same step.
 
-Both screens are mocked end to end — a successful login just navigates to
+`/activate-account` — where an invited user lands from their activation email:
+name, password and confirm password in one form, then a confirmation that links
+back to login. Passwords need at least 8 characters and the two entries must
+match. Unlike `/signup` it takes a password, and unlike `/reset-password` it
+names the account as well.
+
+All three screens are mocked end to end — a successful login just navigates to
 `/admin`.
