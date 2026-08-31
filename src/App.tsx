@@ -6,6 +6,7 @@ import { APP_LINK_PATH } from '@/lib/app-links'
 import { AdminPage } from '@/routes/admin/AdminPage'
 import { getAdminRedirect } from '@/routes/admin/adminRoutes'
 import { AppRedirectPage } from '@/routes/app/AppRedirectPage'
+import { ActivateAccountPage } from '@/routes/auth/ActivateAccountPage'
 import { LoginPage } from '@/routes/auth/LoginPage'
 import { ResetPasswordPage } from '@/routes/auth/ResetPasswordPage'
 import { SignupPage } from '@/routes/signup/SignupPage'
@@ -21,7 +22,11 @@ function getPathname() {
     return '/signup'
   }
 
-  if (pathname === '/login' || pathname === '/reset-password') {
+  if (
+    pathname === '/login' ||
+    pathname === '/reset-password' ||
+    pathname === '/activate-account'
+  ) {
     return pathname
   }
 
@@ -80,6 +85,10 @@ function App() {
 
     if (pathname === '/reset-password') {
       return <ResetPasswordPage />
+    }
+
+    if (pathname === '/activate-account') {
+      return <ActivateAccountPage />
     }
 
     if (pathname === APP_LINK_PATH) {
