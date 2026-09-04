@@ -174,12 +174,12 @@ export const appsAdminNav: AdminNavItem[] = [
     url: '/admin/apps/online-store',
     icon: Globe,
     items: [
-      { title: 'Fulfillment', url: '/admin/apps/online-store/fulfillment', icon: Truck },
       {
         title: 'Calendar',
         url: '/admin/apps/online-store/calendar',
         icon: CalendarDays,
       },
+      { title: 'Fulfillment', url: '/admin/apps/online-store/fulfillment', icon: Truck },
       { title: 'Checkouts', url: '/admin/apps/online-store/checkouts', icon: ReceiptText },
       { title: 'Website', url: '/admin/settings/website', icon: Globe, redirect: true },
       { title: 'View store', url: `https://${STORE_DOMAIN}`, icon: Store, external: true },

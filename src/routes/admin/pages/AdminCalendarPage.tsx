@@ -593,6 +593,13 @@ export function AdminCalendarPage() {
     }
     return dates
   }, [today])
+  // Open dates — every day the merchant hasn't closed — get a green background.
+  // Past days are tinted too, but the disabled styling fades them out.
+  const isOpenDate = React.useCallback(
+    (date: Date) => !closedDates.some((closed) => isSameDay(closed, date)),
+    [closedDates],
+  )
+
   // The gray dot only shows on open (not closed) dates that have a saved value.
   const valueDots = React.useMemo(
     () =>
@@ -846,8 +853,8 @@ export function AdminCalendarPage() {
 
         <div className="flex w-full flex-col gap-8 xl:flex-row xl:items-start">
           {/* Left column: a month-by-month calendar for hand-picking one or more
-              available dates. 350px on desktop, full-width when stacked below xl. */}
-          <div className="flex w-full flex-col gap-3 xl:sticky xl:top-8 xl:w-[350px] xl:shrink-0 xl:self-start">
+              available dates. 440px on desktop, full-width when stacked below xl. */}
+          <div className="flex w-full flex-col gap-3 xl:sticky xl:top-8 xl:w-[440px] xl:shrink-0 xl:self-start">
             <TypographyLarge>Select dates</TypographyLarge>
             <Card className="items-center gap-4 py-4 shadow-none">
               <Calendar
@@ -858,14 +865,33 @@ export function AdminCalendarPage() {
                 onMonthChange={setDisplayMonth}
                 disabled={{ before: today }}
                 startMonth={today}
-                classNames={{ today: '' }}
-                modifiers={{ closed: closedDates, hasValue: valueDots }}
+                classNames={{
+                  today: '',
+                  // 8px between columns and between rows, with 40px cells (up
+                  // from 36px) so each date has more room around its number.
+                  weekdays: 'flex gap-2',
+                  weekday: 'w-10 text-[0.8rem] font-normal text-muted-foreground',
+                  week: 'mt-2 flex w-full gap-2',
+                  day: 'relative size-10 p-0 text-center text-sm focus-within:relative focus-within:z-20 [&>button]:size-10',
+                  // Selection is a primary (amber) outline rather than a fill,
+                  // so a selected date keeps its open/closed background.
+                  selected:
+                    '[&>button]:border-2 [&>button]:border-primary [&>button]:font-medium',
+                  // Past dates keep their green/red tint but fade to a
+                  // washed-out version of it, and drop the button's hover state
+                  // that would otherwise imply they're still selectable.
+                  disabled:
+                    'opacity-40 [&>button]:pointer-events-none',
+                }}
+                modifiers={{ closed: closedDates, open: isOpenDate, hasValue: valueDots }}
                 modifiersClassNames={{
-                  // Closed dates read as red + struck through. Only the text is
-                  // overridden, so a closed date that's also selected keeps the
-                  // primary (amber) selection background.
+                  // Closed dates read as red + struck through, open ones as
+                  // green — past dates included, faded by the disabled styling.
+                  // Both tints stay on when the date is selected: the selection
+                  // outline sits on top of them.
                   closed:
-                    '[&>button]:!text-destructive [&>button]:line-through',
+                    '[&>button]:!text-destructive [&>button]:line-through [&>button]:bg-destructive/10 [&>button]:hover:bg-destructive/20',
+                  open: '[&>button]:bg-success [&>button]:text-success-foreground [&>button]:hover:bg-success-border',
                   // A small gray dot below the number marks a saved value.
                   hasValue:
                     '[&>button]:relative [&>button]:after:absolute [&>button]:after:bottom-1 [&>button]:after:left-1/2 [&>button]:after:size-1 [&>button]:after:-translate-x-1/2 [&>button]:after:rounded-full [&>button]:after:bg-muted-foreground [&>button]:after:content-[""]',
