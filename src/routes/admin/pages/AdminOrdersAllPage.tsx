@@ -48,6 +48,7 @@ import globeIcon from '@/assets/channels/globe.png'
 import monitorIcon from '@/assets/channels/monitor.png'
 import qrIcon from '@/assets/channels/qr.png'
 import adminIcon from '@/assets/channels/admin.png'
+import mavenIcon from '@/assets/channels/maven.png'
 import PendingIcon from '@/assets/status/pending.svg?react'
 import PaidIcon from '@/assets/status/paid.svg?react'
 import FulfilledIcon from '@/assets/status/fulfilled.svg?react'
@@ -167,6 +168,15 @@ const CHANNEL_ICON_SRC: Record<Channel, string> = {
   POS: monitorIcon,
   'QR Code Ordering': qrIcon,
   'Admin Dashboard': adminIcon,
+}
+
+// Connected apps that can place an order through a channel. Their logo is
+// badged onto the channel icon in the list, and shown on its own row in the
+// order detail.
+type OrderApp = 'Maven'
+
+const APP_ICON_SRC: Record<OrderApp, string> = {
+  Maven: mavenIcon,
 }
 
 export const CHANNEL_OPTIONS: FilterOption[] = (Object.keys(CHANNEL_ICON_SRC) as Channel[]).map(
@@ -477,6 +487,41 @@ type Order = {
   status: OrderStatus
   address?: string[]
   gift?: { to: string; message: string }
+  app?: OrderApp
+}
+
+// The channel the order came through, with the connected app (if any) badged on
+// its bottom-right corner.
+function ChannelIcon({
+  order,
+  className,
+  badgeClassName,
+}: {
+  order: Order
+  className?: string
+  badgeClassName?: string
+}) {
+  return (
+    <span className="relative inline-flex shrink-0">
+      <img src={CHANNEL_ICON_SRC[order.channel]} alt={order.channel} className={className} />
+      {order.app ? (
+        // The logo sits inside the circle rather than filling it, so neither the
+        // border nor the border radius clips it.
+        <span
+          className={cn(
+            'absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full border border-border bg-background',
+            badgeClassName,
+          )}
+        >
+          <img
+            src={APP_ICON_SRC[order.app]}
+            alt={order.app}
+            className="size-[72%] object-contain"
+          />
+        </span>
+      ) : null}
+    </span>
+  )
 }
 
 function formatDate(date: Date) {
@@ -674,6 +719,10 @@ const ORDERS: Order[] = Array.from({ length: 40 }, (_, i) => {
         }
       : undefined
 
+  // A single order came in through the Maven app. Index 3 is the first Online
+  // Store order on the first page, so the badge is visible on landing.
+  const app = channel === 'Online Store' && i === 3 ? ('Maven' as const) : undefined
+
   return {
     id: getOrderId(channel, customer, i),
     channel,
@@ -687,6 +736,7 @@ const ORDERS: Order[] = Array.from({ length: 40 }, (_, i) => {
     status,
     address,
     gift,
+    app,
   }
 })
 
@@ -1981,14 +2031,22 @@ function OrderDetailPane({
       </div>
 
       <TabsContent value="order">
-      {/* Channel + ordered time */}
-      <div className="flex items-center justify-between gap-2 border-b border-border p-4 text-sm text-muted-foreground md:justify-start">
-        <span className="flex items-center gap-1">
-          <img src={CHANNEL_ICON_SRC[order.channel]} alt="" className="size-5" />
-          {order.channel}
-        </span>
-        <span aria-hidden className="hidden size-1 rounded-full bg-muted-foreground/40 md:block" />
-        <span>{formatDateTime(order.orderedAt)}</span>
+      {/* Channel + ordered time, then the connected app on its own row */}
+      <div className="flex flex-col gap-1 border-b border-border p-4 text-sm text-muted-foreground">
+        <div className="flex items-center justify-between gap-2 md:justify-start">
+          <span className="flex items-center gap-1">
+            <img src={CHANNEL_ICON_SRC[order.channel]} alt="" className="size-5 shrink-0" />
+            {order.channel}
+          </span>
+          <span aria-hidden className="hidden size-1 rounded-full bg-muted-foreground/40 md:block" />
+          <span>{formatDateTime(order.orderedAt)}</span>
+        </div>
+        {order.app ? (
+          <span className="flex items-center gap-1">
+            <img src={APP_ICON_SRC[order.app]} alt="" className="size-5 shrink-0" />
+            via {order.app} Ads
+          </span>
+        ) : null}
       </div>
 
       {/* Fulfillment */}
@@ -2296,13 +2354,11 @@ function getOrderColumns(
         <div className="flex items-center gap-4">
           <Tooltip>
             <TooltipTrigger asChild>
-              <img
-                src={CHANNEL_ICON_SRC[order.channel]}
-                alt={order.channel}
-                className="size-9 shrink-0"
-              />
+              <ChannelIcon order={order} className="size-9" badgeClassName="size-6" />
             </TooltipTrigger>
-            <TooltipContent>{order.channel}</TooltipContent>
+            <TooltipContent>
+              {order.app ? `${order.channel} · ${order.app}` : order.channel}
+            </TooltipContent>
           </Tooltip>
           <div className="min-w-0">
             <p className="font-semibold text-foreground">{order.id}</p>
@@ -3569,11 +3625,7 @@ export function AdminOrdersAllPage() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <img
-                      src={CHANNEL_ICON_SRC[order.channel]}
-                      alt={order.channel}
-                      className="size-6 shrink-0"
-                    />
+                    <ChannelIcon order={order} className="size-6" badgeClassName="size-4" />
                     <p className="text-sm font-semibold text-foreground">{order.id}</p>
                   </div>
                   {/* Stop propagation so changing status doesn't toggle the card. */}
