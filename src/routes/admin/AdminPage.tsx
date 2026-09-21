@@ -104,8 +104,11 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/orders/analytics' &&
     activeRoute.path !== '/admin/marketing/email' &&
     activeRoute.path !== '/admin/apps/pos' &&
+    activeRoute.path !== '/admin/referrals' &&
     !isOrderDetailPage &&
     !isOrderFormPage
+  // The All Apps and referrals pages render their own header (a mobile back
+  // button beside a centred title), so the shared title is suppressed for them.
   const showPageTitle =
     activeRoute.path !== '/admin' &&
     activeRoute.path !== '/admin/apps' &&
@@ -118,6 +121,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/orders/analytics' &&
     activeRoute.path !== '/admin/marketing/email' &&
     activeRoute.path !== '/admin/apps/pos' &&
+    activeRoute.path !== '/admin/referrals' &&
     !isOrderDetailPage &&
     !isOrderFormPage
 
@@ -154,6 +158,11 @@ export function AdminPage({ pathname }: AdminPageProps) {
                 ? 'pb-0 pt-0'
                 : 'px-4 pb-24 pt-5 sm:px-6 sm:pb-24 md:pb-6 lg:px-8 lg:pb-8',
               isOrderFormPage && 'pt-4 sm:pt-8 lg:pt-8',
+              // The All Apps and referrals pages open straight onto their own
+              // centred title, so on desktop it sits 32px below the top edge.
+              (activeRoute.path === '/admin/apps' ||
+                activeRoute.path === '/admin/referrals') &&
+                'md:pt-8',
             )}
           >
             {showPageTitle ? (
