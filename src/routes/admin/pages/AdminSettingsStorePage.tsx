@@ -1,5 +1,6 @@
 import * as React from 'react'
 import {
+  ArrowLeft,
   Bell,
   Clock,
   Coins,
@@ -35,6 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { TypographyLarge } from '@/components/ui/typography'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 
 type IconComponent = React.ComponentType<{ className?: string }>
@@ -257,7 +259,27 @@ function SaveRow({ onClick }: { onClick: () => void }) {
   )
 }
 
+// On mobile the store route is the Settings hub: AdminPage renders the section
+// and apps menus there, and the store settings themselves live behind the hub's
+// "Store" tile (/admin/settings/store/details). On desktop the sidebar handles
+// navigation, so the settings render on the store route as before.
 export function AdminSettingsStorePage() {
+  const isMobile = useIsMobile()
+
+  if (isMobile) {
+    return null
+  }
+
+  return <StoreSettings />
+}
+
+// The hub's "Store" tile lands here, so on mobile the settings get a page of
+// their own (with a back button, like the other Settings subpages).
+export function AdminSettingsStoreDetailsPage() {
+  return <StoreSettings />
+}
+
+function StoreSettings() {
   // `form` holds the working values; `saved` holds what's persisted. Text fields
   // diverge until their Save button commits them; selects and switches commit
   // immediately, so they stay in sync.
@@ -359,10 +381,20 @@ export function AdminSettingsStorePage() {
   return (
     <>
       <form onSubmit={(event) => event.preventDefault()} className="w-full">
-        {/* The store page is the Settings section hub: on mobile it's the
-            Settings tab's destination (with the section sub-menu above it) and
-            on desktop the sidebar covers navigation, so there's no back button. */}
-        <header className="mb-8 flex items-center justify-center">
+        <header className="relative mb-8 flex items-center justify-center">
+          {/* Back button is only shown on mobile, where these settings are a
+              subpage of the Settings hub; on desktop the sidebar covers
+              navigation. */}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-lg"
+            aria-label="Go back"
+            onClick={() => window.history.back()}
+            className="absolute left-0 md:hidden"
+          >
+            <ArrowLeft className="size-5" />
+          </Button>
           <h1 className="text-2xl font-semibold tracking-normal text-neutral-900">
             Store
           </h1>

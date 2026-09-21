@@ -63,7 +63,10 @@ import { AdminSettingsPaymentsPhNewPage } from './pages/AdminPaymentsPhNewPage'
 import { AdminSettingsPaymentsPhProgressPage } from './pages/AdminPaymentsPhProgressPage'
 import { AdminSettingsPaymentsPhFailedPage } from './pages/AdminPaymentsPhFailedPage'
 import { AdminSettingsPaymentsPhSetupPage } from './pages/AdminPaymentsPhSetupPage'
-import { AdminSettingsStorePage } from './pages/AdminSettingsStorePage'
+import {
+  AdminSettingsStoreDetailsPage,
+  AdminSettingsStorePage,
+} from './pages/AdminSettingsStorePage'
 import { AdminSettingsWebsitePage } from './pages/AdminSettingsWebsitePage'
 import { AdminSettingsWebsiteAppearancePage } from './pages/AdminSettingsWebsiteAppearancePage'
 import { AdminSettingsWebsiteCustomDomainPage } from './pages/AdminSettingsWebsiteCustomDomainPage'
@@ -77,6 +80,7 @@ import { AdminQrCheckoutsPage } from './pages/AdminQrCheckoutsPage'
 import { AdminQrOrderFormPage } from './pages/AdminQrOrderFormPage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
+import { AdminReferralsPage } from './pages/AdminReferralsPage'
 import { AdminHomeCardsPage } from './pages/AdminHomeCardsPage'
 import { AdminSetupCardsPage } from './pages/AdminSetupCardsPage'
 import { AdminErrorPage } from './pages/AdminErrorPage'
@@ -99,8 +103,8 @@ export type AdminNavItem = {
     url: string
     icon?: LucideIcon
     // A redirect link points at a page owned by another nav item, so it never
-    // shows an active state of its own (e.g. Online Store → Website, which
-    // routes to the Website settings page under Settings).
+    // shows an active state of its own (e.g. Settings → Calendar, which routes
+    // to the calendar page under Online Store).
     redirect?: boolean
     // An external link leaves the dashboard entirely (e.g. the live storefront).
     external?: boolean
@@ -163,7 +167,12 @@ export const primaryAdminNav: AdminNavItem[] = [
       { title: 'Website', url: '/admin/settings/website', icon: Globe },
       { title: 'Payments', url: '/admin/settings/payments', icon: CreditCard },
       { title: 'Team', url: '/admin/settings/team', icon: Users },
-      { title: 'Billing', url: '/admin/settings/billing', icon: ReceiptText },
+      {
+        title: 'Calendar',
+        url: '/admin/apps/online-store/calendar',
+        icon: CalendarDays,
+        redirect: true,
+      },
     ],
   },
 ]
@@ -181,7 +190,6 @@ export const appsAdminNav: AdminNavItem[] = [
       },
       { title: 'Fulfillment', url: '/admin/apps/online-store/fulfillment', icon: Truck },
       { title: 'Checkouts', url: '/admin/apps/online-store/checkouts', icon: ReceiptText },
-      { title: 'Website', url: '/admin/settings/website', icon: Globe, redirect: true },
       { title: 'View store', url: `https://${STORE_DOMAIN}`, icon: Store, external: true },
     ],
   },
@@ -576,6 +584,15 @@ export const adminRoutes: AdminRoute[] = [
     component: AdminSettingsStorePage,
   },
   {
+    // Mobile only: the store route is the Settings hub on small screens, so the
+    // settings themselves get their own path behind the hub's "Store" tile.
+    path: '/admin/settings/store/details',
+    label: 'Store',
+    title: 'Store',
+    icon: Settings,
+    component: AdminSettingsStoreDetailsPage,
+  },
+  {
     path: '/admin/settings/team',
     label: 'Team',
     title: 'Team',
@@ -664,6 +681,15 @@ export const adminRoutes: AdminRoute[] = [
     title: 'POS',
     icon: Monitor,
     component: AdminPosPage,
+  },
+  // Reached from the sidebar card rather than the nav, so like the card
+  // galleries it stays out of primaryAdminNav / appsAdminNav.
+  {
+    path: '/admin/referrals',
+    label: 'Refer & Earn',
+    title: 'Refer & Earn',
+    icon: Gift,
+    component: AdminReferralsPage,
   },
   {
     path: '/admin/error',

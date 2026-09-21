@@ -5,6 +5,7 @@ import * as React from "react"
 import { NavMain } from "./nav-main"
 import { NavUser } from "./nav-user"
 import { SearchCommandDialog } from "./search-command-dialog"
+import { ReferralCard, SHOW_REFERRAL_CARD } from "./referral-card"
 import { appsAdminNav, primaryAdminNav, type AdminNavItem } from "../adminRoutes"
 import {
   Sidebar,
@@ -81,7 +82,10 @@ export function AppSidebar({ pathname, ...props }: AppSidebarProps) {
           <NavMain items={primaryItems} />
           <NavMain items={appItems} label="Apps" />
         </SidebarContent>
-        <SidebarFooter>
+        {/* The footer's default gap-2 sits the referral card too close to the
+            user menu below it, so it's widened to 16px. */}
+        <SidebarFooter className="gap-4">
+          {SHOW_REFERRAL_CARD ? <ReferralCard /> : null}
           <NavUser user={data.user} />
         </SidebarFooter>
       </Sidebar>

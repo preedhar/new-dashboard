@@ -4,6 +4,7 @@ import { MobileBottomNav } from './components/mobile-bottom-nav'
 import { MobileAppsMenu } from './components/mobile-apps-menu'
 import { MobileHeader } from './components/mobile-header'
 import { MobileSectionMenu } from './components/mobile-section-menu'
+import { ReferralCard, SHOW_REFERRAL_CARD } from './components/referral-card'
 import { SetupGuideHintProvider } from './components/setup-guide-hint'
 import {
   Breadcrumb,
@@ -42,6 +43,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path === '/admin/orders/edit/automated' ||
     activeRoute.path === '/admin/orders/new' ||
     activeRoute.path === '/admin/settings/store' ||
+    activeRoute.path === '/admin/settings/store/details' ||
     activeRoute.path === '/admin/settings/website' ||
     activeRoute.path === '/admin/settings/website/appearance' ||
     activeRoute.path === '/admin/settings/website/custom-domain' ||
@@ -160,6 +162,25 @@ export function AdminPage({ pathname }: AdminPageProps) {
                   {activeRoute.title}
                 </h1>
               </header>
+            ) : null}
+
+            {/* The Settings hub no longer renders a page of its own on mobile
+                (the store form moved behind its "Store" tile), so it gets a
+                title of its own above the menus. */}
+            {activeRoute.path === '/admin/settings/store' ? (
+              <>
+                <header className="flex items-center justify-center md:hidden">
+                  <h1 className="text-2xl font-semibold tracking-normal text-neutral-900">
+                    Settings
+                  </h1>
+                </header>
+                {/* The referral promo the sidebar carries on desktop. There's no
+                    sidebar on mobile, so the hub shows it under its title, on a
+                    grey fill rather than the sidebar card's white one. */}
+                {SHOW_REFERRAL_CARD ? (
+                  <ReferralCard className="bg-muted md:hidden" />
+                ) : null}
+              </>
             ) : null}
 
             <MobileSectionMenu pathname={activeRoute.path} />
