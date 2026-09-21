@@ -80,6 +80,7 @@ import { AdminQrCheckoutsPage } from './pages/AdminQrCheckoutsPage'
 import { AdminQrOrderFormPage } from './pages/AdminQrOrderFormPage'
 import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
+import { AdminReferralsPage } from './pages/AdminReferralsPage'
 import { AdminHomeCardsPage } from './pages/AdminHomeCardsPage'
 import { AdminSetupCardsPage } from './pages/AdminSetupCardsPage'
 import { AdminErrorPage } from './pages/AdminErrorPage'
@@ -680,6 +681,15 @@ export const adminRoutes: AdminRoute[] = [
     title: 'POS',
     icon: Monitor,
     component: AdminPosPage,
+  },
+  // Reached from the sidebar card rather than the nav, so like the card
+  // galleries it stays out of primaryAdminNav / appsAdminNav.
+  {
+    path: '/admin/referrals',
+    label: 'Refer & Earn',
+    title: 'Refer & Earn',
+    icon: Gift,
+    component: AdminReferralsPage,
   },
   {
     path: '/admin/error',
