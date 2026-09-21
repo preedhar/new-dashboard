@@ -179,7 +179,9 @@ function initialsFor(name: string) {
 // Each row shows the shop's logo, its name with its status below (in green
 // while active), its next payout with its expected day below (only an active
 // shop has one), and on the right what it has paid out so far (nothing yet
-// while on trial).
+// while on trial). On a phone, where there's no room for the payout column,
+// the next payout drops to a single line under the row, lined up with the
+// name.
 function ReferralsList({ referrals }: { referrals: Referral[] }) {
   return (
     <section aria-labelledby="referrals-heading" className="mx-auto w-full max-w-[600px]">
@@ -188,7 +190,7 @@ function ReferralsList({ referrals }: { referrals: Referral[] }) {
       </TypographyLarge>
       <ul className="divide-y divide-border/50">
         {referrals.map((referral) => (
-          <li key={referral.id} className="flex items-center gap-3 py-3">
+          <li key={referral.id} className="flex flex-wrap items-center gap-x-3 py-3">
             <Avatar>
               <AvatarImage src={REFERRAL_LOGO_PLACEHOLDER} alt="" />
               <AvatarFallback>{initialsFor(referral.shopName)}</AvatarFallback>
@@ -204,7 +206,7 @@ function ReferralsList({ referrals }: { referrals: Referral[] }) {
                 {referral.status}
               </p>
             </div>
-            <div className="w-32 shrink-0 text-right text-muted-foreground">
+            <div className="hidden w-32 shrink-0 text-right text-muted-foreground md:block">
               {referral.nextPayout ? (
                 <>
                   <p className="text-sm text-foreground">${referral.nextPayout.amount}</p>
@@ -220,6 +222,12 @@ function ReferralsList({ referrals }: { referrals: Referral[] }) {
                 </>
               )}
             </div>
+            {referral.nextPayout ? (
+              <p className="mt-2 basis-full pl-11 text-xs text-muted-foreground md:hidden">
+                Next payout: <span className="text-foreground">${referral.nextPayout.amount}</span>{' '}
+                · Expected {formatPayoutDate(referral.nextPayout.date)}
+              </p>
+            ) : null}
           </li>
         ))}
       </ul>
