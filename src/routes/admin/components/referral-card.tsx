@@ -2,10 +2,10 @@ import moneyImage from '@/assets/admin/money.png'
 
 import { cn } from '@/lib/utils'
 
-// The referral card is kept around but hidden for now. Flip this to true to
-// bring it back in both places it appears: the desktop sidebar footer, above the
-// user menu, and the top of the mobile Settings page.
-export const SHOW_REFERRAL_CARD: boolean = false
+// Flip this to false to hide the referral card in both places it appears: the
+// desktop sidebar footer, above the user menu, and the top of the mobile
+// Settings page.
+export const SHOW_REFERRAL_CARD: boolean = true
 
 // The referral promo. It reuses the artwork from the "Turn more visitors into
 // buyers" home card, laid out as a row — art on the left, title beside it — so
@@ -29,7 +29,7 @@ export function ReferralCard({ className }: { className?: string }) {
           in it rather than trailing off the art. It sits beside the art in the
           sidebar, where the card is only as wide as the nav. */}
       <span className="flex-1 text-center leading-5 md:flex-none md:text-left">
-        Refer &amp; Earn $500
+        Refer &amp; Earn $200
       </span>
       {/* Balances the art so the title centres on the card itself, not on the
           space left over beside it. */}
