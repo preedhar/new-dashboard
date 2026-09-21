@@ -1,18 +1,53 @@
 import { cn } from "@/lib/utils"
+import { MobileMenuList } from "./mobile-menu-list"
 import { primaryAdminNav } from "../adminRoutes"
 
 type MobileSectionMenuProps = {
   pathname: string
 }
 
+// A hub page normally has no entry of its own, since it's the page you're on.
+// Settings is the exception: its store form moved off the hub onto a path of
+// its own, so the hub links to it like any other subpage.
+const HUB_PAGE_PATHS: Record<string, string> = {
+  "/admin/settings/store": "/admin/settings/store/details",
+}
+
+// The Settings hub lists its pages as a labelled vertical list, matching the
+// apps list below it. Every other section keeps the icon-tile row.
+const LIST_MENU_LABELS: Record<string, string> = {
+  "/admin/settings/store": "General",
+}
+
 // On mobile the sidebar is hidden, so a section's first subpage doubles as its
 // hub: it shows a menu linking to the other subpages in that parent section.
 export function MobileSectionMenu({ pathname }: MobileSectionMenuProps) {
   const section = primaryAdminNav.find((item) => item.url === pathname)
-  const subpages = section?.items?.filter((sub) => sub.url !== section.url) ?? []
+  const subpages =
+    section?.items
+      ?.map((sub) =>
+        sub.url === section.url && HUB_PAGE_PATHS[sub.url]
+          ? { ...sub, url: HUB_PAGE_PATHS[sub.url] }
+          : sub,
+      )
+      // Redirect links (e.g. Settings -> Calendar) open a page owned by another
+      // section, which has its own list on this hub, so they're dropped here.
+      .filter((sub) => sub.url !== section.url && !sub.redirect) ?? []
 
   if (!section || subpages.length === 0) {
     return null
+  }
+
+  const listLabel = LIST_MENU_LABELS[pathname]
+
+  if (listLabel) {
+    return (
+      <MobileMenuList
+        ariaLabel={`${section.title} pages`}
+        label={listLabel}
+        items={subpages}
+      />
+    )
   }
 
   return (
