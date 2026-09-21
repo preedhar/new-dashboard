@@ -90,7 +90,7 @@ function getReferralLink(code: string) {
 }
 
 function getReferralMessage(code: string) {
-  return `I use Cococart to run my shop. Sign up with my code ${code} and get 25% off for 3 months: ${getReferralLink(code)}`
+  return `I use Cococart to run my shop. Sign up with my code ${code} and get 25% off your first month: ${getReferralLink(code)}`
 }
 
 function openInNewTab(url: string) {
@@ -366,7 +366,7 @@ function ReferralShareOptions({ code }: { code: string }) {
       onSelect: () =>
         window.location.assign(
           `mailto:?subject=${encodeURIComponent(
-            'Get 25% off Cococart for 3 months',
+            'Get 25% off your first month of Cococart',
           )}&body=${encodeURIComponent(message)}`,
         ),
     },
