@@ -5,6 +5,7 @@ import {
   Banknote,
   Copy,
   Handshake,
+  Info,
   Mail,
   Share,
   type LucideIcon,
@@ -18,6 +19,7 @@ import MessengerIcon from '@/assets/links/messenger.svg?react'
 import WhatsappIcon from '@/assets/links/whatsapp.svg?react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { TypographyH2, TypographyLarge } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'
@@ -38,39 +40,44 @@ const REFERRAL_TERMS_URL = 'https://www.cococart.co/terms-of-use'
 // A stand-in until codes come from the backend.
 const REFERRAL_CODE = 'HAU7ZW'
 
-type ReferralStatus = 'Trialing' | 'Active' | 'Canceled'
+type ReferralEventKind = 'payout' | 'canceled'
 
-type Referral = {
+type ReferralEvent = {
   id: string
   shopName: string
-  status: ReferralStatus
-  // What the referral has paid out so far. Left off while the shop has yet to
-  // subscribe.
-  earned?: number
-  // The payout due next, and the day it's paid out. Only an active shop has
-  // one.
-  nextPayout?: { amount: number; date: string }
+  kind: ReferralEventKind
+  // The day it happened, ISO so the list can sort on it as a string.
+  date: string
+  // Only a payout carries one. A share of the shop's plan, so it varies by
+  // shop rather than being a flat fee.
+  amount?: number
 }
 
-// Sample referrals until they come from the backend.
-const REFERRALS: Referral[] = [
-  { id: 'r1', shopName: 'Brew & Bean', status: 'Trialing' },
-  {
-    id: 'r2',
-    shopName: 'Sunny Bakes',
-    status: 'Active',
-    earned: 40,
-    nextPayout: { amount: 20, date: '2026-10-10' },
-  },
-  {
-    id: 'r3',
-    shopName: 'Kopi Corner',
-    status: 'Active',
-    earned: 120,
-    nextPayout: { amount: 20, date: '2026-10-15' },
-  },
-  { id: 'r4', shopName: 'Petal & Stem', status: 'Canceled', earned: 40 },
-  { id: 'r5', shopName: 'Noodle Bar', status: 'Trialing' },
+// What each kind of event reads as, following the shop's name.
+const EVENT_TEXT: Record<ReferralEventKind, string> = {
+  payout: 'earned you',
+  canceled: 'has cancelled',
+}
+
+// How far the shop is towards its next payout, until it comes from the
+// backend. Whole dollars, unlike the per-event amounts, which are a share of a
+// plan and so land on cents.
+const NEXT_PAYOUT = { earned: 12, target: 20 }
+
+// Sample activity until it comes from the backend. Order doesn't matter here:
+// the list sorts newest first. Each shop pays out monthly from the day it
+// subscribed, so the staggered sign-ups interleave the shops down the list.
+const REFERRAL_EVENTS: ReferralEvent[] = [
+  // Kopi Corner, the oldest: subscribed in June, paid out every month since.
+  { id: 'e1', shopName: 'Kopi Corner', kind: 'payout', date: '2026-07-20', amount: 14.75 },
+  { id: 'e2', shopName: 'Kopi Corner', kind: 'payout', date: '2026-08-20', amount: 14.75 },
+  { id: 'e3', shopName: 'Kopi Corner', kind: 'payout', date: '2026-09-20', amount: 14.75 },
+  // Sunny Bakes, subscribed a few weeks later.
+  { id: 'e4', shopName: 'Sunny Bakes', kind: 'payout', date: '2026-08-14', amount: 4.75 },
+  { id: 'e5', shopName: 'Sunny Bakes', kind: 'payout', date: '2026-09-14', amount: 4.75 },
+  // Petal & Stem, one payout in before it left.
+  { id: 'e6', shopName: 'Petal & Stem', kind: 'payout', date: '2026-09-02', amount: 14.75 },
+  { id: 'e7', shopName: 'Petal & Stem', kind: 'canceled', date: '2026-09-21' },
 ]
 
 // Every referral shows the Haus logo until shops' own logos come through.
@@ -143,24 +150,14 @@ export function AdminReferralsPage() {
         </ul>
 
         {/* The code and share options sit in a bordered, light grey container
-            (the All Apps cards' fill), at most 600px wide on desktop, with the
-            terms link just under it. */}
-        <div className="flex flex-col items-center gap-6">
-          <div className="mx-auto flex w-full flex-col gap-10 rounded-xl border border-border bg-neutral-50 p-5 md:max-w-[600px] md:p-8">
-            <ReferralCodeTicket code={code} />
-            <ReferralShareOptions code={code} />
-          </div>
-          <a
-            href={REFERRAL_TERMS_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
-          >
-            T&amp;C apply
-          </a>
+            (the All Apps cards' fill), at most 600px wide on desktop. The terms
+            hang off the rewards heading's info icon rather than a link here. */}
+        <div className="mx-auto flex w-full flex-col gap-10 rounded-xl border border-border bg-neutral-50 p-5 md:max-w-[600px] md:p-8">
+          <ReferralCodeTicket code={code} />
+          <ReferralShareOptions code={code} />
         </div>
 
-        <ReferralsList referrals={REFERRALS} />
+        <ReferralEvents events={REFERRAL_EVENTS} />
       </div>
     </div>
   )
@@ -175,59 +172,80 @@ function initialsFor(name: string) {
     .join('')
 }
 
-// The shops signed up with the code, in a divided list at most 600px wide.
-// Each row shows the shop's logo, its name with its status below (in green
-// while active), its next payout with its expected day below (only an active
-// shop has one), and on the right what it has paid out so far (nothing yet
-// while on trial). On a phone, where there's no room for the payout column,
-// the next payout drops to a single line under the row, lined up with the
-// name.
-function ReferralsList({ referrals }: { referrals: Referral[] }) {
+// Everything the code has led to, newest first, in a divided list at most
+// 600px wide. Each row shows the shop's logo, then what happened written as a
+// sentence about the shop, and on the right the amount it earned — in green
+// with a plus, since it only ever adds up, and only on a payout — followed by
+// the day it happened.
+function ReferralEvents({ events }: { events: ReferralEvent[] }) {
+  // Sorted here rather than in the data so the list stays newest-first
+  // whatever order the backend eventually sends. ISO dates sort as strings.
+  const sorted = React.useMemo(
+    () => [...events].sort((a, b) => b.date.localeCompare(a.date)),
+    [events],
+  )
+
   return (
     <section aria-labelledby="referrals-heading" className="mx-auto w-full max-w-[600px]">
-      <TypographyLarge id="referrals-heading" className="mb-3">
-        Your referrals
-      </TypographyLarge>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <TypographyLarge id="referrals-heading">Your rewards</TypographyLarge>
+        {/* The only route to the terms now, so the icon opens them. It sits
+            at the far end of the row, over the list's right-hand columns. */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              asChild
+              variant="ghost"
+              size="icon-sm"
+              className="-mr-2 text-muted-foreground"
+              aria-label="Terms and conditions apply"
+            >
+              <a href={REFERRAL_TERMS_URL} target="_blank" rel="noreferrer">
+                <Info />
+              </a>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent sideOffset={6}>T&amp;C apply</TooltipContent>
+        </Tooltip>
+      </div>
+      {/* How far along the next payout is, above the list it will join. The
+          label and the running total share a line, with the bar under both. */}
+      <div className="mb-4 flex flex-col gap-1.5">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-sm text-muted-foreground">Next payout</span>
+          <span className="text-sm tabular-nums text-muted-foreground">
+            <span className="font-medium text-foreground">${NEXT_PAYOUT.earned}</span> / $
+            {NEXT_PAYOUT.target}
+          </span>
+        </div>
+        <Progress
+          value={(NEXT_PAYOUT.earned / NEXT_PAYOUT.target) * 100}
+          aria-label={`Next payout: $${NEXT_PAYOUT.earned} of $${NEXT_PAYOUT.target}`}
+        />
+      </div>
       <ul className="divide-y divide-border/50">
-        {referrals.map((referral) => (
-          <li key={referral.id} className="flex flex-wrap items-center gap-x-3 py-3">
-            <Avatar>
+        {sorted.map((event) => (
+          <li key={event.id} className="flex flex-wrap items-center gap-x-3 py-3">
+            <Avatar className="shrink-0">
               <AvatarImage src={REFERRAL_LOGO_PLACEHOLDER} alt="" />
-              <AvatarFallback>{initialsFor(referral.shopName)}</AvatarFallback>
+              <AvatarFallback>{initialsFor(event.shopName)}</AvatarFallback>
             </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-foreground">{referral.shopName}</p>
-              <p
-                className={cn(
-                  'text-xs',
-                  referral.status === 'Active' ? 'text-success-foreground' : 'text-muted-foreground',
-                )}
-              >
-                {referral.status}
-              </p>
-            </div>
-            <div className="hidden w-32 shrink-0 text-right text-muted-foreground md:block">
-              {referral.nextPayout ? (
-                <>
-                  <p className="text-sm text-foreground">${referral.nextPayout.amount}</p>
-                  <p className="text-xs">Expected {formatPayoutDate(referral.nextPayout.date)}</p>
-                </>
-              ) : null}
-            </div>
-            <div className="w-24 shrink-0 text-right text-muted-foreground">
-              {referral.status === 'Trialing' ? null : (
-                <>
-                  <p className="text-sm text-foreground">${referral.earned ?? 0}</p>
-                  <p className="text-xs">Paid out</p>
-                </>
-              )}
-            </div>
-            {referral.nextPayout ? (
-              <p className="mt-2 basis-full pl-11 text-xs text-muted-foreground md:hidden">
-                Next payout: <span className="text-foreground">${referral.nextPayout.amount}</span>{' '}
-                · Expected {formatPayoutDate(referral.nextPayout.date)}
-              </p>
-            ) : null}
+            <p className="min-w-0 flex-1 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{event.shopName}</span>{' '}
+              {EVENT_TEXT[event.kind]}
+            </p>
+            {/* Fixed width and always rendered, so the amounts line up down
+                the list whether or not a row has one. Last in the row on a
+                phone, where the date drops away, so it sits flush right. */}
+            <span className="w-20 shrink-0 text-right text-sm font-medium text-success-foreground">
+              {event.amount == null ? null : `+$${event.amount.toFixed(2)}`}
+            </span>
+            {/* On a phone there's no room for a third column, so the date
+                wraps onto its own line, indented past the logo to line up
+                under the event. On desktop it returns to a fixed column. */}
+            <span className="mt-1 basis-full pl-11 text-xs text-muted-foreground md:mt-0 md:w-16 md:shrink-0 md:basis-auto md:pl-0 md:text-right md:text-sm">
+              {formatEventDate(event.date)}
+            </span>
           </li>
         ))}
       </ul>
@@ -427,7 +445,8 @@ function ReferralShareOptions({ code }: { code: string }) {
   )
 }
 
-// Formats a payout day as "10 Oct".
-function formatPayoutDate(date: string) {
-  return new Date(`${date}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+// Formats an event's day as "Oct 10". Pinned to en-US for that month-first
+// order, and because en-GB abbreviates September to "Sept".
+function formatEventDate(date: string) {
+  return new Date(`${date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
