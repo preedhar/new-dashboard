@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils'
 // phone, where each point is a single row, it reads as a space.
 const INFO_POINTS: { icon: LucideIcon; text: string }[] = [
   { icon: Handshake, text: 'Refer someone\nyou know' },
-  { icon: BadgePercent, text: 'They get 25% off\nfor first month' },
+  { icon: BadgePercent, text: 'They get 20% off\nfor first month' },
   { icon: Banknote, text: 'You get paid\nup to $200' },
 ]
 
@@ -53,9 +53,11 @@ type ReferralEvent = {
   amount?: number
 }
 
-// What each kind of event reads as, following the shop's name.
+// What each kind of event reads as. A payout is written from the shop owner's
+// side and carries the amount after it, so it stands on its own; a cancellation
+// still follows the name of the shop it happened to.
 const EVENT_TEXT: Record<ReferralEventKind, string> = {
-  payout: 'earned you',
+  payout: 'You earned',
   canceled: 'has cancelled',
 }
 
@@ -69,14 +71,14 @@ const NEXT_PAYOUT = { earned: 12, target: 20 }
 // subscribed, so the staggered sign-ups interleave the shops down the list.
 const REFERRAL_EVENTS: ReferralEvent[] = [
   // Kopi Corner, the oldest: subscribed in June, paid out every month since.
-  { id: 'e1', shopName: 'Kopi Corner', kind: 'payout', date: '2026-07-20', amount: 14.75 },
-  { id: 'e2', shopName: 'Kopi Corner', kind: 'payout', date: '2026-08-20', amount: 14.75 },
-  { id: 'e3', shopName: 'Kopi Corner', kind: 'payout', date: '2026-09-20', amount: 14.75 },
+  { id: 'e1', shopName: 'Kopi Corner', kind: 'payout', date: '2026-07-20', amount: 11.8 },
+  { id: 'e2', shopName: 'Kopi Corner', kind: 'payout', date: '2026-08-20', amount: 11.8 },
+  { id: 'e3', shopName: 'Kopi Corner', kind: 'payout', date: '2026-09-20', amount: 11.8 },
   // Sunny Bakes, subscribed a few weeks later.
-  { id: 'e4', shopName: 'Sunny Bakes', kind: 'payout', date: '2026-08-14', amount: 4.75 },
-  { id: 'e5', shopName: 'Sunny Bakes', kind: 'payout', date: '2026-09-14', amount: 4.75 },
+  { id: 'e4', shopName: 'Sunny Bakes', kind: 'payout', date: '2026-08-14', amount: 3.8 },
+  { id: 'e5', shopName: 'Sunny Bakes', kind: 'payout', date: '2026-09-14', amount: 3.8 },
   // Petal & Stem, one payout in before it left.
-  { id: 'e6', shopName: 'Petal & Stem', kind: 'payout', date: '2026-09-02', amount: 14.75 },
+  { id: 'e6', shopName: 'Petal & Stem', kind: 'payout', date: '2026-09-02', amount: 11.8 },
   { id: 'e7', shopName: 'Petal & Stem', kind: 'canceled', date: '2026-09-21' },
 ]
 
@@ -97,7 +99,7 @@ function getReferralLink(code: string) {
 }
 
 function getReferralMessage(code: string) {
-  return `I use Cococart to run my shop. Sign up with my code ${code} and get 25% off your first month: ${getReferralLink(code)}`
+  return `I use Cococart to run my shop. Sign up with my code ${code} and get 20% off your first month: ${getReferralLink(code)}`
 }
 
 function openInNewTab(url: string) {
@@ -173,10 +175,10 @@ function initialsFor(name: string) {
 }
 
 // Everything the code has led to, newest first, in a divided list at most
-// 600px wide. Each row shows the shop's logo, then what happened written as a
-// sentence about the shop, and on the right the amount it earned — in green
-// with a plus, since it only ever adds up, and only on a payout — followed by
-// the day it happened.
+// 600px wide. Each row shows the shop's logo, then what happened: a payout
+// reads as "You earned $11.80", the amount in green since it only ever adds
+// up, and a cancellation as a sentence about the shop. The day it happened
+// closes the row.
 function ReferralEvents({ events }: { events: ReferralEvent[] }) {
   // Sorted here rather than in the data so the list stays newest-first
   // whatever order the backend eventually sends. ISO dates sort as strings.
@@ -226,21 +228,31 @@ function ReferralEvents({ events }: { events: ReferralEvent[] }) {
       <ul className="divide-y divide-border/50">
         {sorted.map((event) => (
           <li key={event.id} className="flex flex-wrap items-center gap-x-3 py-3">
+            {/* A payout no longer names the shop in its text, so the logo
+                carries the name for it. */}
             <Avatar className="shrink-0">
-              <AvatarImage src={REFERRAL_LOGO_PLACEHOLDER} alt="" />
+              <AvatarImage
+                src={REFERRAL_LOGO_PLACEHOLDER}
+                alt={event.kind === 'payout' ? event.shopName : ''}
+              />
               <AvatarFallback>{initialsFor(event.shopName)}</AvatarFallback>
             </Avatar>
             <p className="min-w-0 flex-1 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{event.shopName}</span>{' '}
-              {EVENT_TEXT[event.kind]}
+              {event.kind === 'payout' ? (
+                <>
+                  {EVENT_TEXT.payout}{' '}
+                  <span className="font-medium text-success-foreground">
+                    ${event.amount?.toFixed(2)}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="font-medium text-foreground">{event.shopName}</span>{' '}
+                  {EVENT_TEXT[event.kind]}
+                </>
+              )}
             </p>
-            {/* Fixed width and always rendered, so the amounts line up down
-                the list whether or not a row has one. Last in the row on a
-                phone, where the date drops away, so it sits flush right. */}
-            <span className="w-20 shrink-0 text-right text-sm font-medium text-success-foreground">
-              {event.amount == null ? null : `+$${event.amount.toFixed(2)}`}
-            </span>
-            {/* On a phone there's no room for a third column, so the date
+            {/* On a phone there's no room for a second column, so the date
                 wraps onto its own line, indented past the logo to line up
                 under the event. On desktop it returns to a fixed column. */}
             <span className="mt-1 basis-full pl-11 text-xs text-muted-foreground md:mt-0 md:w-16 md:shrink-0 md:basis-auto md:pl-0 md:text-right md:text-sm">
@@ -392,7 +404,7 @@ function ReferralShareOptions({ code }: { code: string }) {
       onSelect: () =>
         window.location.assign(
           `mailto:?subject=${encodeURIComponent(
-            'Get 25% off your first month of Cococart',
+            'Get 20% off your first month of Cococart',
           )}&body=${encodeURIComponent(message)}`,
         ),
     },
