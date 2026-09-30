@@ -1,6 +1,8 @@
 import * as React from 'react'
 import {
+  ArrowDownAZ,
   ArrowLeft,
+  ArrowUpDown,
   Box,
   Calendar as CalendarIcon,
   CalendarCheck,
@@ -35,6 +37,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -111,29 +121,42 @@ function selectableDatesInMonth(month: Date, minDate: Date) {
 }
 
 // Twenty products (drawn from the Order summary page), each with a starting
-// stock, sorted alphabetically for the availability Products tab.
+// stock. This array order is the "Default" sort on the availability Products
+// tab: menu order (coffee, tea, food) rather than alphabetical.
 const PRODUCTS: { name: string; stock: number }[] = [
+  { name: 'Espresso', stock: 28 },
   { name: 'Americano, Hot', stock: 24 },
   { name: 'Americano, Iced', stock: 18 },
-  { name: 'BBQ Baby Back Ribs', stock: 12 },
-  { name: 'Caesar Salad', stock: 30 },
   { name: 'Cappuccino', stock: 20 },
-  { name: 'Chai Latte', stock: 16 },
-  { name: 'Cheeseburger, Double', stock: 15 },
-  { name: 'Cheeseburger, Single', stock: 19 },
-  { name: 'Croissant', stock: 40 },
-  { name: 'Espresso', stock: 28 },
   { name: 'Flat White', stock: 21 },
-  { name: 'Green Tea', stock: 25 },
-  { name: 'Iced Coffee', stock: 22 },
   { name: 'Latte, Full Cream', stock: 17 },
   { name: 'Latte, Oat Milk', stock: 14 },
-  { name: 'Margherita Pizza', stock: 10 },
   { name: 'Mocha', stock: 23 },
+  { name: 'Iced Coffee', stock: 22 },
+  { name: 'Chai Latte', stock: 16 },
+  { name: 'Green Tea', stock: 25 },
+  { name: 'Croissant', stock: 40 },
+  { name: 'Caesar Salad', stock: 30 },
+  { name: 'Cheeseburger, Single', stock: 19 },
+  { name: 'Cheeseburger, Double', stock: 15 },
+  { name: 'BBQ Baby Back Ribs', stock: 12 },
+  { name: 'Margherita Pizza', stock: 10 },
   { name: 'Pad Thai', stock: 13 },
   { name: 'Ramen, Shoyu', stock: 11 },
   { name: 'Ramen, Tonkotsu', stock: 9 },
-].sort((a, b) => a.name.localeCompare(b.name))
+]
+
+// Sort options offered by the Inventory list's sort menu.
+type ProductSort = 'default' | 'az'
+
+const PRODUCT_SORTS: {
+  value: ProductSort
+  label: string
+  icon: IconComponent
+}[] = [
+  { value: 'default', label: 'Default', icon: ArrowUpDown },
+  { value: 'az', label: 'A to Z', icon: ArrowDownAZ },
+]
 
 function defaultQuantities(): Record<string, string> {
   // Most products start empty; only every fifth one carries a saved stock
@@ -781,15 +804,26 @@ export function AdminCalendarPage() {
     return () => document.removeEventListener('click', handleClick, true)
   }, [isDirty])
 
-  // Filters the Products tab as the merchant types.
+  // Filters and sorts the Products tab as the merchant types.
   const [productSearch, setProductSearch] = React.useState('')
+  const [productSort, setProductSort] =
+    React.useState<ProductSort>('default')
   const filteredProducts = React.useMemo(() => {
     const query = productSearch.trim().toLowerCase()
-    if (!query) return PRODUCTS
-    return PRODUCTS.filter((product) =>
-      product.name.toLowerCase().includes(query),
-    )
-  }, [productSearch])
+    const matches = query
+      ? PRODUCTS.filter((product) =>
+          product.name.toLowerCase().includes(query),
+        )
+      : PRODUCTS
+    if (productSort === 'az') {
+      return [...matches].sort((a, b) => a.name.localeCompare(b.name))
+    }
+    return matches
+  }, [productSearch, productSort])
+  const activeProductSort =
+    PRODUCT_SORTS.find((option) => option.value === productSort) ??
+    PRODUCT_SORTS[0]
+  const ProductSortIcon = activeProductSort.icon
 
   const [available, setAvailable] =
     React.useState<AvailableSettings>(defaultAvailable)
@@ -1020,11 +1054,48 @@ export function AdminCalendarPage() {
                                 ) : null}
                               </InputGroup>
                             </div>
-                            <div className="space-y-1 pb-4 pt-4">
-                              <TypographyLarge>Inventory</TypographyLarge>
-                              <p className="text-sm text-muted-foreground">
-                                Leave blank for no limit
-                              </p>
+                            <div className="flex items-start justify-between gap-4 pb-4 pt-4">
+                              <div className="space-y-1">
+                                <TypographyLarge>Inventory</TypographyLarge>
+                                <p className="text-sm text-muted-foreground">
+                                  Leave blank for no limit
+                                </p>
+                              </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon-lg"
+                                    className="shrink-0"
+                                    aria-label={`Sort products: ${activeProductSort.label}`}
+                                  >
+                                    <ProductSortIcon className="size-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-44">
+                                  <DropdownMenuLabel>Sort</DropdownMenuLabel>
+                                  <DropdownMenuRadioGroup
+                                    value={productSort}
+                                    onValueChange={(value) =>
+                                      setProductSort(value as ProductSort)
+                                    }
+                                  >
+                                    {PRODUCT_SORTS.map((option) => {
+                                      const Icon = option.icon
+                                      return (
+                                        <DropdownMenuRadioItem
+                                          key={option.value}
+                                          value={option.value}
+                                        >
+                                          <Icon className="size-4 text-muted-foreground" />
+                                          {option.label}
+                                        </DropdownMenuRadioItem>
+                                      )
+                                    })}
+                                  </DropdownMenuRadioGroup>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                             {filteredProducts.length === 0 ? (
                               <p className="py-4 text-sm text-muted-foreground">
