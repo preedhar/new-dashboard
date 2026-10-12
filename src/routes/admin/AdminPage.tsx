@@ -105,6 +105,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/marketing/email' &&
     activeRoute.path !== '/admin/apps/pos' &&
     activeRoute.path !== '/admin/referrals' &&
+    activeRoute.path !== '/admin/settings/billing' &&
     !isOrderDetailPage &&
     !isOrderFormPage
   // The All Apps and referrals pages render their own header (a mobile back
@@ -122,6 +123,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/marketing/email' &&
     activeRoute.path !== '/admin/apps/pos' &&
     activeRoute.path !== '/admin/referrals' &&
+    activeRoute.path !== '/admin/settings/billing' &&
     !isOrderDetailPage &&
     !isOrderFormPage
 

@@ -5,6 +5,7 @@ import {
   CircleUserIcon,
   LanguagesIcon,
   LogOutIcon,
+  ReceiptTextIcon,
   Smile,
 } from "lucide-react"
 
@@ -61,6 +62,12 @@ export function UserMenuContent({
         <DropdownMenuItem onSelect={() => setProfileOpen(true)}>
           <CircleUserIcon />
           Profile
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <a href="/admin/settings/billing">
+            <ReceiptTextIcon />
+            Billing
+          </a>
         </DropdownMenuItem>
         {/* A plain link, so it reloads home and brings back a guide that was
             hidden on this visit. */}
