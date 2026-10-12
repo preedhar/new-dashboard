@@ -49,6 +49,7 @@ import {
 } from './pages/AdminOrdersEarningsPage'
 import { AdminOrdersAnalyticsPage } from './pages/AdminOrdersAnalyticsPage'
 import { AdminAppsPage } from './pages/AdminAppsPage'
+import { AdminBillingPage } from './pages/AdminBillingPage'
 import {
   AdminFulfillmentPage,
   AdminTimeSlotsPage,
@@ -604,10 +605,7 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Billing',
     title: 'Billing',
     icon: Settings,
-    component: createAdminPlaceholder(
-      'Billing',
-      'A future workspace for plans, invoices, and subscription details.',
-    ),
+    component: AdminBillingPage,
   },
   {
     path: '/admin/apps',
