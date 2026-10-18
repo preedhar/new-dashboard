@@ -6,6 +6,8 @@ import {
   ChevronDown,
   ChevronRight,
   Copy,
+  Eye,
+  EyeOff,
   Folder,
   GripVertical,
   Link2,
@@ -132,6 +134,9 @@ type Category = {
   url: string
   // Null until the merchant uploads one; rows fall back to a placeholder.
   image: string | null
+  // Hidden categories stay in the admin list — greyed out and flagged — but
+  // neither they nor the products inside them reach any sales channel.
+  hidden?: boolean
 }
 
 type Product = {
@@ -153,17 +158,25 @@ function isAvailable(product: Product) {
   return product.channels.length > 0
 }
 
-// Seed catalog — every product starts uncategorised so the page opens on the
-// default "No category" state described in the spec. Pad Thai ships with no
-// channels so the unavailable state (and the availability sort) is visible.
+// Seed categories — the store opens with these two already filed, which is
+// what puts the left column, the "Everything else" catch-all label and the
+// reorder handles (they want two categories) on screen from the first render.
+const INITIAL_CATEGORIES: Category[] = [
+  { id: 'c-drinks', name: 'Drinks', url: 'drinks', image: null },
+  { id: 'c-food', name: 'Food', url: 'food', image: null },
+]
+
+// Seed catalog. Two products are left uncategorised on purpose so the catch-all
+// has something in it alongside the two seeded categories. Pad Thai ships with
+// no channels so the unavailable state (and the availability sort) is visible.
 const INITIAL_PRODUCTS: Product[] = [
-  { id: 'p-americano', name: 'Americano, Iced', price: 4.5, categoryIds: [], channels: ['online-store', 'pos', 'qr'] },
-  { id: 'p-cappuccino', name: 'Cappuccino', price: 5.0, categoryIds: [], channels: ['online-store', 'pos'] },
-  { id: 'p-croissant', name: 'Butter Croissant', price: 3.75, categoryIds: [], channels: ['online-store', 'qr'] },
-  { id: 'p-latte', name: 'Oat Milk Latte', price: 5.5, categoryIds: [], channels: ['online-store', 'pos', 'qr'] },
-  { id: 'p-cheeseburger', name: 'Double Cheeseburger', price: 12.0, categoryIds: [], channels: ['online-store', 'pos'], isBundle: true },
+  { id: 'p-americano', name: 'Americano, Iced', price: 4.5, categoryIds: ['c-drinks'], channels: ['online-store', 'pos', 'qr'] },
+  { id: 'p-cappuccino', name: 'Cappuccino', price: 5.0, categoryIds: ['c-drinks'], channels: ['online-store', 'pos'] },
+  { id: 'p-croissant', name: 'Butter Croissant', price: 3.75, categoryIds: ['c-food'], channels: ['online-store', 'qr'] },
+  { id: 'p-latte', name: 'Oat Milk Latte', price: 5.5, categoryIds: ['c-drinks'], channels: ['online-store', 'pos', 'qr'] },
+  { id: 'p-cheeseburger', name: 'Double Cheeseburger', price: 12.0, categoryIds: ['c-food'], channels: ['online-store', 'pos'], isBundle: true },
   { id: 'p-caesar', name: 'Caesar Salad', price: 9.5, categoryIds: [], channels: ['online-store'] },
-  { id: 'p-margherita', name: 'Margherita Pizza', price: 14.0, categoryIds: [], channels: ['online-store', 'pos', 'qr'], isBundle: true },
+  { id: 'p-margherita', name: 'Margherita Pizza', price: 14.0, categoryIds: ['c-food'], channels: ['online-store', 'pos', 'qr'], isBundle: true },
   { id: 'p-padthai', name: 'Pad Thai', price: 11.5, categoryIds: [], channels: [] },
 ]
 
@@ -748,6 +761,7 @@ function CategoryRow({
   count,
   selected,
   isDefault,
+  hidden,
   mobile,
   reorderable,
   listReorderable,
@@ -761,6 +775,7 @@ function CategoryRow({
   onCheckedChange,
   onEdit,
   onCopyLink,
+  onToggleHidden,
   onDuplicate,
   onDelete,
   dragProps,
@@ -770,6 +785,9 @@ function CategoryRow({
   count: number
   selected: boolean
   isDefault: boolean
+  // Off every channel: the row reads as greyed out with an eye-off flag, and
+  // the menu offers to put it back.
+  hidden: boolean
   // On a phone the row is a link into the category, so it stacks into two lines
   // with a chevron up top and the manage menu below.
   mobile: boolean
@@ -793,6 +811,7 @@ function CategoryRow({
   onCheckedChange: (checked: boolean) => void
   onEdit: () => void
   onCopyLink: () => void
+  onToggleHidden: () => void
   onDuplicate: () => void
   onDelete: () => void
   dragProps?: React.HTMLAttributes<HTMLDivElement> & { draggable?: boolean }
@@ -819,6 +838,14 @@ function CategoryRow({
             duplicated or deleted — only its image is editable. */}
         {!isDefault ? (
           <>
+            <DropdownMenuItem onSelect={onToggleHidden}>
+              {hidden ? (
+                <Eye className="size-4" />
+              ) : (
+                <EyeOff className="size-4" />
+              )}
+              {hidden ? 'Show' : 'Hide'}
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={onCopyLink}>
               <Link2 className="size-4" />
               Copy link
@@ -835,6 +862,37 @@ function CategoryRow({
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+
+  // The eye carries the state on screen; the word is kept for anyone hearing
+  // the row rather than seeing it.
+  const hiddenFlag = hidden ? (
+    <>
+      <EyeOff aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+      <span className="sr-only">Hidden</span>
+    </>
+  ) : null
+
+  // A hidden category reads as greyed out: its name drops to the muted colour
+  // the count already uses, and its image dims to match.
+  const nameLine = (
+    <span
+      className={cn('flex min-w-0 items-center gap-1.5', mobile && 'flex-1')}
+    >
+      <span
+        className={cn(
+          'min-w-0 truncate text-sm font-medium',
+          hidden && 'text-muted-foreground',
+        )}
+      >
+        {name}
+      </span>
+      {hiddenFlag}
+    </span>
+  )
+  const imageClass = cn(
+    'size-10 shrink-0 rounded-md object-cover',
+    hidden && 'opacity-50',
   )
 
   const productCount = (
@@ -875,14 +933,8 @@ function CategoryRow({
         )}
       >
         <div className="flex items-center gap-3">
-          <img
-            src={image ?? productImage}
-            alt=""
-            className="size-10 shrink-0 rounded-md object-cover"
-          />
-          <span className="min-w-0 flex-1 truncate text-sm font-medium">
-            {name}
-          </span>
+          <img src={image ?? productImage} alt="" className={imageClass} />
+          {nameLine}
           {/* The chevron and the manage menu keep the same 40px box, so
               swapping in the drag handle doesn't move the row. */}
           <span className="flex size-10 shrink-0 items-center justify-center">
@@ -957,13 +1009,9 @@ function CategoryRow({
         disabled={inReorder}
         className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:cursor-default"
       >
-        <img
-          src={image ?? productImage}
-          alt=""
-          className="size-10 shrink-0 rounded-md object-cover"
-        />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium">{name}</span>
+        <img src={image ?? productImage} alt="" className={imageClass} />
+        <span className="flex min-w-0 flex-1 flex-col">
+          {nameLine}
           <span className="block text-sm text-muted-foreground">
             {count} {count === 1 ? 'product' : 'products'}
           </span>
@@ -1315,10 +1363,14 @@ function ListSurface({
 export function AdminProductsPage() {
   // Non-default categories, in display order. The catch-all is rendered after
   // these and lives outside this array.
-  const [categories, setCategories] = React.useState<Category[]>([])
+  const [categories, setCategories] =
+    React.useState<Category[]>(INITIAL_CATEGORIES)
   const [products, setProducts] = React.useState<Product[]>(INITIAL_PRODUCTS)
-  const [selectedCategoryId, setSelectedCategoryId] =
-    React.useState<string>(DEFAULT_CATEGORY_ID)
+  // Desktop opens on the first seeded category rather than the catch-all, so
+  // the right column starts on a category's own products.
+  const [selectedCategoryId, setSelectedCategoryId] = React.useState<string>(
+    INITIAL_CATEGORIES[0]?.id ?? DEFAULT_CATEGORY_ID,
+  )
   // FLIP animators that slide rows to their new spots when the lists reorder.
   const registerCategoryRow = useReorderTransition()
   const registerProductRow = useReorderTransition()
@@ -1499,6 +1551,10 @@ export function AdminProductsPage() {
   const [pendingCategoryDelete, setPendingCategoryDelete] = React.useState<
     Category[] | null
   >(null)
+  // Hiding takes a category (and everything in it) off every channel, so it
+  // asks first. Putting one back is harmless and goes straight through.
+  const [pendingCategoryHide, setPendingCategoryHide] =
+    React.useState<Category | null>(null)
 
   // The catch-all never joins a selection, and `categories` only holds the real
   // ones, so filtering by it drops it on its own.
@@ -1548,6 +1604,16 @@ export function AdminProductsPage() {
     toast.success('Link copied')
   }
 
+  function setCategoryHidden(category: Category, hidden: boolean) {
+    setCategories((current) =>
+      current.map((item) =>
+        item.id === category.id ? { ...item, hidden } : item,
+      ),
+    )
+    setPendingCategoryHide(null)
+    toast.success(hidden ? 'Category hidden' : 'Category shown')
+  }
+
   // Duplicating drops each copy directly after its original. Takes a list so a
   // row's menu and the bulk action share one path.
   function duplicateCategories(targets: Category[]) {
@@ -1560,6 +1626,7 @@ export function AdminProductsPage() {
           name: `${category.name} copy`,
           url: `${category.url}-copy`,
           image: category.image,
+          hidden: category.hidden,
         },
       ]),
     )
@@ -1789,6 +1856,7 @@ export function AdminProductsPage() {
     name: string
     image: string | null
     isDefault: boolean
+    hidden: boolean
     category: Category
   }[] = [
     ...categories.map((category) => ({
@@ -1796,13 +1864,17 @@ export function AdminProductsPage() {
       name: category.name,
       image: category.image,
       isDefault: false,
+      hidden: category.hidden === true,
       category,
     })),
     {
+      // The catch-all isn't a category the merchant owns — there's no hiding
+      // it, the way it can't be renamed, duplicated or deleted.
       id: DEFAULT_CATEGORY_ID,
       name: defaultCategoryName,
       image: defaultImage,
       isDefault: true,
+      hidden: false,
       category: defaultCategory,
     },
   ]
@@ -2175,6 +2247,7 @@ export function AdminProductsPage() {
                       // stays marked as current.
                       selected={!isMobile && selectedCategoryId === entry.id}
                       isDefault={entry.isDefault}
+                      hidden={entry.hidden}
                       mobile={isMobile}
                       className={isMobile ? 'rounded-none' : undefined}
                       reorderable={!entry.isDefault && categoriesDraggable}
@@ -2204,6 +2277,13 @@ export function AdminProductsPage() {
                         })
                       }
                       onCopyLink={() => copyCategoryLink(entry.category)}
+                      onToggleHidden={() => {
+                        if (entry.category.hidden) {
+                          setCategoryHidden(entry.category, false)
+                        } else {
+                          setPendingCategoryHide(entry.category)
+                        }
+                      }}
                       onDuplicate={() => duplicateCategories([entry.category])}
                       onDelete={() => setPendingCategoryDelete([entry.category])}
                       dragProps={dragProps}
@@ -2368,6 +2448,33 @@ export function AdminProductsPage() {
               onClick={deleteSelectedProducts}
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={pendingCategoryHide !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingCategoryHide(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hide category?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This category and its products will be hidden on all channels.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                pendingCategoryHide &&
+                setCategoryHidden(pendingCategoryHide, true)
+              }
+            >
+              Hide
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
