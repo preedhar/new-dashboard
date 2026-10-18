@@ -8,6 +8,7 @@ import giftImage from '@/assets/admin/gift.png'
 import moneyImage from '@/assets/admin/money.png'
 import postImage from '@/assets/admin/post.png'
 import qrCodeImage from '@/assets/admin/qr-code.png'
+import { MAVEN_UNREAD_COUNT } from './components/maven-panel'
 
 export type PromoTile = {
   id: string
@@ -16,11 +17,24 @@ export type PromoTile = {
   // Falls back to the placeholder artwork, so a tile only names an image once it
   // has one of its own.
   image?: string
+  // A count of messages waiting in the Maven chat. Set, it replaces the artwork
+  // with the Maven logo wearing a red badge that shows the number.
+  unread?: number
   // href is left off when there's no page to send the merchant to yet. external
   // marks a link that leaves the dashboard, so it opens in a new tab. paywall is
   // temporary: it puts a placeholder dialog in front of the tile, and takes
   // precedence over href, so dropping the flag hands the tile back to its link.
-  action: { label: string; href?: string; external?: boolean; paywall?: boolean }
+  // chat opens the Maven chat in a panel beside the content on desktop; a phone
+  // follows href to the chat's own page instead.
+  action: {
+    label: string
+    href?: string
+    external?: boolean
+    paywall?: boolean
+    chat?: boolean
+    // Rings the call to action in the Maven logo's turning gradient.
+    mavenBorder?: boolean
+  }
 }
 
 // Every tip / upsell card designed for the dashboard home page, in the order the
@@ -61,10 +75,22 @@ export const ALL_PROMO_TILES: PromoTile[] = [
   },
   {
     id: 'maven',
-    title: 'Get Maven to do your social media marketing',
-    description: 'Maven plans your strategy and makes your content around the clock',
+    title: 'Run your Meta ads on autopilot without the hassle',
+    description:
+      'Maven AI brings you sales by creating your Facebook and Instagram ads, picking the right audience, and adjusting the campaign along the way. All with your approvals.',
     image: postImage,
-    action: { label: 'Try Maven for Free', href: 'https://magicposts.com', external: true },
+    action: { label: 'Try for free', href: '/admin/maven', chat: true, mavenBorder: true },
+  },
+  // The Maven card once the merchant has a conversation going: it reports
+  // what's waiting in the chat rather than pitching the service, and wears the
+  // Maven logo with the count on it in place of the artwork.
+  {
+    id: 'maven-unread',
+    title: `You have ${MAVEN_UNREAD_COUNT} unread messages from Maven`,
+    description:
+      'Maven has drafted your Facebook and Instagram ads for the holidays and is waiting on your approval before anything goes live',
+    unread: MAVEN_UNREAD_COUNT,
+    action: { label: 'View chat', href: '/admin/maven', chat: true, mavenBorder: true },
   },
   {
     id: 'online-store-pro',
@@ -111,10 +137,11 @@ export const ALL_PROMO_TILES: PromoTile[] = [
   },
 ]
 
-// The cards live on home today. The annual-billing upsell used to lead the row,
-// but a second setup guide has taken its cell, so only the verified badge tip
-// is left here. The upsell itself stays in the gallery above.
-const HOME_TILE_IDS = ['tip-verified-badge']
+// The cards live on home today, after the setup guide: the Maven pitch, then
+// the Maven card as it looks with messages waiting. The annual-billing upsell
+// and the verified badge tip used to hold these cells; both are switched off
+// on home for now, but stay in the gallery above.
+const HOME_TILE_IDS = ['maven', 'maven-unread']
 
 // Ordered by HOME_TILE_IDS rather than by the catalogue above, so home keeps its
 // own running order as cards are added to or reordered in the gallery.

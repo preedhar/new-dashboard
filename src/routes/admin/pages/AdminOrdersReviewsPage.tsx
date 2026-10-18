@@ -492,7 +492,7 @@ export function AdminOrdersReviewsPage() {
       {/* Desktop: reviews data table + always-visible stats pane. Below lg the
           pane stacks above the table (flex-col-reverse puts the last child on
           top); at lg and up it sits beside the table on the right. */}
-      <div className="hidden md:flex md:flex-col-reverse md:gap-6 lg:flex-row">
+      <div className="hidden md:flex md:flex-col-reverse md:gap-6 content-lg:flex-row">
         <div className="min-w-0 flex-1">
           <DataTable
             columns={columns}
@@ -502,7 +502,7 @@ export function AdminOrdersReviewsPage() {
         </div>
         <ReviewStatsPane
           reviews={reviews}
-          className="lg:sticky lg:top-4 lg:w-[340px] lg:shrink-0 lg:self-start"
+          className="content-lg:sticky content-lg:top-4 content-lg:w-[340px] content-lg:shrink-0 content-lg:self-start"
         />
       </div>
     </div>

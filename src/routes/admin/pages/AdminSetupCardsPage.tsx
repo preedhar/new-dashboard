@@ -56,13 +56,13 @@ export function AdminSetupCardsPage() {
         those states. Reload to bring back a hidden card.
       </TypographyMuted>
 
-      {/* The same column and breakpoint as the home page: one card up to 1280px,
+      {/* The same column and breakpoint as the home page: one card up to a 944px column,
           capped at 640px wide, then thirds of a 1120px row. Equal rows across
           the whole grid, not just within one, so a finished card — which has
           only a line or two to hold — keeps the height it has beside a card
-          still carrying its list. Stacked below 1280px they take their own
+          still carrying its list. Stacked in a narrower column they take their own
           height, as they do on home. */}
-      <div className="grid w-full max-w-[640px] grid-cols-1 gap-6 xl:max-w-[1120px] xl:auto-rows-fr xl:grid-cols-3 xl:gap-10">
+      <div className="grid w-full max-w-[640px] grid-cols-1 gap-6 content-xl:max-w-[1120px] content-xl:auto-rows-fr content-xl:grid-cols-3 content-xl:gap-10">
         {GALLERY_CARDS.filter((card) => !hiddenCardIds.includes(card.id)).map((card) => (
           <div key={card.id} className="flex">
             <SetupChecklistCard

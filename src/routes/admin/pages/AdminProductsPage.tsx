@@ -2200,10 +2200,10 @@ export function AdminProductsPage() {
           </div>
         )}
 
-        <div className="flex w-full flex-col gap-8 xl:flex-row xl:items-start">
+        <div className="flex w-full flex-col gap-8 content-xl:flex-row content-xl:items-start">
           {/* Left column: the category list, with the catch-all pinned last. */}
           {showCategories ? (
-          <div className="flex w-full flex-col gap-3 xl:sticky xl:top-8 xl:w-[350px] xl:shrink-0 xl:self-start">
+          <div className="flex w-full flex-col gap-3 content-xl:sticky content-xl:top-8 content-xl:w-[350px] content-xl:shrink-0 content-xl:self-start">
             <ListSurface mobile={isMobile}>
                 {categories.length === 0 ? (
                   <p className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
@@ -2308,7 +2308,7 @@ export function AdminProductsPage() {
 
           {/* Right column: the products filed under the selected category. */}
           {showProducts ? (
-          <div className="flex w-full flex-col gap-3 xl:flex-1">
+          <div className="flex w-full flex-col gap-3 content-xl:flex-1">
             <ListSurface mobile={isMobile}>
                 {displayedProducts.length === 0 ? (
                   <p className="py-8 text-center text-sm text-muted-foreground">

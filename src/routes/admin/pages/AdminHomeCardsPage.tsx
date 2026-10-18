@@ -17,12 +17,12 @@ export function AdminHomeCardsPage() {
         Every card that could appear on the dashboard home page.
       </TypographyMuted>
 
-      {/* The same column and breakpoint as the home page: one card up to 1280px,
-          capped at 640px wide, then three across a 1120px row. Home sizes its
+      {/* The same column and breakpoint as the home page: one card up to a
+          944px column, capped at 640px wide, then three across a 1120px row. Home sizes its
           cards with flex basis so a short row stays centred; a gallery always
           fills its rows, so a three-column grid does the same job and keeps
           every card in a row the same height. */}
-      <div className="grid w-full max-w-[640px] grid-cols-1 gap-6 xl:max-w-[1120px] xl:grid-cols-3 xl:gap-10">
+      <div className="grid w-full max-w-[640px] grid-cols-1 gap-6 content-xl:max-w-[1120px] content-xl:grid-cols-3 content-xl:gap-10">
         {ALL_PROMO_TILES.map((tile) => (
           <div key={tile.id} className="flex">
             <PromoTileCard tile={tile} />

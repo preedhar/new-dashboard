@@ -885,10 +885,10 @@ export function AdminCalendarPage() {
           </h1>
         </header>
 
-        <div className="flex w-full flex-col gap-8 xl:flex-row xl:items-start">
+        <div className="flex w-full flex-col gap-8 content-xl:flex-row content-xl:items-start">
           {/* Left column: a month-by-month calendar for hand-picking one or more
               available dates. 440px on desktop, full-width when stacked below xl. */}
-          <div className="flex w-full flex-col gap-3 xl:sticky xl:top-8 xl:w-[440px] xl:shrink-0 xl:self-start">
+          <div className="flex w-full flex-col gap-3 content-xl:sticky content-xl:top-8 content-xl:w-[440px] content-xl:shrink-0 content-xl:self-start">
             <TypographyLarge>Select dates</TypographyLarge>
             <Card className="items-center gap-4 py-4 shadow-none">
               <Calendar
@@ -960,7 +960,7 @@ export function AdminCalendarPage() {
 
           {/* Right column: the availability card, or — once dates are picked —
               a card scoped to the current selection. */}
-          <div className="flex w-full flex-col gap-3 xl:flex-1">
+          <div className="flex w-full flex-col gap-3 content-xl:flex-1">
             {hasSelection ? (
               <>
                 <TypographyLarge>{selectionTitle}</TypographyLarge>

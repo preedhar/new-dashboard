@@ -5,6 +5,18 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Content-width breakpoints. The admin shell's content column is a named
+   container (see AdminPage), and these match where md, lg and xl land on it
+   once the sidebar and the column's padding are taken off: with nothing else
+   open, content-md applies from the same viewport as md, and so on. Open the
+   Maven panel beside the content and they respond to the room that is left,
+   where the viewport variants would not. Use them for layout density (columns,
+   side-by-side panes); keep md: and friends for anything that means phone
+   versus desktop, which the shell still decides by viewport. */
+@custom-variant content-md (@container content (width >= 28rem));
+@custom-variant content-lg (@container content (width >= 43rem));
+@custom-variant content-xl (@container content (width >= 59rem));
+
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: 'Inter Variable', sans-serif;
@@ -145,6 +157,50 @@
   }
   &::-webkit-scrollbar-track {
     background-color: transparent;
+  }
+}
+
+/*
+ * A 1px border in the Maven logo's purple and cyan whose angle slowly turns,
+ * so the two colours swap ends around the edge. It's drawn by a ::before laid
+ * over the element's own 1px border (hence the -1px inset, and the transparent
+ * border colour underneath), masked down to just that ring, so the element
+ * keeps its own fill and hover states and its rounded corners. The angle is a
+ * registered property because a plain custom property can't be animated. With
+ * reduced motion it holds still at the logo's own angle.
+ */
+@property --maven-border-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 135deg;
+}
+
+@keyframes maven-border-spin {
+  to {
+    --maven-border-angle: 495deg;
+  }
+}
+
+@utility maven-border {
+  position: relative;
+  border-color: transparent;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border: 1px solid transparent;
+    border-radius: inherit;
+    background: linear-gradient(var(--maven-border-angle), #9b5ae5, #46d2f2) border-box;
+    mask:
+      linear-gradient(#000 0 0) padding-box exclude,
+      linear-gradient(#000 0 0);
+    pointer-events: none;
+    animation: maven-border-spin 6s linear infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
   }
 }
 

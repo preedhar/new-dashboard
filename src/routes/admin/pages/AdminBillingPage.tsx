@@ -234,8 +234,8 @@ export function AdminBillingPage() {
           box so its two cards become items of this one, which lets the annual
           offer lead the page — it's the cheapest thing on it — while the
           bundles stay at the bottom, after the plans they'd replace. */}
-      <div className="flex flex-col gap-8 lg:flex-row">
-        <div className="order-2 flex min-w-0 flex-1 flex-col gap-10 lg:order-none">
+      <div className="flex flex-col gap-8 content-lg:flex-row">
+        <div className="order-2 flex min-w-0 flex-1 flex-col gap-10 content-lg:order-none">
           <ActivePlansSection
             pausedPlans={pausedPlans}
             onCancelPlan={handleCancelPlan}
@@ -244,11 +244,11 @@ export function AdminBillingPage() {
           />
           <InactivePlansSection onStartTrial={handleStartTrial} />
         </div>
-        <aside className="contents lg:flex lg:w-80 lg:shrink-0 lg:flex-col lg:gap-8">
-          <div className="order-1 lg:order-none">
+        <aside className="contents content-lg:flex content-lg:w-80 content-lg:shrink-0 content-lg:flex-col content-lg:gap-8">
+          <div className="order-1 content-lg:order-none">
             <AnnualBillingSection />
           </div>
-          <div className="order-3 lg:order-none">
+          <div className="order-3 content-lg:order-none">
             <BundlesSection />
           </div>
         </aside>
