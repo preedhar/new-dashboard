@@ -5,12 +5,15 @@ import {
   ArrowLeftRight,
   ArrowRight,
   BadgePercent,
+  Check,
+  CirclePause,
   Compass,
   Ellipsis,
   Gauge,
   Headset,
   Hourglass,
   Puzzle,
+  ShieldCheck,
   Wallet,
   type LucideIcon,
 } from "lucide-react"
@@ -32,6 +35,9 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { TypographyH4 } from "@/components/ui/typography"
+
+import { STORE_DOMAIN } from "../catalog"
+import { PAUSE_ENABLED } from "./paused-subscriptions"
 
 // Cancelling runs through the survey, then either an offer worth making or a
 // last confirmation. They live here together so the billing page only has to
@@ -55,23 +61,38 @@ export type UnsubscribeReason = {
   // The save attempt worth making for this reason, if any. Without one the
   // survey goes straight to the confirmation.
   offer?: CancelOffer
+  // Which subscriptions the reason is offered for. Listed for both unless set:
+  // there's no trial left to extend on a paid plan, and nothing to pause on a
+  // trial that hasn't been paid for yet.
+  only?: "trial" | "paid"
 }
 
 // Doubles as the name of the step the billing page moves to.
-export type CancelOffer = "trial-extension" | "discount"
+export type CancelOffer = "trial-extension" | "discount" | "pause-plan"
 
 const DETAILS_PLACEHOLDER = "Tell us more"
 
 const UNSUBSCRIBE_REASONS: UnsubscribeReason[] = [
   {
+    // First on the list: it's the only reason that isn't a complaint, and the
+    // one with an answer that keeps the shop. No follow-up either — the offer
+    // that comes next asks the only question worth asking of someone pausing,
+    // and asks it with something on the table.
+    label: "I wanna pause for some time",
+    icon: CirclePause,
+    offer: "pause-plan",
+    only: "paid",
+  },
+  {
+    label: "I need more time to try",
+    icon: Hourglass,
+    offer: "trial-extension",
+    only: "trial",
+  },
+  {
     label: "Some features are missing",
     icon: Puzzle,
     detailsLabel: "Which features were missing?",
-  },
-  {
-    label: "I need more time to try it",
-    icon: Hourglass,
-    offer: "trial-extension",
   },
   {
     label: "I'm switching to a different service",
@@ -79,16 +100,16 @@ const UNSUBSCRIBE_REASONS: UnsubscribeReason[] = [
     detailsLabel: "Which service are you switching to?",
   },
   {
-    label: "It wasn't easy to use",
-    icon: Compass,
-    detailsLabel: "Please provide more details",
-  },
-  {
     label: "I don't use the service enough",
     icon: Gauge,
     detailsLabel: "Please provide more details",
     detailsOptional: true,
     offer: "discount",
+  },
+  {
+    label: "It wasn't easy to use",
+    icon: Compass,
+    detailsLabel: "Please provide more details",
   },
   {
     label: "I'm not happy with the customer service",
@@ -113,17 +134,30 @@ const UNSUBSCRIBE_REASONS: UnsubscribeReason[] = [
 // answer isn't collected from someone who then backs out. The answer also
 // decides what the next step is.
 export function UnsubscribeReasonDialog({
+  onTrial,
+  offerPause = PAUSE_ENABLED,
   open,
   onOpenChange,
   onContinue,
 }: {
+  // Whether the plan being cancelled is still on its free trial. Two of the
+  // reasons only make sense on one side of that line.
+  onTrial: boolean
+  // Whether pausing is worth offering. It isn't when the thing being cancelled
+  // is the pause itself, and it isn't while the offer is switched off.
+  offerPause?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   onContinue: (reason: UnsubscribeReason) => void
 }) {
   const [reason, setReason] = React.useState("")
   const [details, setDetails] = React.useState("")
-  const selected = UNSUBSCRIBE_REASONS.find((option) => option.label === reason)
+  const reasons = UNSUBSCRIBE_REASONS.filter(
+    (option) =>
+      (option.only === undefined || option.only === (onTrial ? "trial" : "paid")) &&
+      (offerPause || option.offer !== "pause-plan"),
+  )
+  const selected = reasons.find((option) => option.label === reason)
   const needsDetails =
     selected?.detailsLabel !== undefined && !selected.detailsOptional
   const canContinue = selected !== undefined && (!needsDetails || details.trim() !== "")
@@ -149,7 +183,7 @@ export function UnsubscribeReasonDialog({
             onValueChange={setReason}
             className="gap-0 divide-y overflow-hidden rounded-lg border"
           >
-            {UNSUBSCRIBE_REASONS.map(({ label, icon: Icon }, index) => {
+            {reasons.map(({ label, icon: Icon }, index) => {
               const id = `unsubscribe-reason-${index}`
               return (
                 <FieldLabel
@@ -194,8 +228,9 @@ export function UnsubscribeReasonDialog({
             </Button>
           </DialogClose>
           {/* Learning why is the whole point of this step, so the reason and
-              — for most of them — its follow-up are required. "Other reason"
-              keeps anyone who doesn't fit the list from being stuck. */}
+              — for most of them — its follow-up are required. The ones with
+              nothing to diagnose ask without holding anyone up, and "Other
+              reason" keeps anyone who doesn't fit the list from being stuck. */}
           <Button
             className={FOOTER_BUTTON_CLASS}
             disabled={!canContinue}
@@ -211,6 +246,10 @@ export function UnsubscribeReasonDialog({
 
 const TRIAL_EXTENSION_DAYS = 7
 const DISCOUNT_PERCENT = 20
+// Dollars a month to hold a shop that isn't trading: cheap enough to sit on
+// while the business is closed, which is the whole point of the offer. The
+// billing rows quote it too, so it's exported rather than written twice.
+export const PAUSE_PRICE = 5
 
 // The one number each offer turns on, sized to carry the dialog.
 const OFFER_FIGURE_CLASS = "text-3xl font-semibold text-success-foreground"
@@ -219,10 +258,10 @@ function formatDay(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
-// Both save attempts read the same way: a headline figure, a line showing what
-// it changes, and the choice between taking it and leaving anyway. Sharing the
-// shell keeps the two in step — not least the fact that turning an offer down
-// unsubscribes outright.
+// Every save attempt reads the same way: a headline figure, a line showing
+// what it changes, and the choice between taking it and leaving anyway.
+// Sharing the shell keeps them in step — not least the fact that turning an
+// offer down unsubscribes outright.
 function SaveOfferDialog({
   planTitle,
   open,
@@ -371,6 +410,155 @@ export function DiscountOfferDialog({
         slightly easier for you.
       </DialogDescription>
     </SaveOfferDialog>
+  )
+}
+
+// What a paused shop keeps hold of. Spelled out item by item because the
+// offer only persuades if it's clear what "your data" actually means.
+const PAUSE_KEEPS: { key: string; text: React.ReactNode }[] = [
+  {
+    key: "link",
+    // The domain itself carries the weight: it's the one thing on the list
+    // that can't be rebuilt once someone else has taken it.
+    text: (
+      <>
+        <span className="font-medium">{STORE_DOMAIN}</span> will be reserved for you
+      </>
+    ),
+  },
+  { key: "data", text: "Products, Orders, and other data will be saved" },
+  { key: "flexibility", text: "Unpause or cancel anytime" },
+]
+
+// Offered when the reason was a pause rather than a problem: the shop isn't
+// leaving over the app, it's closing for a while, so the pitch is holding
+// everything intact for a price that's easy to carry while nothing is coming in.
+export function PausePlanDialog({
+  planTitle,
+  price,
+  open,
+  onOpenChange,
+  onPause,
+}: {
+  planTitle: string
+  // Dollars a month the plan costs today, struck through beside the paused
+  // price so the drop is read rather than worked out.
+  price: number
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  // Told when the offer is taken, so the plan's row can say it's pausing
+  // rather than renewing.
+  onPause: () => void
+}) {
+  function handlePause() {
+    onPause()
+    toast.success(`${planTitle} is paused`)
+    onOpenChange(false)
+  }
+
+  return (
+    <SaveOfferDialog
+      planTitle={planTitle}
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Save your data"
+      acceptLabel={`Save for $${PAUSE_PRICE}/mo`}
+      onAccept={handlePause}
+    >
+      {/* What's at stake, opening the dialog: the offer below it only means
+          anything once it's clear what's being lost. */}
+      <DialogDescription className="text-center">
+        Unsubscribing deletes your shop data and releases your shop link for
+        someone else to take. Once gone, it can't be undone.
+      </DialogDescription>
+
+      {/* The same badge treatment the discount offer uses, set down from the
+          warning so the offer reads as its own half of the dialog. A shield rather
+          than the reason's pause mark: what's on offer here is the data being
+          kept safe from the deletion the line above warns about. Archive, the
+          other candidate, already means something else on the orders page. */}
+      <span className="mt-4 flex size-16 items-center justify-center rounded-full bg-success-foreground/10">
+        <ShieldCheck aria-hidden="true" className="size-10 text-success-foreground" />
+      </span>
+      <p className={OFFER_FIGURE_CLASS}>${PAUSE_PRICE}/mo</p>
+      {/* Struck-through full price beside the paused one, as on the trial
+          extension and the bundle cards. */}
+      <p className="flex items-center gap-2">
+        <span className="text-muted-foreground">instead of</span>
+        <span className="text-muted-foreground line-through">${price}/mo</span>
+      </p>
+
+      {/* Centred with the rest of the stack: each line sits on the dialog's
+          axis rather than on a shared left edge. */}
+      <ul className="mt-2 w-full space-y-2 text-center">
+        {PAUSE_KEEPS.map(({ key, text }) => (
+          <li key={key} className="flex items-start justify-center gap-2">
+            <Check
+              aria-hidden="true"
+              className="mt-1 size-4 shrink-0 text-success-foreground"
+            />
+            {text}
+          </li>
+        ))}
+      </ul>
+    </SaveOfferDialog>
+  )
+}
+
+// Cancelling the pause itself: the plan is already stopped, so what's at stake
+// is only what's being kept. Asked before the survey rather than after it —
+// the survey is worth answering once they've decided, not before.
+export function CancelDataSavingDialog({
+  planTitle,
+  open,
+  onOpenChange,
+  onConfirm,
+}: {
+  planTitle: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: () => void
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className={DIALOG_CLASS}>
+        <DialogHeader>
+          <DialogTitle asChild>
+            <TypographyH4 className="text-center font-semibold">
+              Cancel data saving?
+            </TypographyH4>
+          </DialogTitle>
+        </DialogHeader>
+
+        <DialogBody>
+          <DialogDescription asChild>
+            <div className="space-y-6">
+              <p>
+                {planTitle} is paused, not gone — the fee is what holds its data and
+                keeps your shop link reserved. Cancelling deletes them, and that
+                can't be undone.
+              </p>
+              <p>Are you sure you want to cancel data saving for {planTitle}?</p>
+            </div>
+          </DialogDescription>
+        </DialogBody>
+
+        <DialogFooter className="flex-row">
+          <DialogClose asChild>
+            <Button variant="outline" className={FOOTER_BUTTON_CLASS}>
+              Keep my data
+            </Button>
+          </DialogClose>
+          <Button
+            variant="destructive"
+            className={FOOTER_BUTTON_CLASS}
+            onClick={onConfirm}
+          >
+            Cancel data saving
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

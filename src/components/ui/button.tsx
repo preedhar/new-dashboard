@@ -19,6 +19,10 @@ const buttonVariants = cva(
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+        // Destructive's opposite number, built the same way: a tint of the
+        // colour carrying type in it, rather than a filled green.
+        success:
+          "bg-success-foreground/10 text-success-foreground hover:bg-success-foreground/20 focus-visible:border-success-foreground/40 focus-visible:ring-success-foreground/20 dark:bg-success-foreground/20 dark:hover:bg-success-foreground/30 dark:focus-visible:ring-success-foreground/40",
         link: "text-[#2040B0] underline-offset-4 hover:underline",
       },
       size: {
