@@ -611,17 +611,17 @@ export function AdminOrdersAnalyticsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:gap-2">
+      <div className="flex flex-col gap-4 content-md:flex-row content-md:flex-wrap content-md:items-center content-md:gap-2">
         {/* Date + period share one equal-width row on mobile; md:contents lets
             them flow back into the toolbar's own flex layout on desktop. */}
         <div className="flex items-center gap-2 md:contents">
           <InlineDateFilter
             appliedRange={dateRange}
             onApply={setDateRange}
-            className="min-w-0 flex-1 justify-start md:w-auto md:flex-none"
+            className="min-w-0 flex-1 justify-start content-md:w-auto content-md:flex-none"
           />
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="h-10! min-w-0 flex-1 md:w-[130px] md:flex-none">
+            <SelectTrigger className="h-10! min-w-0 flex-1 content-md:w-[130px] content-md:flex-none">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -636,12 +636,12 @@ export function AdminOrdersAnalyticsPage() {
           options={CHANNEL_OPTIONS}
           value={channel}
           onChange={setChannel}
-          className="w-full justify-start md:w-auto"
+          className="w-full justify-start content-md:w-auto"
           contentClassName="w-(--radix-dropdown-menu-trigger-width) md:w-auto"
         />
         <label
           htmlFor="analytics-exclude-pending"
-          className="flex h-10 w-full cursor-pointer flex-row-reverse items-center justify-between gap-3 rounded-md border border-border bg-background px-3 shadow-xs transition-colors hover:bg-muted/50 md:w-auto md:flex-row md:justify-start"
+          className="flex h-10 w-full cursor-pointer flex-row-reverse items-center justify-between gap-3 rounded-md border border-border bg-background px-3 shadow-xs transition-colors hover:bg-muted/50 content-md:w-auto content-md:flex-row content-md:justify-start"
         >
           <Switch
             id="analytics-exclude-pending"
@@ -681,7 +681,7 @@ export function AdminOrdersAnalyticsPage() {
       />
 
       {/* Charts */}
-      <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:gap-6 content-lg:grid-cols-2">
         <AreaMetricCard
           title="How many unique visitors?"
           seriesLabel="Visitors"

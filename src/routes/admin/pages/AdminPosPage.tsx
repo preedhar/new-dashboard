@@ -14,7 +14,7 @@ import { TypographyMuted } from "@/components/ui/typography"
 // running on a tablet, with the supported devices called out underneath.
 export function AdminPosPage() {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-4 xl:max-w-5xl xl:flex-1">
+    <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-4 content-xl:max-w-5xl content-xl:flex-1">
       {/* The desktop chrome for this route is suppressed in AdminPage, so the
           page supplies its own back affordance on a phone. */}
       <Button
@@ -31,21 +31,21 @@ export function AdminPosPage() {
       {/* Stacked on narrower screens; once there's room the image and the
           download card sit side by side, with the image easing back to leave
           the card its space. */}
-      <div className="flex w-full flex-col items-center gap-4 xl:flex-1 xl:flex-row xl:items-center xl:gap-6">
+      <div className="flex w-full flex-col items-center gap-4 content-xl:flex-1 content-xl:flex-row content-xl:items-center content-xl:gap-6">
         {/* Scales with the column rather than sitting at a fixed size, so it
             fills the width it's given and shrinks to fit a phone. Eases back a
             notch on xl so the card has room alongside it. */}
         <img
           src={posPreview}
           alt="The POS app taking a new order on a tablet"
-          className="h-auto w-full xl:min-w-0 xl:flex-1"
+          className="h-auto w-full content-xl:min-w-0 content-xl:flex-1"
         />
 
         {/* Scanning the code sends a phone or tablet to the store it belongs to;
             the badges beside it cover anyone reading this on a desktop. The card
             is capped rather than sized to its contents, so the heading wraps
             instead of stretching it. */}
-        <Card className="w-full max-w-lg gap-4 border-none bg-transparent p-4 shadow-none sm:p-6 xl:max-w-[280px] xl:shrink-0">
+        <Card className="w-full max-w-lg gap-4 border-none bg-transparent p-4 shadow-none sm:p-6 content-xl:max-w-[280px] content-xl:shrink-0">
           <div className="flex flex-col gap-1">
             <p className="text-center text-xl font-semibold text-foreground sm:text-2xl">
               Start for free
@@ -58,7 +58,7 @@ export function AdminPosPage() {
           {/* QR beside the badges, so a scanner and a tapper each have their
               path. On xl the pair stacks into a column to sit within the
               narrow card beside the image. */}
-          <div className="flex flex-row items-center justify-center gap-4 sm:gap-6 xl:flex-col xl:gap-4">
+          <div className="flex flex-row items-center justify-center gap-4 sm:gap-6 content-xl:flex-col content-xl:gap-4">
             <img
               src={posAppQr}
               alt="QR code to download the POS app"
@@ -74,14 +74,14 @@ export function AdminPosPage() {
                 <img
                   src={appStoreBadge}
                   alt="Download on the App Store"
-                  className="h-auto w-40 lg:w-36"
+                  className="h-auto w-40 content-lg:w-36"
                 />
               </a>
               <a href={GOOGLE_PLAY_URL} target="_blank" rel="noreferrer">
                 <img
                   src={googlePlayBadge}
                   alt="Get it on Google Play"
-                  className="h-auto w-40 lg:w-36"
+                  className="h-auto w-40 content-lg:w-36"
                 />
               </a>
             </div>

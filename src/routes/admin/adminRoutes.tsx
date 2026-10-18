@@ -19,6 +19,7 @@ import {
   Percent,
   Settings,
   ReceiptText,
+  Sparkles,
   Star,
   Store,
   Tag,
@@ -83,6 +84,7 @@ import { AdminSettingsTeamPage } from './pages/AdminSettingsTeamPage'
 import { AdminOverviewPage } from './pages/AdminOverviewPage'
 import { AdminReferralsPage } from './pages/AdminReferralsPage'
 import { AdminHomeCardsPage } from './pages/AdminHomeCardsPage'
+import { AdminMavenPage } from './pages/AdminMavenPage'
 import { AdminSetupCardsPage } from './pages/AdminSetupCardsPage'
 import { AdminErrorPage } from './pages/AdminErrorPage'
 import { AdminPagePlaceholder } from './pages/AdminPagePlaceholder'
@@ -229,6 +231,15 @@ export const adminRoutes: AdminRoute[] = [
     title: 'Setup cards',
     icon: LayoutGrid,
     component: AdminSetupCardsPage,
+  },
+  // Where the Maven home tile sends a phone; desktop opens the same chat in a
+  // panel beside the content. Reachable by URL, not from the nav.
+  {
+    path: '/admin/maven',
+    label: 'Maven',
+    title: 'Maven',
+    icon: Sparkles,
+    component: AdminMavenPage,
   },
   {
     path: '/admin/orders',

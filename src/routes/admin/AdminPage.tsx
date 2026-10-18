@@ -1,5 +1,7 @@
 import { AppAlertBanner } from './components/app-alert-banner'
 import { AppSidebar } from './components/app-sidebar'
+import { MavenLauncher } from './components/maven-launcher'
+import { MavenPanel, MavenPanelProvider } from './components/maven-panel'
 import { MobileBottomNav } from './components/mobile-bottom-nav'
 import { MobileAppsMenu } from './components/mobile-apps-menu'
 import { MobileHeader } from './components/mobile-header'
@@ -88,12 +90,16 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path === '/admin/products'
   // The order and delivery detail pages provide their own back button and
   // render a full-bleed card, so the shared title/header and the section's
-  // horizontal padding are suppressed for them.
+  // horizontal padding are suppressed for them. The Maven chat page is built
+  // the same way: its own back button, and a composer pinned to the bottom
+  // edge where the bottom nav would be.
   const isOrderDetailPage =
+    activeRoute.path === '/admin/maven' ||
     activeRoute.path === '/admin/orders/detail' ||
     activeRoute.path === '/admin/orders/deliveries/detail' ||
     activeRoute.path === '/admin/orders/earnings/detail' ||
     activeRoute.path === '/admin/marketing/email/detail'
+  const showBottomNav = !((isOrderFormPage && !keepsBottomNav) || isOrderDetailPage)
   const showDesktopHeader =
     activeRoute.path !== '/admin' &&
     activeRoute.path !== '/admin/apps' &&
@@ -132,86 +138,94 @@ export function AdminPage({ pathname }: AdminPageProps) {
   return (
     <PausedSubscriptionsProvider>
       <SetupGuideHintProvider>
-        <SidebarProvider open onOpenChange={() => {}}>
-          <AppSidebar pathname={activeRoute.path} />
-          <SidebarInset className="min-w-0">
-            <MobileHeader pathname={activeRoute.path} />
-            {SHOW_ALERT_BANNERS ? <AppAlertBanner /> : null}
-            <PausedSubscriptionBanner />
-            {showDesktopHeader ? (
-              <header className="hidden h-16 shrink-0 items-center gap-2 border-b border-border px-4 md:flex">
-                <Breadcrumb>
-                  <BreadcrumbList>
-                    <BreadcrumbItem className="hidden md:block">
-                      <BreadcrumbLink href="/admin">Admin</BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="hidden md:block" />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>{activeRoute.label}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </BreadcrumbList>
-                </Breadcrumb>
-              </header>
-            ) : null}
-
-            <section
-              className={cn(
-                'flex min-w-0 flex-1 flex-col gap-6',
-                // The order detail page is full-bleed (no horizontal padding) so its
-                // card sits flush to the screen edges, and it has no bottom padding
-                // since its action bar is pinned to the bottom edge.
-                isOrderDetailPage
-                  ? 'pb-0 pt-0'
-                  : 'px-4 pb-24 pt-5 sm:px-6 sm:pb-24 md:pb-6 lg:px-8 lg:pb-8',
-                isOrderFormPage && 'pt-4 sm:pt-8 lg:pt-8',
-                // The All Apps and referrals pages open straight onto their own
-                // centred title, so on desktop it sits 32px below the top edge.
-                (activeRoute.path === '/admin/apps' ||
-                  activeRoute.path === '/admin/referrals') &&
-                  'md:pt-8',
-              )}
-            >
-              {showPageTitle ? (
-                <header>
-                  <h1 className="text-2xl font-semibold tracking-normal text-neutral-900">
-                    {activeRoute.title}
-                  </h1>
+        <MavenPanelProvider>
+          <SidebarProvider open onOpenChange={() => {}}>
+            <AppSidebar pathname={activeRoute.path} />
+            <SidebarInset className="min-w-0">
+              <MobileHeader pathname={activeRoute.path} />
+              {SHOW_ALERT_BANNERS ? <AppAlertBanner /> : null}
+              <PausedSubscriptionBanner />
+              {showDesktopHeader ? (
+                <header className="hidden h-16 shrink-0 items-center gap-2 border-b border-border px-4 md:flex">
+                  <Breadcrumb>
+                    <BreadcrumbList>
+                      <BreadcrumbItem className="hidden md:block">
+                        <BreadcrumbLink href="/admin">Admin</BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator className="hidden md:block" />
+                      <BreadcrumbItem>
+                        <BreadcrumbPage>{activeRoute.label}</BreadcrumbPage>
+                      </BreadcrumbItem>
+                    </BreadcrumbList>
+                  </Breadcrumb>
                 </header>
               ) : null}
-
-              {/* The Settings hub no longer renders a page of its own on mobile
-                  (the store form moved behind its "Store" tile), so it gets a
-                  title of its own above the menus. */}
-              {activeRoute.path === '/admin/settings/store' ? (
-                <>
-                  <header className="flex items-center justify-center md:hidden">
+  
+              <section
+                className={cn(
+                  // The named container the content-md/lg/xl variants in
+                  // index.css measure against.
+                  '@container/content flex min-w-0 flex-1 flex-col gap-6',
+                  // The order detail page is full-bleed (no horizontal padding) so its
+                  // card sits flush to the screen edges, and it has no bottom padding
+                  // since its action bar is pinned to the bottom edge.
+                  isOrderDetailPage
+                    ? 'pb-0 pt-0'
+                    : 'px-4 pb-24 pt-5 sm:px-6 sm:pb-24 md:pb-6 lg:px-8 lg:pb-8',
+                  isOrderFormPage && 'pt-4 sm:pt-8 lg:pt-8',
+                  // The All Apps and referrals pages open straight onto their own
+                  // centred title, so on desktop it sits 32px below the top edge.
+                  (activeRoute.path === '/admin/apps' ||
+                    activeRoute.path === '/admin/referrals') &&
+                    'md:pt-8',
+                )}
+              >
+                {showPageTitle ? (
+                  <header>
                     <h1 className="text-2xl font-semibold tracking-normal text-neutral-900">
-                      Settings
+                      {activeRoute.title}
                     </h1>
                   </header>
-                  {/* The referral promo the sidebar carries on desktop. There's no
-                      sidebar on mobile, so the hub shows it under its title, on a
-                      grey fill rather than the sidebar card's white one. */}
-                  {SHOW_REFERRAL_CARD ? (
-                    <ReferralCard className="bg-muted md:hidden" />
-                  ) : null}
-                </>
-              ) : null}
-
-              <MobileSectionMenu pathname={activeRoute.path} />
-
-              {/* The Store settings page is the mobile Settings hub, so beneath the
-                  section menu it also surfaces the Online Store app's pages and an
-                  "All Apps" shortcut (mobile only). */}
-              {activeRoute.path === '/admin/settings/store' ? <MobileAppsMenu /> : null}
-
-              <Page />
-            </section>
-          </SidebarInset>
-          {(isOrderFormPage && !keepsBottomNav) || isOrderDetailPage ? null : (
-            <MobileBottomNav pathname={activeRoute.path} />
-          )}
-        </SidebarProvider>
+                ) : null}
+  
+                {/* The Settings hub no longer renders a page of its own on mobile
+                    (the store form moved behind its "Store" tile), so it gets a
+                    title of its own above the menus. */}
+                {activeRoute.path === '/admin/settings/store' ? (
+                  <>
+                    <header className="flex items-center justify-center md:hidden">
+                      <h1 className="text-2xl font-semibold tracking-normal text-neutral-900">
+                        Settings
+                      </h1>
+                    </header>
+                    {/* The referral promo the sidebar carries on desktop. There's no
+                        sidebar on mobile, so the hub shows it under its title, on a
+                        grey fill rather than the sidebar card's white one. */}
+                    {SHOW_REFERRAL_CARD ? (
+                      <ReferralCard className="bg-muted md:hidden" />
+                    ) : null}
+                  </>
+                ) : null}
+  
+                <MobileSectionMenu pathname={activeRoute.path} />
+  
+                {/* The Store settings page is the mobile Settings hub, so beneath the
+                    section menu it also surfaces the Online Store app's pages and an
+                    "All Apps" shortcut (mobile only). */}
+                {activeRoute.path === '/admin/settings/store' ? <MobileAppsMenu /> : null}
+  
+                <Page />
+              </section>
+              {/* The chat page has the chat already, so no launcher there. */}
+              {activeRoute.path === '/admin/maven' ? null : (
+                <MavenLauncher aboveBottomNav={showBottomNav} />
+              )}
+            </SidebarInset>
+            {/* The Maven chat, beside the content card on desktop when open. */}
+            <MavenPanel />
+            {showBottomNav ? <MobileBottomNav pathname={activeRoute.path} /> : null}
+          </SidebarProvider>
+        </MavenPanelProvider>
       </SetupGuideHintProvider>
     </PausedSubscriptionsProvider>
   )

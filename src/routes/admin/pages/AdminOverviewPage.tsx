@@ -26,10 +26,17 @@ const STORE_METRICS: StoreMetric[] = [
   { id: 'sales', label: 'Sales', value: '$4,320.75' },
 ]
 
+// The Online Store guide is switched off on home for now, so the row runs
+// setup guide, verified badge, Maven. Flip this to false to bring it back as
+// the second card; the hide control and reopen hint still work when it is.
+const ONLINE_STORE_GUIDE_HIDDEN = true
+
 export function AdminOverviewPage() {
   // A hidden guide leaves the row with fewer cards, which centres the rest.
   const [setupGuideHidden, setSetupGuideHidden] = React.useState(false)
-  const [onlineStoreGuideHidden, setOnlineStoreGuideHidden] = React.useState(false)
+  const [onlineStoreGuideHidden, setOnlineStoreGuideHidden] = React.useState(
+    ONLINE_STORE_GUIDE_HIDDEN,
+  )
   // Hiding a guide takes it off the page, so the user menu it can be reopened
   // from says so.
   const { showHint } = useSetupGuideHint()
@@ -69,8 +76,10 @@ export function AdminOverviewPage() {
       </div>
 
       {/* The metrics and the cards travel together, with a wider gap between
-          them from xl up. */}
-      <div className="flex w-full flex-col items-center gap-8 xl:gap-[60px]">
+          them once the column is wide enough for the cards to sit in a row.
+          The row goes by the column's width, not the viewport's, so it stacks
+          again when the Maven panel opens beside it. */}
+      <div className="flex w-full flex-col items-center gap-8 content-xl:gap-[60px]">
         {/* The title introduces the figures, so it sits with them rather than a
             long gap away. */}
         <div className="flex w-full flex-col items-center gap-6">
@@ -104,17 +113,18 @@ export function AdminOverviewPage() {
           </a>
         </div>
 
-        {/* 640px matches the card column on the store settings page; from xl up
-            the column widens to fit all three cards side by side. */}
-        <section className="w-full max-w-[640px] text-left xl:max-w-[1120px]">
-          {/* Setup card and promo tiles share one row from 1280px up, where three
-              columns still have room to breathe, and stack below that. Each card
+        {/* 640px matches the card column on the store settings page; from a
+            944px column up (a 1280px viewport with no panel open) it widens to
+            fit all three cards side by side. */}
+        <section className="w-full max-w-[640px] text-left content-xl:max-w-[1120px]">
+          {/* Setup card and promo tiles share one row from a 944px column up, where
+              three columns still have room to breathe, and stack below that. Each card
               is a third of the row whatever the count, so one or two cards keep
               that width and justify-center puts them in the middle rather than
               stretching them across the row. */}
-          <div className="flex flex-col gap-6 xl:flex-row xl:flex-wrap xl:justify-center xl:gap-10">
+          <div className="flex flex-col gap-6 content-xl:flex-row content-xl:flex-wrap content-xl:justify-center content-xl:gap-10">
             {setupGuideHidden ? null : (
-              <div className="flex xl:w-[calc((100%_-_5rem)/3)]">
+              <div className="flex content-xl:w-[calc((100%_-_5rem)/3)]">
                 <SetupChecklistCard
                   onHide={() => {
                     setSetupGuideHidden(true)
@@ -126,7 +136,7 @@ export function AdminOverviewPage() {
             {/* The same guide pinned to one app, so it lists that app's tasks
                 with no picker above them. */}
             {onlineStoreGuideHidden ? null : (
-              <div className="flex xl:w-[calc((100%_-_5rem)/3)]">
+              <div className="flex content-xl:w-[calc((100%_-_5rem)/3)]">
                 <SetupChecklistCard
                   app={SETUP_APPS[0]}
                   onHide={() => {
@@ -137,7 +147,7 @@ export function AdminOverviewPage() {
               </div>
             )}
             {PROMO_TILES.map((tile) => (
-              <div key={tile.id} className="flex xl:w-[calc((100%_-_5rem)/3)]">
+              <div key={tile.id} className="flex content-xl:w-[calc((100%_-_5rem)/3)]">
                 <PromoTileCard tile={tile} />
               </div>
             ))}

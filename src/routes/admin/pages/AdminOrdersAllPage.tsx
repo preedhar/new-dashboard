@@ -143,6 +143,7 @@ import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { TypographyH3, TypographyH4, TypographyLarge } from '@/components/ui/typography'
+import { MavenBanner } from '../components/maven-banner'
 import type { ColumnDef, RowSelectionState } from '@tanstack/react-table'
 
 type OrderStat = {
@@ -3334,7 +3335,7 @@ export function AdminOrdersAllPage() {
           title keeps its original 16/24px spacing to the cards via mb. */}
       <TypographyH3 className="mb-2 text-center md:mb-4 md:text-left">All Orders</TypographyH3>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 content-lg:grid-cols-4">
         {ORDER_STATS.map((stat) => (
           <Card
             key={stat.label}
@@ -3363,6 +3364,12 @@ export function AdminOrdersAllPage() {
           </Card>
         ))}
       </div>
+
+      {/* The Maven pitch, between the stat cards and the toolbar. mt-4 plus
+          the column's 8px gap makes 24px above, matching the 24px below that
+          the toolbars' own top spacing adds to the gap (py-4 on desktop,
+          mt-2 + pt-2 on mobile). */}
+      <MavenBanner className="mt-4" />
 
       {/* Mobile toolbar: search on its own row, then equal-width Filters /
           Actions / Add order. Filters are collapsed into a dialog. Sticks to
@@ -3515,10 +3522,11 @@ export function AdminOrdersAllPage() {
               <Search className="size-4" />
               Order
             </Button>
-            {/* Inline filter buttons at xl and up; below that they collapse
-                into the Filters dialog. `contents` lets the buttons keep
-                participating in the toolbar's flex layout. */}
-            <div className="hidden xl:contents">
+            {/* Inline filter buttons once the content column is xl-wide; in
+                a narrower column they collapse into the Filters dialog.
+                `contents` lets the buttons keep participating in the
+                toolbar's flex layout. */}
+            <div className="hidden content-xl:contents">
               <SelectFilter
                 label="Channel"
                 options={CHANNEL_OPTIONS}
@@ -3545,7 +3553,7 @@ export function AdminOrdersAllPage() {
               />
               <ActiveFilter value={activeFilter} onChange={setActiveFilter} />
             </div>
-            <div className="xl:hidden">
+            <div className="content-xl:hidden">
               <FiltersDialog
                 open={filtersOpen}
                 onOpenChange={setFiltersOpen}

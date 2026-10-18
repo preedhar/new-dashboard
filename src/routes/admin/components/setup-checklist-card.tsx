@@ -51,13 +51,13 @@ export function SetupChecklistCard({
       {headerVisible ? null : (
         <SetupOptionsMenu
           onHide={onHide}
-          className="absolute top-4 right-2 z-10 mr-0 sm:top-6 sm:right-4 xl:top-8 xl:right-6"
+          className="absolute top-4 right-2 z-10 mr-0 sm:top-6 sm:right-4 content-xl:top-8 content-xl:right-6"
         />
       )}
 
       {/* The list sits closer to the heading than to the card's outer edges. */}
       {headerVisible ? (
-        <div className="flex flex-col gap-2 p-4 pb-2 sm:p-6 sm:pb-3 xl:p-8 xl:pb-4">
+        <div className="flex flex-col gap-2 p-4 pb-2 sm:p-6 sm:pb-3 content-xl:p-8 content-xl:pb-4">
           <div className="flex items-center gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               {/* Same type scale as the app names on the Apps page. */}
@@ -134,7 +134,7 @@ export function SetupChecklistCard({
           it, since a finished card sits in a row beside cards carrying a full
           list. */}
       {setupComplete ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4 text-center sm:p-6 xl:p-8">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4 text-center sm:p-6 content-xl:p-8">
           {/* The artwork stands on its own here, unframed, at the size the
               Apps page draws an app's mark inside its tile. */}
           <img src={activeApp.icon} alt="" className="size-8 shrink-0 sm:size-10" />
@@ -159,7 +159,7 @@ export function SetupChecklistCard({
            a full-width band rather than a floating pill. Nothing is set aside on
            the left for a mark, since a finished task carries its mark on the
            right instead. */
-        <ul className="flex flex-1 flex-col px-2 pb-2 sm:px-4 sm:pb-3 xl:px-6 xl:pb-4">
+        <ul className="flex flex-1 flex-col px-2 pb-2 sm:px-4 sm:pb-3 content-xl:px-6 content-xl:pb-4">
           {activeApp.steps.map((step) => {
             const completed = Boolean(step.completed)
 

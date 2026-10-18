@@ -1660,7 +1660,7 @@ export function AdminSettingsWebsiteAppearancePage() {
           </h1>
         </header>
 
-        <div className="mx-auto flex w-full max-w-[1086px] justify-center gap-8 xl:justify-between">
+        <div className="mx-auto flex w-full max-w-[1086px] justify-center gap-8 content-xl:justify-between">
           <div className="flex w-full max-w-[640px] flex-col gap-8">
             <Section>
               <ImageUploadField
@@ -1984,7 +1984,7 @@ export function AdminSettingsWebsiteAppearancePage() {
 
           {/* Empty preview frame, shown only on wide (>1280px) screens. Sticks to
             the top of the viewport while scrolling a tall card. */}
-          <div className="hidden xl:sticky xl:top-8 xl:block xl:shrink-0 xl:self-start">
+          <div className="hidden content-xl:sticky content-xl:top-8 content-xl:block content-xl:shrink-0 content-xl:self-start">
             <div className="h-[640px] w-[350px] overflow-hidden rounded-lg border border-border bg-muted" />
             <p className="mt-3 text-center text-sm text-muted-foreground">
               Preview

@@ -8,17 +8,22 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import emailCreatedImage from '@/assets/admin/email-created.png'
+import mavenLogo from '@/assets/admin/maven-logo.svg'
 import { TypographyH4, TypographyLarge, TypographyMuted } from '@/components/ui/typography'
+import { useIsMobile } from '@/hooks/use-mobile'
 import type { PromoTile } from '../promo-tiles'
+import { useMavenPanel } from './maven-panel'
 import { cn } from '@/lib/utils'
 
 // The whole tile is the click target, like the Apps page cards, so the call to
 // action is a styled span rather than a nested button.
 const PROMO_TILE_CLASS =
-  'group relative isolate flex min-h-40 w-full flex-col rounded-xl p-4 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:p-6 xl:min-h-[420px] xl:p-8'
+  'group relative isolate flex min-h-40 w-full flex-col rounded-xl p-4 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:p-6 content-xl:min-h-[420px] content-xl:p-8'
 
 export function PromoTileCard({ tile }: { tile: PromoTile }) {
   const [paywallOpen, setPaywallOpen] = React.useState(false)
+  const isMobile = useIsMobile()
+  const { openPanel } = useMavenPanel()
 
   const body = (
     <>
@@ -34,29 +39,51 @@ export function PromoTileCard({ tile }: { tile: PromoTile }) {
           {tile.description}
         </TypographyMuted>
       </div>
-      {/* Artwork, bleeding off the bottom-right corner. Every file is @2x, so
-          w-40 draws it at half its pixel size from 640px up; below that it steps
-          down, since a square icon at full size stands as tall as the whole
-          stacked card. Its height comes from the file rather than a fixed
-          attribute, since the set isn't all one shape — the icons are square
-          where the placeholder is landscape. The wrapper clips
-          it to the card, which the surface layer can't do any more, so it grows
-          on hover exactly as the surface does — otherwise the art would stay cut
-          off at the resting edge while the card carried on past it. */}
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl transition-all duration-200 group-hover:-inset-2.5"
-      >
-        <img
-          src={tile.image ?? emailCreatedImage}
-          alt=""
-          className="absolute right-0 bottom-0 w-28 max-w-[55%] translate-x-3 translate-y-3 sm:w-40"
-        />
-      </span>
+      {tile.unread ? (
+        /* The Maven logo in the artwork's corner, kept inside the card's
+           padding like an app icon, with the unread count on a red badge over
+           its top-right corner. */
+        <span
+          aria-hidden="true"
+          className="absolute right-4 bottom-4 z-10 sm:right-6 sm:bottom-6 content-xl:right-8 content-xl:bottom-8"
+        >
+          <img src={mavenLogo} alt="" className="size-24 sm:size-32" />
+          <span className="absolute -top-1 -right-1 flex h-7 min-w-7 items-center justify-center rounded-full border-2 border-neutral-50 bg-red-500 px-2 text-sm font-semibold text-white group-hover:border-muted">
+            {tile.unread}
+          </span>
+        </span>
+      ) : (
+        /* Artwork, bleeding off the bottom-right corner. Every file is @2x, so
+            w-40 draws it at half its pixel size from 640px up; below that it steps
+            down, since a square icon at full size stands as tall as the whole
+            stacked card. Its height comes from the file rather than a fixed
+            attribute, since the set isn't all one shape — the icons are square
+            where the placeholder is landscape. The wrapper clips
+            it to the card, which the surface layer can't do any more, so it grows
+            on hover exactly as the surface does — otherwise the art would stay cut
+            off at the resting edge while the card carried on past it. */
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl transition-all duration-200 group-hover:-inset-2.5"
+        >
+          <img
+            src={tile.image ?? emailCreatedImage}
+            alt=""
+            className="absolute right-0 bottom-0 w-28 max-w-[55%] translate-x-3 translate-y-3 sm:w-40"
+          />
+        </span>
+      )}
       {/* mt-auto pins the call to action to the bottom-left, clear of the art.
           The gap above it tightens when the cards are stacked. */}
-      <div className="relative z-10 mt-auto pt-4 xl:pt-8">
-        <span className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
+      <div className="relative z-10 mt-auto pt-4 content-xl:pt-8">
+        <span
+          className={cn(
+            buttonVariants({ variant: 'outline', size: 'lg' }),
+            // border-transparent displaces the outline variant's grey border,
+            // which would otherwise win over the utility's.
+            tile.action.mavenBorder && 'maven-border border-transparent',
+          )}
+        >
           {tile.action.label}
         </span>
       </div>
@@ -94,6 +121,18 @@ export function PromoTileCard({ tile }: { tile: PromoTile }) {
       <a
         href={tile.action.href}
         {...(tile.action.external ? { target: '_blank', rel: 'noreferrer' } : {})}
+        // A chat tile is a link to the chat page, which is where a phone goes.
+        // On desktop the click opens the panel beside the content instead.
+        onClick={
+          tile.action.chat
+            ? (event) => {
+                if (!isMobile) {
+                  event.preventDefault()
+                  openPanel()
+                }
+              }
+            : undefined
+        }
         className={PROMO_TILE_CLASS}
       >
         {body}
