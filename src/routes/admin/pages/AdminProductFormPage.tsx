@@ -88,7 +88,14 @@ import { TypographyH4, TypographyLarge } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'
 import productImage from '@/assets/product.png'
 
-import { CHANNELS, STORE_DOMAIN, slugify, type Channel } from '../catalog'
+import {
+  CATEGORY_OPTIONS,
+  CHANNELS,
+  PRODUCT_OPTIONS,
+  STORE_DOMAIN,
+  slugify,
+  type Channel,
+} from '../catalog'
 import { setRowDragImage, useReorderTransition } from '../reorder'
 import { CustomQuestionDialog } from '../components/custom-question-dialog'
 import {
@@ -135,21 +142,6 @@ const LABEL_OPTIONS = [
   'Limited time',
   'Sale',
   'New',
-]
-
-// There's no shared catalog behind these screens yet, so the categories field
-// offers a sample set to pick from — anything else is typed in and created.
-const CATEGORY_OPTIONS = ['Hot Drinks', 'Cold Drinks', 'Pastries', 'Mains']
-
-// The products a bundle can be built out of — the same stand-in catalog, minus
-// the bundles themselves. Mirrors the order page's product picker.
-const PRODUCT_OPTIONS = [
-  'Americano, Iced',
-  'Butter Croissant',
-  'Caesar Salad',
-  'Cappuccino',
-  'Oat Milk Latte',
-  'Pad Thai',
 ]
 
 type ProductImage = { id: string; name: string; url: string }

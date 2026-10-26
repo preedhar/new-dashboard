@@ -143,7 +143,6 @@ import { DataTable, DataTableColumnHeader } from '@/components/ui/data-table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { TypographyH3, TypographyH4, TypographyLarge } from '@/components/ui/typography'
-import { MavenBanner } from '../components/maven-banner'
 import type { ColumnDef, RowSelectionState } from '@tanstack/react-table'
 
 type OrderStat = {
@@ -3364,12 +3363,6 @@ export function AdminOrdersAllPage() {
           </Card>
         ))}
       </div>
-
-      {/* The Maven pitch, between the stat cards and the toolbar. mt-4 plus
-          the column's 8px gap makes 24px above, matching the 24px below that
-          the toolbars' own top spacing adds to the gap (py-4 on desktop,
-          mt-2 + pt-2 on mobile). */}
-      <MavenBanner className="mt-4" />
 
       {/* Mobile toolbar: search on its own row, then equal-width Filters /
           Actions / Add order. Filters are collapsed into a dialog. Sticks to
