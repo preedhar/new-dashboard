@@ -30,6 +30,8 @@ import {
 
 import { STORE_DOMAIN } from './catalog'
 import { AdminCustomersPage } from './pages/AdminCustomersPage'
+import { AdminDiscountsPage } from './pages/AdminDiscountsPage'
+import { AdminDiscountFormPage } from './pages/AdminDiscountFormPage'
 import {
   AdminEmailMarketingPage,
   AdminEmailDetailPage,
@@ -458,10 +460,21 @@ export const adminRoutes: AdminRoute[] = [
     label: 'Discounts',
     title: 'Discounts',
     icon: Tag,
-    component: createAdminPlaceholder(
-      'Discounts',
-      'A future workspace for promotions, discount codes, and campaign rules.',
-    ),
+    component: AdminDiscountsPage,
+  },
+  {
+    path: '/admin/marketing/discounts/new',
+    label: 'Add discount',
+    title: 'Add discount',
+    icon: Tag,
+    component: () => <AdminDiscountFormPage />,
+  },
+  {
+    path: '/admin/marketing/discounts/edit',
+    label: 'Edit discount',
+    title: 'Edit discount',
+    icon: Tag,
+    component: () => <AdminDiscountFormPage mode="edit" />,
   },
   {
     path: '/admin/marketing/email',

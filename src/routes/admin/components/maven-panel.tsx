@@ -69,8 +69,8 @@ export function useMavenPanel() {
 
 export const MAVEN_PANEL_WIDTH_PX = 400
 
-// Messages waiting in the chat. A fixed number for the prototype, shared by
-// the home card and the floating launcher so the two always agree.
+// Messages waiting in the chat. A fixed number for the prototype, shown on
+// the home card.
 export const MAVEN_UNREAD_COUNT = 2
 
 // Desktop only: on a phone the chat is its own page at /admin/maven. The panel

@@ -1,6 +1,5 @@
 import { AppAlertBanner } from './components/app-alert-banner'
 import { AppSidebar } from './components/app-sidebar'
-import { MavenLauncher } from './components/maven-launcher'
 import { MavenPanel, MavenPanelProvider } from './components/maven-panel'
 import { MobileBottomNav } from './components/mobile-bottom-nav'
 import { MobileAppsMenu } from './components/mobile-apps-menu'
@@ -62,6 +61,8 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path === '/admin/products/edit' ||
     activeRoute.path === '/admin/products/bundles/new' ||
     activeRoute.path === '/admin/products/bundles/edit' ||
+    activeRoute.path === '/admin/marketing/discounts/new' ||
+    activeRoute.path === '/admin/marketing/discounts/edit' ||
     activeRoute.path === '/admin/apps/online-store/checkouts' ||
     activeRoute.path === '/admin/apps/online-store/checkouts/order-form' ||
     activeRoute.path === '/admin/apps/qr-code/checkouts' ||
@@ -111,6 +112,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/orders/earnings' &&
     activeRoute.path !== '/admin/orders/analytics' &&
     activeRoute.path !== '/admin/marketing/email' &&
+    activeRoute.path !== '/admin/marketing/discounts' &&
     activeRoute.path !== '/admin/apps/pos' &&
     activeRoute.path !== '/admin/referrals' &&
     activeRoute.path !== '/admin/settings/billing' &&
@@ -129,6 +131,7 @@ export function AdminPage({ pathname }: AdminPageProps) {
     activeRoute.path !== '/admin/orders/earnings' &&
     activeRoute.path !== '/admin/orders/analytics' &&
     activeRoute.path !== '/admin/marketing/email' &&
+    activeRoute.path !== '/admin/marketing/discounts' &&
     activeRoute.path !== '/admin/apps/pos' &&
     activeRoute.path !== '/admin/referrals' &&
     activeRoute.path !== '/admin/settings/billing' &&
@@ -216,10 +219,6 @@ export function AdminPage({ pathname }: AdminPageProps) {
   
                 <Page />
               </section>
-              {/* The chat page has the chat already, so no launcher there. */}
-              {activeRoute.path === '/admin/maven' ? null : (
-                <MavenLauncher aboveBottomNav={showBottomNav} />
-              )}
             </SidebarInset>
             {/* The Maven chat, beside the content card on desktop when open. */}
             <MavenPanel />
