@@ -26,6 +26,7 @@ import {
   Trash2,
   Truck,
   User,
+  Wallet,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -107,6 +108,19 @@ const STATUS_OPTIONS: OptionWithIcon[] = [
   { label: 'Rejected', icon: RejectedIcon },
 ]
 
+// How an order the merchant files themselves was paid for: "Admin added" when
+// the money was settled outside Cococart, or one of the manual payment methods
+// from Settings → Payments → Manual payments.
+const ADMIN_ADDED_PAYMENT = 'Admin added'
+
+const PAYMENT_METHOD_OPTIONS = [
+  ADMIN_ADDED_PAYMENT,
+  'PayNow',
+  'PayPal',
+  'Bank transfer',
+  'Cash',
+] as const
+
 const FULFILLMENT_TYPES: OptionWithIcon[] = [
   { label: 'Delivery Zone 1 (0-3km)', icon: Truck },
   { label: 'Delivery Zone 2 (3-5Km)', icon: Truck },
@@ -143,6 +157,7 @@ type OrderEditForm = {
   customerPhone: string
   customerEmail: string
   status: string
+  paymentMethod: string
   // Fulfillment
   fulfillDate: Date | undefined
   timeSlot: string
@@ -251,6 +266,7 @@ const INITIAL_FORM: OrderEditForm = {
   customerPhone: '',
   customerEmail: '',
   status: 'Pending',
+  paymentMethod: ADMIN_ADDED_PAYMENT,
   fulfillDate: undefined,
   timeSlot: '',
   fulfillType: '',
@@ -1124,6 +1140,10 @@ export function AdminOrderEditPage({
     enabledFieldsFor(initialForm),
   )
   const [dateOpen, setDateOpen] = React.useState(false)
+  // A pending order hasn't been paid yet, so there's no method to record. Past
+  // that, an order the merchant filed from the dashboard says how it was paid;
+  // one Cococart charged already knows.
+  const showsPaymentMethod = !paymentAutomated && form.status !== 'Pending'
   // The item dialog: 'add' for a new item, or the item being edited. null when
   // closed.
   const [itemDialog, setItemDialog] = React.useState<
@@ -1352,6 +1372,28 @@ export function AdminOrderEditPage({
               </SelectContent>
             </Select>
           </FormRow>
+          {showsPaymentMethod ? (
+            <FormRow id="payment-method" label="Payment method" icon={Wallet}>
+              <Select
+                value={form.paymentMethod}
+                onValueChange={(value) => update('paymentMethod', value)}
+              >
+                <SelectTrigger
+                  id="payment-method"
+                  className="w-full data-[size=default]:h-10"
+                >
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_METHOD_OPTIONS.map((method) => (
+                    <SelectItem key={method} value={method}>
+                      {method}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormRow>
+          ) : null}
         </Section>
 
         <Section title="Fulfillment">
